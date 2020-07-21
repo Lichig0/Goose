@@ -2,7 +2,8 @@ const kick = require("../commands/kick");
 const pong = require("../commands/ping");
 const curse = require("../commands/curse");
 const insult = require("../commands/insult");
-const Discord = require("discord.js")
+const leave = require("../commands/leave");
+const Discord = require("discord.js");
 module.exports = (client, message) => {
     const {content, author, guild} = message;
     if (!content.startsWith(".")) {
@@ -24,10 +25,13 @@ module.exports = (client, message) => {
     }
     else if (content === ".insult"){
         // message.channel.send("Stop.");
-        curse(message, author);
+        return curse(message, author);
         // return insult(message);
     }
     else if (content === ".ping") {
         return pong(message);
+    }
+    else if (content === ".kys" && kick_perm === true) {
+        return leave();
     }
 }
