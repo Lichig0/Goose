@@ -23,7 +23,9 @@ module.exports = (client, message) => {
         return role_perm ? curse(message) : message.channel.send("Your authority is not recognized in Fort Kickass.")
     }
     else if (content === ".insult"){
-        return insult(message);
+        // message.channel.send("Stop.");
+        curse(message, author);
+        // return insult(message);
     }
     else if (content === ".ping") {
         return pong(message);
