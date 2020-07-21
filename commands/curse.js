@@ -6,25 +6,13 @@ module.exports = (message, who = undefined) => {
         return;
     }
     if (!member.manageable) {
-        return message.reply(`I can't.`)
+        return message.reply(`Honk.`)
     }
     let role = message.guild.roles.cache.find(r => r.name === "cursed")
     if (!message.content.includes('lift')) {
-        return member
-            .roles.add(role)
-            .then(() => message.reply(`${member.user.tag} was cursed.`))
-            .catch(error => {
-                message.reply(`Error.`)
-                console.error(error)
-            })
+        return member.roles.add(role);
     } else {
-        return member
-            .roles.remove(role)
-            .then(() => message.reply(`${member.user.tag}'s cursed was lifted.`))
-            .catch(error => {
-                message.reply(`Error.`)
-                console.error(error)
-            })
+        return member.roles.remove(role);
     }
     
 }
