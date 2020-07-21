@@ -32,6 +32,6 @@ module.exports = (client, message) => {
         return pong(message);
     }
     else if (content === ".kys" && kick_perm === true) {
-        return leave();
+        return leave(message);
     }
 }
