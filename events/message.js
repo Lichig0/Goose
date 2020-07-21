@@ -15,8 +15,8 @@ module.exports = (client, message) => {
     Role: ${role_perm}
     Kick: ${kick_perm}
     `);
-    if (message.content.startsWith(".kick" && kick_perm)) {
-        return kick(message)
+    if (content.startsWith(".kick")) {
+        return kick_perm ? kick(message) : message.channel.send("Your authority is not recognized in Fort Kickass.")
     }
     else if (content.startsWith(".curse")) {
         

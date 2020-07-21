@@ -11,5 +11,5 @@ module.exports = message => {
         .then(() => {
             message.reply(`${member.user.tag} was kicked. Reason: ${message.content}`)
         })
-        .catch(error => message.reply(`Sorry, an error occured.`))
+        .catch(error => message.reply(`Error.`))
 }
