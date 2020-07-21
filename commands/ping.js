@@ -1,3 +1,4 @@
 module.exports = message => {
-    return message.channel.send("Pong~")
+    const { author } = message
+    author.createDM().then(dm => dm.send("Pong~"));
 }
