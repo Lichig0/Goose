@@ -1,0 +1,12 @@
+{
+  "sqltools.connections": [
+    {
+      "database": "goosedb.sqlite",
+      "driver": "SQLite",
+      "group": "Goose",
+      "name": "goosedb",
+      "previewLimit": 50
+    }
+  ],
+  "sqltools.useNodeRuntime": true
+}

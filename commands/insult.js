@@ -1,15 +1,15 @@
 const message = require("../events/message");
 const curse = require("../commands/curse");
-const db = require('sqlite3');
+const sqlite3 = require('sqlite3');
 
 module.exports = message => {
     const { author, content, guild, channel } = message
     if (content.startsWith(".insult add ")) {
-        let insult = conetent.split('.insult add ')[1];
+        let insult = content.split('.insult add')[1];
+        console.log(insult)
         addInsultToDb(insult);
     }
     else {
-        getRandomUsers(message);
         return message.channel.send(getInsult(message))
     }
 }
@@ -22,15 +22,22 @@ const addInsultToDb = function(insult) {
         console.log('Connected to the SQlite database.');
     });
 
-    db.run('CREATE TABLE IF NOT EXISTS insults(insult text)');
+
+    db.run(`INSERT INTO insults (insult) VALUES (?);`, insult, function (err) {
+        if (err) {
+            return console.log(err.message);
+        }
+        // get the last insert id
+        console.log(`A row has been inserted with rowid ${this.lastID}`);
+    }).close();
 
     // close the database connection
-    db.close((err) => {
-        if (err) {
-            return console.error(err.message);
-        }
-        console.log('Close the database connection.');
-    });
+    // db.close((err) => {
+    //     if (err) {
+    //         return console.error(err.message);
+    //     }
+    //     console.log('Close the database connection.');
+    // });
 
 }
 

@@ -18,6 +18,7 @@ let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     }
     console.log('Connected to the SQlite database.');
 });
+db.run('CREATE TABLE IF NOT EXISTS insults(insult text)');
 
 // close the database connection
 db.close((err) => {

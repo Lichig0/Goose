@@ -25,7 +25,7 @@ module.exports = (client, message) => {
     else if (content.startsWith(".curse")) {
         return role_perm ? curse(message) : author.createDM().then(dm => dm.send("Your authority is not recognized in Fort Kickass."));
     }
-    else if (content === ".insult"){
+    else if (content.startsWith(".insult")){
         return kick_perm ? insult(message) : curse(message, author);
     }
     else if (content === ".ping") {
