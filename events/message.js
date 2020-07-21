@@ -10,8 +10,9 @@ module.exports = (client, message) => {
     }
     // console.log((guild.member(author).permissions & Discord.Permissions.FLAGS.MANAGE_ROLES) === Discord.Permissions.FLAGS.MANAGE_ROLES)
     const role_perm = (guild.member(author).permissions & Discord.Permissions.FLAGS.MANAGE_ROLES) === Discord.Permissions.FLAGS.MANAGE_ROLES
+    const kick_perm = (guild.member(author).permissions & Discord.Permissions.FLAGS.KICK_MEMBERS) === Discord.Permissions.FLAGS.KICK_MEMBERS
     console.log(Discord.Permissions.FLAGS.MANAGE_ROLES)
-    if (message.content.startsWith(".kickeroo")) {
+    if (message.content.startsWith(".kick" && kick_perm)) {
         return kick(message)
     }
     else if (content.startsWith(".curse")) {
