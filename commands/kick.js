@@ -11,6 +11,13 @@ module.exports = message => {
         .kick()
         .then(() => {
             console.log(message, member);
+            message.channel.createInvite({ maxUses: 1 }).then(invite => {
+                message.author.createDM().then(dm => {
+                    dm.send(`Get kicked nerd.
+                    "${message.content}"`)
+                    dm.send(invite.url)
+                }).catch(error => console.error(error));
+            }).catch(error => console.error(error));
             message.channel.send(`Bye. ${member.user.tag}`)
         })
         .catch(error => message.reply(`Error.`))
