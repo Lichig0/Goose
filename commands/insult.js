@@ -24,8 +24,6 @@ const getInsult = function(message, def) {
         `${getRandomUsers(message)}’s just as full of crap as ${getRandomUsers(message)} is chromosomes.`,
         `I can envision millions of Americans rising up as one and demanding legislation that would require ${getRandomUsers(message)} legs to be amputated, burned, and buried next to Hitler.`,
         `${getRandomUsers(message)} won’t truly appreciate the awkwardness of this moment until they’re fondly reminiscing as a 35-year-old homosexual.`,
-        `Hahaha. Fuck you. ${curse(message)}`,
-        
     ]
     return def ? insults[def] : insults[Math.floor(Math.random() * insults.length)];
 }
