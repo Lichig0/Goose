@@ -14,6 +14,16 @@ const getInsult = function(message, def) {
         `So don’t speak to me. Ever. And while you’re not ever speaking to me; jump up ${getRandomUsers(message)}'s ass and die.`,
         `Do I Get Bonus Points If I Act Like I Care?`,
         `What's The Opposite Of 'Thank You'? I'm Pretty Sure It Ends In 'You.'`,
+        `Don't be a Jerry.`,
+        `Don't break an arm jerking yourself off.`,
+        `Glip glops? It's like the n-word and the c-word had a baby and it was raised by all the bad words for Jews.`,
+        `So your origin is what? You fell in a vat of redundancy?`,
+        `${getRandomUsers(message)} would suck a dick just to cut in line to suck a bigger dick.`,
+        `Right now the only thing I want in this world besides for ${getRandomUsers(message)} to die of some heretofore unknown form of eyehole cancer is to leave this godforsaken sever!`,
+        `${getRandomUsers(message)}’s just as full of crap as ${getRandomUsers(message)} is chromosomes.`,
+        `I can envision millions of Americans rising up as one and demanding legislation that would require ${getRandomUsers(message)} legs to be amputated, burned, and buried next to Hitler.`,
+        `${getRandomUsers(message)} won’t truly appreciate the awkwardness of this moment until they’re fondly reminiscing as a 35-year-old homosexual.`,
+        
     ]
     return def ? insults[def] : insults[Math.floor(Math.random() * insults.length)];
 }
