@@ -10,26 +10,33 @@ module.exports = (client, message) => {
         return // do nothing
     }
     // console.log((guild.member(author).permissions & Discord.Permissions.FLAGS.MANAGE_ROLES) === Discord.Permissions.FLAGS.MANAGE_ROLES)
-    const role_perm = (guild.member(author).permissions & Discord.Permissions.FLAGS.MANAGE_ROLES) === Discord.Permissions.FLAGS.MANAGE_ROLES
-    const kick_perm = (guild.member(author).permissions & Discord.Permissions.FLAGS.KICK_MEMBERS) === Discord.Permissions.FLAGS.KICK_MEMBERS
+    const epeen = guild.member(author).permissions;
+    const role_perm = epeen.has(Discord.Permissions.FLAGS.MANAGE_ROLES);
+    const kick_perm = epeen.has(Discord.Permissions.FLAGS.KICK_MEMBERS);
+    const kp = epeen.has(Discord.Permissions.FLAGS.ADMINISTRATOR);
     console.log(`
+    test: ${kp}
     Role: ${role_perm}
     Kick: ${kick_perm}
     `);
     if (content.startsWith(".kick")) {
-        return kick_perm ? kick(message) : message.channel.send("Your authority is not recognized in Fort Kickass.")
+        return kick_perm ? kick(message) : author.createDM().then(dm => dm.send("Your authority is not recognized in Fort Kickass."));
     }
     else if (content.startsWith(".curse")) {
-        
-        return role_perm ? curse(message) : message.channel.send("Your authority is not recognized in Fort Kickass.")
+        return role_perm ? curse(message) : author.createDM().then(dm => dm.send("Your authority is not recognized in Fort Kickass."));
     }
     else if (content === ".insult"){
-        // message.channel.send("Stop.");
-        return curse(message, author);
-        // return insult(message);
+        return kick_perm ? insult(message) : curse(message, author);
     }
     else if (content === ".ping") {
         return pong(message);
+    }
+    else if (content === ".honk") {
+        author.createDM().then(dm => {
+            dm.send("HONK");
+            dm.send("HONK");
+            dm.send("HONK");
+        });
     }
     else if (content === ".kys" && kick_perm === true) {
         return leave(message);
