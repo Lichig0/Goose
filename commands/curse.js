@@ -1,9 +1,9 @@
 const { Guild } = require("discord.js")
 
-module.exports = message => {
-    const member = message.mentions.members.first()
+module.exports = (message, who = undefined) => {
+    const member = who || message.mentions.members.first();
     if (!member) {
-        return message.reply(`Who are you trying to curse? You must mention a user.`)
+        return;
     }
     if (!member.manageable) {
         return message.reply(`I can't.`)
