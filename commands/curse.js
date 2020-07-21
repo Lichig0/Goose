@@ -9,7 +9,7 @@ module.exports = message => {
         return message.reply(`I can't.`)
     }
     let role = message.guild.roles.cache.find(r => r.name === "cursed")
-    if (!message.contents.contains('lift')) {
+    if (!message.contents.includes('lift')) {
         return member
             .roles.add(role)
             .then(() => message.reply(`${member.user.tag} was cursed.`))
