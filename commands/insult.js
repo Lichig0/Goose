@@ -1,11 +1,38 @@
 const message = require("../events/message");
 const curse = require("../commands/curse");
+const db = require('sqlite3');
 
 module.exports = message => {
-    getRandomUsers(message);
-    return message.channel.send(getInsult(message))
+    const { author, content, guild, channel } = message
+    if (content.startsWith(".insult add ")) {
+        let insult = conetent.split('.insult add ')[1];
+        addInsultToDb(insult);
+    }
+    else {
+        getRandomUsers(message);
+        return message.channel.send(getInsult(message))
+    }
 }
 
+const addInsultToDb = function(insult) {
+    let db = new sqlite3.Database('goosedb.sqlite', (err) => {
+        if (err) {
+            return console.error(err.message);
+        }
+        console.log('Connected to the SQlite database.');
+    });
+
+    db.run('CREATE TABLE IF NOT EXISTS insults(insult text)');
+
+    // close the database connection
+    db.close((err) => {
+        if (err) {
+            return console.error(err.message);
+        }
+        console.log('Close the database connection.');
+    });
+
+}
 
 const getInsult = function(message, def) {
     const insults = [
@@ -15,9 +42,9 @@ const getInsult = function(message, def) {
         `So don’t speak to me. Ever. And while you’re not ever speaking to me; jump up ${getRandomUsers(message)}'s ass and die.`,
         `Do I Get Bonus Points If I Act Like I Care?`,
         `What's The Opposite Of 'Thank You'? I'm Pretty Sure It Ends In 'You.'`,
-        `Don't be a Jerry.`,
+        `Don't be a ${getRandomUsers(message)}`,
         `Don't break an arm jerking yourself off.`,
-        `Glip glops? It's like the n-word and the c-word had a baby and it was raised by all the bad words for Jews.`,
+        `${getRandomUsers(message)}? It's like the n-word and the c-word had a baby and it was raised by all the bad words for Jews.`,
         `So your origin is what? You fell in a vat of redundancy?`,
         `${getRandomUsers(message)} would suck a dick just to cut in line to suck a bigger dick.`,
         `Right now the only thing I want in this world besides for ${getRandomUsers(message)} to die of some heretofore unknown form of eyehole cancer is to leave this godforsaken sever!`,
