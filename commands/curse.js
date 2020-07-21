@@ -20,7 +20,7 @@ module.exports = message => {
     } else {
         return member
             .roles.remove(role)
-            .then(() => message.reply(`${member.user.tag} was cursed.`))
+            .then(() => message.reply(`${member.user.tag}'s cursed was lifted.`))
             .catch(error => {
                 message.reply(`Error.`)
                 console.error(error)
