@@ -1,45 +1,19 @@
-const message = require("../events/message");
-const curse = require("../commands/curse");
 const sqlite3 = require('sqlite3');
+const insterInsult = require('../dbactions/insertInsult');
 
 module.exports = message => {
     const { author, content, guild, channel } = message
     if (content.startsWith(".insult add ")) {
         let insult = content.split('.insult add')[1];
         console.log(insult)
-        addInsultToDb(insult);
+        insterInsult(insult, author);
     }
     else {
         return message.channel.send(getInsult(message))
     }
 }
 
-const addInsultToDb = function(insult) {
-    let db = new sqlite3.Database('goosedb.sqlite', (err) => {
-        if (err) {
-            return console.error(err.message);
-        }
-        console.log('Connected to the SQlite database.');
-    });
 
-
-    db.run(`INSERT INTO insults (insult) VALUES (?);`, insult, function (err) {
-        if (err) {
-            return console.log(err.message);
-        }
-        // get the last insert id
-        console.log(`A row has been inserted with rowid ${this.lastID}`);
-    }).close();
-
-    // close the database connection
-    // db.close((err) => {
-    //     if (err) {
-    //         return console.error(err.message);
-    //     }
-    //     console.log('Close the database connection.');
-    // });
-
-}
 
 const getInsult = function(message, def) {
     const insults = [

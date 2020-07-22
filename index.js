@@ -1,7 +1,7 @@
 require("dotenv").config();
 const Discord = require("discord.js");
 const fs = require("fs");
-const sqlite3 = require('sqlite3');
+const initTables = require('./dbactions/initTables');
 const client = new Discord.Client();
 
 fs.readdir("./events/", (err, files) => {
@@ -12,20 +12,6 @@ fs.readdir("./events/", (err, files) => {
     })
 })
 
-let db = new sqlite3.Database('goosedb.sqlite', (err) => {
-    if (err) {
-        return console.error(err.message);
-    }
-    console.log('Connected to the SQlite database.');
-});
-db.run('CREATE TABLE IF NOT EXISTS insults(insult text)');
-
-// close the database connection
-db.close((err) => {
-    if (err) {
-        return console.error(err.message);
-    }
-    console.log('Close the database connection.');
-});
+initTables();
 
 client.login(process.env.BOT_TOKEN)

@@ -1,11 +1,12 @@
-const { Guild } = require("discord.js")
+const { Permissions } = require("discord.js")
 
-module.exports = (message, who = undefined) => {
+module.exports = (message, epeen, who = undefined) => {
+    const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
     const member = who || message.mentions.members.first();
     if (!member) {
         return;
     }
-    if (!member.manageable) {
+    if (!member.manageable || !role_perm) {
         return message.reply(`Honk.`)
     }
     let role = message.guild.roles.cache.find(r => r.name === "cursed")
@@ -14,5 +15,5 @@ module.exports = (message, who = undefined) => {
     } else {
         return member.roles.remove(role);
     }
-    
+
 }
