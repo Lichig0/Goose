@@ -11,7 +11,7 @@ fs.readdir("./events/", (err, files) => {
         client.on(eventName, arg => eventHandler(client, arg))
     })
 })
-
 initTables();
+console.log(client.guilds);
 
 client.login(process.env.BOT_TOKEN)
