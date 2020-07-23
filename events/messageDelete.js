@@ -2,6 +2,7 @@ const Discord = require("discord.js");
 
 
 module.exports = (client, messageDelete) => {
+  const deleteChannel = client.channels.cache.find(ch => ch.name === 'deleted');
   if (messageDelete.attachments && messageDelete.attachments.size > 0 && messageDelete) { // If I change this to: message.attachments.size>0 && message it works with deleted image & text but as it is without this said line it doesn't function
 
     var Attachment = (messageDelete.attachments).array();
@@ -18,7 +19,7 @@ module.exports = (client, messageDelete) => {
         .setFooter(`Deleted Image`)
         .setTimestamp()
 
-      messageDelete.channel.send(logembed);
+      deleteChannel.send(logembed);
       console.log(attachment.proxyURL);
     })
   } else {
@@ -34,7 +35,7 @@ module.exports = (client, messageDelete) => {
       .setFooter(`Deleted Message`)
       .setTimestamp()
 
-    messageDelete.channel.send(logembed);
+    deleteChannel.send(logembed);
 
   }
 }
