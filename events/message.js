@@ -37,8 +37,11 @@ module.exports = (client, message) => {
         case 'kys':
             return commands['leave'](message, epeen);
         break;
-        default:
+        case 'help':
             return channel.send(`Commands are: ${Object.keys(commands)}`);
+        break;
+        default:
+            return;
         break;
     }
 }
