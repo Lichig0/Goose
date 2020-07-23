@@ -23,7 +23,6 @@ module.exports = (client, messageDelete) => {
       console.log(attachment.proxyURL);
     })
   } else {
-    console.log(messageDelete)
     const logembed = new Discord.MessageEmbed()
       //.setTitle('Message Deleted')
       .setAuthor(messageDelete.author.tag, messageDelete.author.displayAvatarURL)
