@@ -12,21 +12,30 @@ console.log(commands);
 module.exports = (client, message) => {
     const {content, author, guild, channel} = message;
     let command = undefined;
-    if (!content.startsWith(".")) {
+    if (!content.startsWith(".") || !guild) {
         return // do nothing
     } else {
         command = content.split(' ')[0].toLowerCase().slice(1);
     }
-    const epeen = guild ? guild.member(author).permissions : Permissions.FLAGS.ALL;
-    const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
-    const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
-    const kp = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
     console.log(`
-    command: ${command}
+    >command: ${command}
+    guild: ${guild}
+    channel: ${channel}
+    author: ${author}
+    `);
+    const epeen = guild ? guild.member(author).permissions : new Permissions(Permissions.ALL);
+    console.log(epeen);
+    if(guild) {
+        const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
+        const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
+        const kp = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
+        console.log(`
     test: ${kp}
     Role: ${role_perm}
     Kick: ${kick_perm}
     `);
+    }
+
 
     if(commands[command]) {
         return commands[command](message, epeen);
