@@ -1,6 +1,6 @@
 module.exports = (message) => {
   const {author, channel} = message;
-  if (!author.kickable) {
+  if (author.kickable === false) {
     return message.reply(`No.`)
   }
   return author
