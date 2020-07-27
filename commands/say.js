@@ -1,18 +1,34 @@
 const {Permissions} = require("discord.js");
+const commands = {};
+const fs = require("fs");
+
+fs.readdir("./commands/", (err, files) => {
+  files.forEach(file => {
+    const commandName = file.split(".")[0];
+    commands[commandName] = require(`../commands/${file}`);
+  });
+});
 module.exports = (message, epeen) => {
-  const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
+  const admin_perm = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
   const { content } = message
-  const says = content.split(' ').slice(2).join(' ');
-  if(!message.mentions) {
+  let says = content.split(' ').slice(1).join(' '); // remove says
+  let channels = [message.channel];
+  if (message.mentions && message.mentions.channels.size > 0) {
+    channels = message.mentions.channels.array()
+    channels.forEach(ch => {
+      says = says.replace(`<#${ch.id}>`, '');
+    })
+  }
+
+  if (commands[says.split(' ')[0].toLowerCase().slice(1)] && !admin_perm){
+    return message.channel.send('Quack');
+  }
+
+  if (!channels || !message.guild) {
     return;
   }
-  let channels = message.mentions.channels;
 
-  if (!channels || !message.guild || says==='' || !role_perm) {
-    return;
-  }
-
-  channels.array().forEach(ch => {
+  channels.forEach(ch => {
     if(ch.viewable) {
       return ch.send(says);
     }
