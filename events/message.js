@@ -26,7 +26,9 @@ module.exports = (client, message) => {
                     last = m.id
                 });
                 if(mgs.size === 100) {
-                    buildData(last, channel, data);
+                    let r = 0;
+                    buildData(last, channel, data, r);
+                    console.log(r);
                 }
             }).then(() => {
                 const markov = new Markov(data.flat(2), { stateSize: 2 })
@@ -41,7 +43,9 @@ module.exports = (client, message) => {
                 }
                 // Generate a sentence
                 const result = markov.generate(options)
+                console.log(result);
                 channel.stopTyping(true);
+
                 return channel.send(result.string);
             })
             .catch(err => {
@@ -92,8 +96,8 @@ module.exports = (client, message) => {
 }
 
 
-const buildData = function (o, channel, data) {
-    console.log('recursing....');
+const buildData = function (o, channel, data, times) {
+    times++;
     return channel.messages.fetch({ limit: 100, before: o })
         .then(mgs => {
             let last = ''
@@ -102,7 +106,7 @@ const buildData = function (o, channel, data) {
                 last = m.id
             });
             if (mgs.size === 100 && data.length < 10000) {
-                buildData(last, channel, data);
+                buildData(last, channel, data, times);
             }
         }).catch(err => console.error(err));
 }
