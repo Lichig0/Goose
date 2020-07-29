@@ -1,5 +1,7 @@
 const { Permissions } = require("discord.js");
 const fs = require("fs");
+const Markov = require('markov-strings').default
+
 const commands = {};
 fs.readdir("./commands/", (err, files) => {
     files.forEach(file => {
@@ -10,9 +12,38 @@ fs.readdir("./commands/", (err, files) => {
 console.log(commands);
 
 module.exports = (client, message) => {
-    const {content, author, guild, channel} = message;
+    const {content, author, guild, channel, mentions} = message;
+    const data = [];
     let command = undefined;
-    if (!content.startsWith(".") || !guild) {
+
+    if (mentions.has(client.user.id)) {
+        channel.startTyping()
+        channel.messages.fetch({ limit: 100 })
+            .then(mgs => {
+                mgs.forEach((m, i , s) => {
+                    data.push(m.cleanContent.split('\n'));
+                });
+            }).then(() => {
+                const markov = new Markov(data.flat(2), { stateSize: 2 })
+                markov.buildCorpus()
+
+                const options = {
+                    maxTries: 500, // Give up if I don't have a sentence after 20 tries (default is 10)
+                    prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
+                    filter: (result) => {
+                    return result.string.split(' ').length >= 2// At least 2 words
+                    }
+                }
+                // Generate a sentence
+                const result = markov.generate(options)
+                channel.stopTyping(true);
+                return channel.send(result.string);
+            })
+            .catch(err => {
+                console.error(err); channel.stopTyping(true);
+            });
+
+    } else if (!content.startsWith(".") || !guild) {
         return // do nothing
     } else {
         command = content.split(' ')[0].toLowerCase().slice(1);
