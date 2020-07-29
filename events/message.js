@@ -18,39 +18,14 @@ module.exports = (client, message) => {
 
     if (mentions.has(client.user.id)) {
         channel.startTyping()
-        channel.messages.fetch({ limit: 100 })
-            .then(mgs => {
-                let last = ''
-                mgs.forEach((m, i , s) => {
-                    data.push(m.cleanContent.split('\n'));
-                    last = m.id
-                });
-                if(mgs.size === 100) {
-                    let r = 0;
-                    buildData(last, channel, data, r);
-                    console.log(r);
-                }
-            }).then(() => {
-                const markov = new Markov(data.flat(2), { stateSize: 2 })
-                markov.buildCorpus()
-
-                const options = {
-                    maxTries: 500, // Give up if I don't have a sentence after 20 tries (default is 10)
-                    prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
-                    filter: (result) => {
-                    return result.string.split(' ').length >= 2// At least 2 words
-                    }
-                }
-                // Generate a sentence
-                const result = markov.generate(options)
-                console.log(result);
-                channel.stopTyping(true);
-
-                return channel.send(result.string);
-            })
-            .catch(err => {
-                console.error(err); channel.stopTyping(true);
-            });
+        let r = 0;
+        buildData(message.id, channel, data, r).then(() => {
+            sendMarkovString(channel, data);
+            channel.stopTyping(true);
+        }).catch((err) => {
+            console.error(err);
+            channel.stopTyping(true);
+        });
 
     } else if (!content.startsWith(".") || !guild) {
         return // do nothing
@@ -95,18 +70,35 @@ module.exports = (client, message) => {
     }
 }
 
+const sendMarkovString = (channel, data) => {
+    console.log('okay', data.length);
+    const markov = new Markov(data.flat(2), { stateSize: 1 })
+    markov.buildCorpus()
 
-const buildData = function (o, channel, data, times) {
+    const options = {
+        maxTries: 20, // Give up if I don't have a sentence after 20 tries (default is 10)
+        prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
+        filter: (result) => {
+            return result.string.split(' ').length >= (Math.floor(Math.random() * 10)+1)// At least 1-10 words
+        }
+    }
+    // Generate a sentence
+    const result = markov.generate(options)
+    channel.send(result.string);
+}
+
+
+const buildData = async (o, channel, data, times) => {
     times++;
-    return channel.messages.fetch({ limit: 100, before: o })
-        .then(mgs => {
-            let last = ''
-            mgs.forEach((m, i, s) => {
-                data.push(m.cleanContent.split('\n'));
-                last = m.id
-            });
-            if (mgs.size === 100 && data.length < 10000) {
-                buildData(last, channel, data, times);
-            }
-        }).catch(err => console.error(err));
+    if( data.length > 10000 && times > 6) {
+        return 0;
+    }
+    const msgs = await channel.messages.fetch({ limit: 100, before: o });
+    msgs.forEach((m, i, s) => {
+        data.push(m.cleanContent.split('\n'));
+        last = m.id
+    });
+    if (msgs.size === 100 && data.length < 10000) {
+            await buildData(last, channel, data, times);
+    }
 }
