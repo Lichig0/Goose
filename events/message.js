@@ -102,7 +102,7 @@ const buildData = function (o, channel, data) {
                 last = m.id
             });
             if (mgs.size === 100 && data.length < 10000) {
-                buildData(last);
+                buildData(last, channel, data);
             }
         }).catch(err => console.error(err));
 }
