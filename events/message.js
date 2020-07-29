@@ -72,7 +72,7 @@ module.exports = (client, message) => {
 
 const sendMarkovString = (channel, data) => {
     console.log('okay', data.length);
-    const markov = new Markov(data.flat(2), { stateSize: 1 })
+    const markov = new Markov(data.flat(2), { stateSize: 3 })
     markov.buildCorpus()
 
     const options = {
