@@ -20,7 +20,8 @@ module.exports = (client, message) => {
         channel.startTyping()
         let r = 0;
         buildData(message.id, channel, data, r).then(() => {
-            sendMarkovString(channel, data);
+            //sendMarkovString(channel, data);
+            channel.send('You ruined a good thing.');
             channel.stopTyping(true);
         }).catch((err) => {
             console.error(err);
