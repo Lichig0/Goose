@@ -20,9 +20,14 @@ module.exports = (client, message) => {
         channel.startTyping()
         channel.messages.fetch({ limit: 100 })
             .then(mgs => {
+                let last = ''
                 mgs.forEach((m, i , s) => {
                     data.push(m.cleanContent.split('\n'));
+                    last = m.id
                 });
+                if(mgs.size === 100) {
+                    buildData(last, channel, data);
+                }
             }).then(() => {
                 const markov = new Markov(data.flat(2), { stateSize: 2 })
                 markov.buildCorpus()
@@ -84,4 +89,20 @@ module.exports = (client, message) => {
             return;
         break;
     }
+}
+
+
+const buildData = function (o, channel, data) {
+    console.log('recursing....');
+    return channel.messages.fetch({ limit: 100, before: o })
+        .then(mgs => {
+            let last = ''
+            mgs.forEach((m, i, s) => {
+                data.push(m.cleanContent.split('\n'));
+                last = m.id
+            });
+            if (mgs.size === 100 && data.length < 10000) {
+                buildData(last);
+            }
+        }).catch(err => console.error(err));
 }
