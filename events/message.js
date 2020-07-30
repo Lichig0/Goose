@@ -10,6 +10,7 @@ fs.readdir("./commands/", (err, files) => {
     });
 });
 console.log(commands);
+const freq = process.env.FREQUENCY || 0.995;
 const data = [];
 
 module.exports = (client, message) => {
@@ -20,17 +21,17 @@ module.exports = (client, message) => {
     //const data = [];
     let command = undefined;
 
-    if (isMentioned || rand > 0.9988) {
+    if (isMentioned || rand > freq) {
         channel.startTyping();
-        const textChannels = guild.channels.cache.filter(ch => ch.type == 'text');
+        const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable);
         const honkChannel = isMentioned ? guild.channels.cache.find(ch => ch.name === 'honk') : channel;
         let r = 0;
-        buildData(message.id, channel, data, r).then(() => {
-            sendMarkovString(honkChannel, data);
-            channel.stopTyping(true);
+        buildData(message.id, textChannels, data, r).then(() => {
+            channel.stopTyping();
+            sendMarkovString(honkChannel, data, content);
         }).catch((err) => {
             console.error(err);
-            channel.stopTyping(true);
+            channel.stopTyping();
         });
 
     } else if (!content.startsWith(".") || !guild) {
@@ -76,35 +77,58 @@ module.exports = (client, message) => {
     }
 }
 
-const sendMarkovString = (channel, data) => {
+const sendMarkovString = (channel, data, content) => {
+    channel.startTyping();
     console.log('okay', data.length);
     const markov = new Markov(data.flat(2), { stateSize: 2 })
     markov.buildCorpus()
+    const includesWord = (word) => {
+        console.log(content, word);
+        return content.includes(word);
+    }
 
     const options = {
-        maxTries: 20, // Give up if I don't have a sentence after 20 tries (default is 10)
+        maxTries: 30, // Give up if I don't have a sentence after 20 tries (default is 10)
         prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
         filter: (result) => {
-            return result.string.split(' ').length >= (Math.floor(Math.random() * 10)+1)// At least 1-10 words
+            return result.string.split(' ').length >= (Math.floor(Math.random() * 10)+1) && // At least 1-10 words
+            result.string.split(' ').some(includesWord)
         }
     }
     // Generate a sentence
-    const result = markov.generate(options);
-    channel.send(result.string);
+    const result = markov.generateAsync(options).then((result)=> {
+        channel.stopTyping();
+        channel.send(result.string);
+    }).catch((e) => {
+        console.log(e);
+        channel.stopTyping();
+        // channel.send('Honk HONKING honk h o n k');
+    }).finally(() => channel.stopTyping());
 }
 
 
-const buildData = async (o, channel, data, times) => {
+const buildData = async (o = false, channels, data, times) => {
     times++;
-    if( data.length > 10000 && times > 6) {
-        return 0;
-    }
-    const msgs = await channel.messages.fetch({ limit: 100, before: o });
-    msgs.forEach((m, i, s) => {
-        data.push(m.cleanContent.split('\n'));
-        last = m.id
+
+    // const msgs = await channel.messages.fetch({ limit: 100, before: o });
+    const tasks = channels.array().flatMap((ch) => fetchMessages(ch, o));
+    const msgs = await Promise.all(tasks);
+    msgs.forEach(mm => {
+        mm.forEach((m, i, s) => {
+            const multi = m.cleanContent.split('/[\n.;]');
+            const cache = { string: m.cleanContent, mid: m.id, guide: m.guild, channel: m.channel }
+            multi.forEach(str => {
+                cache.string = str;
+                data.push(cache);
+            })
+            last = cache
+        });
     });
-    if (msgs.size === 100 && data.length < 10000) {
-            await buildData(last, channel, data, times);
+    if (data.length < 500000 && times < 500) {
+            await buildData(last, channels, data, times);
     }
+}
+
+const fetchMessages = async (channel, o) => {
+    return o.channel === channel ? channel.messages.fetch({ limit: 100, before: o.id }) : channel.messages.fetch({ limit: 100 })
 }
