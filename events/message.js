@@ -10,18 +10,23 @@ fs.readdir("./commands/", (err, files) => {
     });
 });
 console.log(commands);
+const data = [];
 
 module.exports = (client, message) => {
     const {content, author, guild, channel, mentions} = message;
-    const data = [];
+    const isMentioned = mentions.has(client.user.id);
+    const rand =  Math.random();
+    console.log(rand);
+    //const data = [];
     let command = undefined;
 
-    if (mentions.has(client.user.id)) {
-        channel.startTyping()
+    if (isMentioned || rand > 0.9988) {
+        channel.startTyping();
+        const textChannels = guild.channels.cache.filter(ch => ch.type == 'text');
+        const honkChannel = isMentioned ? guild.channels.cache.find(ch => ch.name === 'honk') : channel;
         let r = 0;
         buildData(message.id, channel, data, r).then(() => {
-            //sendMarkovString(channel, data);
-            channel.send('You ruined a good thing.');
+            sendMarkovString(honkChannel, data);
             channel.stopTyping(true);
         }).catch((err) => {
             console.error(err);
@@ -73,7 +78,7 @@ module.exports = (client, message) => {
 
 const sendMarkovString = (channel, data) => {
     console.log('okay', data.length);
-    const markov = new Markov(data.flat(2), { stateSize: 3 })
+    const markov = new Markov(data.flat(2), { stateSize: 1 })
     markov.buildCorpus()
 
     const options = {
@@ -84,7 +89,7 @@ const sendMarkovString = (channel, data) => {
         }
     }
     // Generate a sentence
-    const result = markov.generate(options)
+    const result = markov.generate(options);
     channel.send(result.string);
 }
 
