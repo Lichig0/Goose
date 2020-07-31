@@ -25,7 +25,7 @@ module.exports = (client, message) => {
 
     if (!content.startsWith(".") || !guild) {
         const honkChannel = isMentioned ? guild.channels.cache.find(ch => ch.name === 'honk') : channel;
-        if (rand > 0.9 || data.length == 1) {
+        if (rand > 0.98 || data.length == 1) {
             if (data.length == 1) data.pop();
             const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable);
             let r = 0;
@@ -44,7 +44,7 @@ module.exports = (client, message) => {
                 console.log('okay', data.length);
             });
             return;
-        } else if(isMentioned || rand > 0.9) {
+        } else if(isMentioned || rand > 0.89) {
             sendMarkovString(honkChannel, data, content);
         }
     } else {
