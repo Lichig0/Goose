@@ -18,6 +18,7 @@ let markov = new Markov(data.flat(2), { stateSize: 2 });
 module.exports = (client, message) => {
     const {content, author, guild, channel, mentions} = message;
     const isMentioned = mentions.has(client.user.id);
+    const isHonk = channel.name === 'honk';
     const rand =  Math.random();
     console.log(rand);
     //const data = [];
@@ -44,7 +45,7 @@ module.exports = (client, message) => {
                 console.log('okay', data.length);
             });
             return;
-        } else if(isMentioned || rand > 0.89) {
+        } else if((isHonk || isMentioned || rand > 0.96) && !author.bot) {
             sendMarkovString(honkChannel, data, content);
         }
     } else {
