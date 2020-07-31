@@ -10,8 +10,10 @@ fs.readdir("./commands/", (err, files) => {
     });
 });
 console.log(commands);
+
 const freq = process.env.FREQUENCY || 0.995;
-const data = [];
+const data = [{string: 'honk'}];
+let markov = new Markov(data.flat(2), { stateSize: 2 });
 
 module.exports = (client, message) => {
     const {content, author, guild, channel, mentions} = message;
@@ -21,21 +23,30 @@ module.exports = (client, message) => {
     //const data = [];
     let command = undefined;
 
-    if (isMentioned || rand > freq) {
-        channel.startTyping();
-        const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable);
+    if (!content.startsWith(".") || !guild) {
         const honkChannel = isMentioned ? guild.channels.cache.find(ch => ch.name === 'honk') : channel;
-        let r = 0;
-        buildData(message.id, textChannels, data, r).then(() => {
-            channel.stopTyping();
+        if (rand > 0.9 || data.length == 1) {
+            if (data.length == 1) data.pop();
+            const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable);
+            let r = 0;
+            // message.react('🤔');
+            buildData(message.id, textChannels, data, r).then(() => {
+            }).catch((err) => {
+                console.error(err);
+            }).finally(() => {
+                markov = new Markov(data.flat(2), { stateSize: 2 })
+                markov.buildCorpusAsync().then(()=>{
+                    // message.react('💡');
+                }).catch((err) => {
+                    console.error(err);
+                    // message.react('😵');
+                });
+                console.log('okay', data.length);
+            });
+            return;
+        } else if(isMentioned || rand > 0.9) {
             sendMarkovString(honkChannel, data, content);
-        }).catch((err) => {
-            console.error(err);
-            channel.stopTyping();
-        });
-
-    } else if (!content.startsWith(".") || !guild) {
-        return // do nothing
+        }
     } else {
         command = content.split(' ')[0].toLowerCase().slice(1);
     }
@@ -77,33 +88,30 @@ module.exports = (client, message) => {
     }
 }
 
-const sendMarkovString = (channel, data, content) => {
+const sendMarkovString = async (channel, data, content) => {
     channel.startTyping();
     console.log('okay', data.length);
-    const markov = new Markov(data.flat(2), { stateSize: 2 })
-    markov.buildCorpus()
     const includesWord = (word) => {
         console.log(content, word);
         return content.includes(word);
     }
 
     const options = {
-        maxTries: 30, // Give up if I don't have a sentence after 20 tries (default is 10)
+        maxTries: 10, // Give up if I don't have a sentence after 20 tries (default is 10)
         prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
         filter: (result) => {
-            return result.string.split(' ').length >= (Math.floor(Math.random() * 10)+1) && // At least 1-10 words
-            result.string.split(' ').some(includesWord)
+            return result.string.split(' ').length >= (Math.floor(Math.random() * 3)+1) // At least 1-10 words
         }
     }
+    // await markov.buildCorpusAsync()
     // Generate a sentence
-    const result = markov.generateAsync(options).then((result)=> {
+    markov.generateAsync(options).then((result) => {
         channel.stopTyping();
         channel.send(result.string);
     }).catch((e) => {
         console.log(e);
         channel.stopTyping();
-        // channel.send('Honk HONKING honk h o n k');
-    }).finally(() => channel.stopTyping());
+    }).finally(() => channel.stopTyping(true));
 }
 
 
