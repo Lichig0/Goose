@@ -3,6 +3,10 @@ const Discord = require("discord.js");
 
 module.exports = (client, messageDelete) => {
   const deleteChannel = messageDelete.guild.channels.cache.find(ch => ch.name === 'deleted');
+  if(!deleteChannel) {
+    console.error('No Delete channel');
+    return;
+  }
   if (messageDelete.attachments && messageDelete.attachments.size > 0 && messageDelete) { // If I change this to: message.attachments.size>0 && message it works with deleted image & text but as it is without this said line it doesn't function
 
     var Attachment = (messageDelete.attachments).array();
