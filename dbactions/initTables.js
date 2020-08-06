@@ -28,6 +28,13 @@ module.exports = (guilds) => {
     guild TEXT NOT NULL)
     `);
 
+  db.run(`CREATE TABLE IF NOT EXISTS chatt (
+    id INTEGER PRIMARY KEY,
+    message TEXT NOT NULL,
+    channel TEXT NOT NULL,
+    guild TEXT NOT NULL)
+    `);
+
   // close the database connection
   db.close((err) => {
     if (err) {

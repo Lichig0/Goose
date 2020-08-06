@@ -4,9 +4,9 @@ const insterInsult = require('../dbactions/insertInsult');
 module.exports = message => {
     const { author, content, guild, channel } = message
     if (content.startsWith(".insult add ")) {
-        let insult = content.split('.insult add')[1];
-        console.log(insult)
-        insterInsult(insult, author);
+        // let insult = content.split('.insult add')[1];
+        // console.log(insult)
+        // insterInsult(insult, author);
     }
     else {
         return message.channel.send(getInsult(message))
