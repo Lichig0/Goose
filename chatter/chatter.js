@@ -16,16 +16,19 @@ module.exports.run = (message, client) => {
   const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
   const rand = Math.random();
   console.log(rand);
-  const honkChannel = isMentioned ? theHonk : channel;
+  const honkChannel = (isMentioned && config.useHonk) ? theHonk : channel;
   //guild.channels.create('honk',{type: 'text', topic: 'honk', rateLimitPerUser: 1, reason: 'Channel for bot use without spaming other channels'});
   if (rand > 0.98 || reload <= 0) {
     if (data.length == 1) data.pop();
-    const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable);
+    const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable && !ch.nsfw);
     readMessages(message, textChannels);
     reload = 500;
     return;
   } else if ((isHonk || isMentioned || rand > config.randomChat) && !author.bot) {
-    sendMarkovString(honkChannel, data, content);
+    guild.members.fetch(author).then(m => {
+      const hasRole = m.roles.cache.find(r => r.name == "Bot Abuser")
+      if (!hasRole) sendMarkovString(honkChannel, data, content);
+    });
   }
   reload--;
 }
@@ -71,7 +74,9 @@ const sendMarkovString = async (channel, data, content) => {
     maxTries: 20, // Give up if I don't have a sentence after 20 tries (default is 10)
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
-      return result.string.split(' ').length >= (Math.floor(Math.random() * 3) + 1) // At least 1-10 words
+      // return result.string.split(' ').length >= (Math.floor(Math.random() * 3) + 1) // At least 1-10 words
+      return result.string.split (' ').length >= Math.pow(Math.floor(Math.random() * 3) + 1, Math.floor(Math.random() * 4 + 1)) ||
+        (channel.guild.emojis.cache.find(e => e.name == result.string.split(':')[1]))
     }
   }
   // await markov.buildCorpusAsync()
@@ -142,6 +147,7 @@ const loadConfig = () => {
       return console.log(err);
     }
     config = JSON.parse(data);
+    config.useHonk = config.useHonk == undefined ? true : false;
   });
 }
 loadConfig();

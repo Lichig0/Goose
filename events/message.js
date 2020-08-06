@@ -2,6 +2,7 @@ const { Permissions } = require("discord.js");
 const fs = require("fs");
 const chatter = require('../chatter/chatter');
 
+
 const commands = {};
 fs.readdir("./commands/", (err, files) => {
     files.forEach(file => {
@@ -10,8 +11,14 @@ fs.readdir("./commands/", (err, files) => {
     });
 });
 console.log(commands);
-
-
+let config = {};
+fs.readFile('settings.json', 'utf8', function (err, data) {
+    if (err) {
+        return console.log(err);
+    }
+    config = JSON.parse(data);
+    config.prefix = config.prefix || '.'
+});
 
 module.exports = (client, message) => {
     const {content, author, guild, channel, mentions} = message;
@@ -19,7 +26,7 @@ module.exports = (client, message) => {
     //const data = [];
     let command = undefined;
 
-    if (!content.startsWith(".") || !guild) {
+    if (!content.startsWith(config.prefix) || !guild) {
        chatter.run(message, client);
     } else {
         command = content.split(' ')[0].toLowerCase().slice(1);
