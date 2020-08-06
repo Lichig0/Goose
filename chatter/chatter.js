@@ -13,10 +13,11 @@ module.exports.run = (message, client) => {
 
   const isMentioned = mentions.has(client.user.id);
   const isHonk = channel.name === 'honk';
+  const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
   const rand = Math.random();
   console.log(rand);
-  const honkChannel = isMentioned ? guild.channels.cache.find(ch => ch.name === 'honk') : channel;
-
+  const honkChannel = isMentioned ? theHonk : channel;
+  //guild.channels.create('honk',{type: 'text', topic: 'honk', rateLimitPerUser: 1, reason: 'Channel for bot use without spaming other channels'});
   if (rand > 0.98 || reload <= 0) {
     if (data.length == 1) data.pop();
     const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable);
