@@ -107,3 +107,4 @@ dist
 *.sqlite
 goosedb.session.sql
 cache.json
+settings.json
