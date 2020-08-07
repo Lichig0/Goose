@@ -1,7 +1,7 @@
 const sqlite3 = require('sqlite3');
 const insterInsult = require('../dbactions/insertInsult');
-
-module.exports = message => {
+exports.help = () => `Say an insult! There are only a few.\n`;
+module.exports.run = message => {
     const { author, content, guild, channel } = message
     if (content.startsWith(".insult add ")) {
         // let insult = content.split('.insult add')[1];

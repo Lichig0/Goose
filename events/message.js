@@ -1,6 +1,7 @@
 const { Permissions } = require("discord.js");
 const fs = require("fs");
 const chatter = require('../chatter/chatter');
+const { cpuUsage } = require("process");
 
 
 const commands = {};
@@ -47,16 +48,18 @@ module.exports = (client, message) => {
 
 
     if(commands[command]) {
-        return commands[command](message, epeen);
+        return commands[command].run(message, epeen);
     }
 
     // Aliases
     switch(command) {
         case 'kys':
-            return commands['leave'](message, epeen);
+            return commands['leave'].run(message, epeen);
         break;
         case 'help':
-            return channel.send(`Commands are: ${Object.keys(commands)}`);
+            let helpText = 'Commands are:\n\t';
+            Object.keys(commands).forEach(key => { helpText = helpText + `\`${key}\` ${commands[key].help ? commands[key].help() : ''}` + '\t' })
+            return channel.send(helpText);
         break;
         default:
             return;

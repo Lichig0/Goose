@@ -1,6 +1,6 @@
 const https = require('https');
 
-module.exports = message => {
+module.exports.run = message => {
   const { author, channel, content } = message
   const terms = content.split(' ').slice(1).join('+');
   const search = `https://www.google.com/search?q=${terms}`
@@ -17,3 +17,4 @@ module.exports = message => {
     ifl ? channel.send(`${search} | ${ifl}`) : channel.send(search);
   })
 }
+exports.help = () => `Google something\n`;

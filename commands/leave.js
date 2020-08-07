@@ -1,6 +1,6 @@
 const { Permissions } = require("discord.js")
-
-module.exports = (message, epeen) => {
+exports.help = () => `Makes me leave the server. (User needs kick permission)\n`
+module.exports.run = (message, epeen) => {
     const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
     if (!kick_perm) {
         return;

@@ -1,14 +1,14 @@
 const {Permissions} = require("discord.js");
 const commands = {};
 const fs = require("fs");
-
+exports.help = () => `Make me say something.\n`;
 fs.readdir("./commands/", (err, files) => {
   files.forEach(file => {
     const commandName = file.split(".")[0];
     commands[commandName] = require(`../commands/${file}`);
   });
 });
-module.exports = (message, epeen) => {
+module.exports.run = (message, epeen) => {
   const admin_perm = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
   const { content } = message
   let says = content.split(' ').slice(1).join(' '); // remove says

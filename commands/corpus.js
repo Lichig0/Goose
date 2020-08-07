@@ -1,6 +1,7 @@
 const chatter = require('../chatter/chatter');
 const { Permissions } = require('discord.js');
-module.exports = (message, epeen) => {
+exports.help = () => `Get conversation data from the channel the command is used it. \n`
+module.exports.run = (message, epeen) => {
   const {client, channel, guild} = message;
   const admin_perm = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
   if (admin_perm){

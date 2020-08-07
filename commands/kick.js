@@ -1,5 +1,6 @@
 const { Permissions } = require('discord.js');
-module.exports = (message, epeen) => {
+exports.help = () => `Kick a member.\n`;
+module.exports.run = (message, epeen) => {
     const {author, channel, content, guild, mentions} = message;
     const member = mentions.members.first();
     // const epeen = guild ? guild.member(author).permissions : Discord.Permissions.FLAGS.ALL;

@@ -1,6 +1,7 @@
 const fs = require('fs');
 const { MessageAttachment } = require('discord.js');
-module.exports = (message) => {
+exports.help = () => `Export conversation cache json to you(this will likely fail)\n`;
+module.exports.run = (message) => {
   const { author, channel } = message;
 
   return author.createDM().then(dm => {

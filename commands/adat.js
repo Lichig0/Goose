@@ -1,4 +1,4 @@
-module.exports = (message) => {
+module.exports.run = (message) => {
   const {author, channel, guild} = message;
   guild.members.fetch(author).then(m => {
     if (m.kickable === false) {
@@ -15,3 +15,7 @@ module.exports = (message) => {
     }).catch(error => message.reply(`Error.`))
   })
 }
+
+const help = () => `This will kick the command user; and (hopefully) send the user an invite to come back.\n`
+
+exports.help = help;

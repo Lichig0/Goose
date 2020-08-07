@@ -1,6 +1,6 @@
 const { Permissions } = require("discord.js")
-
-module.exports = (message, epeen, who = undefined) => {
+exports.help = () => `Accuse a memeber of being a Bot Abuser.\n`;
+module.exports.run = (message, epeen, who = undefined) => {
     const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
     let members = who || message.mentions.members;
     const guild = message.guild;
