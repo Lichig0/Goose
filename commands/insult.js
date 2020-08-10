@@ -1,42 +1,52 @@
 const sqlite3 = require('sqlite3');
-const insterInsult = require('../dbactions/insertInsult');
-exports.help = () => `Say an insult! There are only a few.\n`;
+const instertInsult = require('../dbactions/insertInsult');
+const insults = [
+    `If I cared about what you do on the weekend, I'd stick a shotgun in my mouth and pull the trigger with my toes.`,
+    `Swear to God, {member} makes me want to pump nerve gas through the vents.`,
+    `If I did want a grandchild, I’d just scrape all {member}'s previous mishaps into a big pile and knit a onesie for it.`,
+    `So don’t speak to me. Ever. And while you’re not ever speaking to me; jump up {member}'s ass and die.`,
+    `Do I Get Bonus Points If I Act Like I Care?`,
+    `What's The Opposite Of 'Thank You'? I'm Pretty Sure It Ends In 'You.'`,
+    `Don't be a {member}`,
+    `Don't break an arm jerking yourself off.`,
+    `{member}? It's like the n-word and the c-word had a baby and it was raised by all the bad words for Jews.`,
+    `So your origin is what? You fell in a vat of redundancy?`,
+    `{member} would suck a dick just to cut in line to suck a bigger dick.`,
+    `Right now the only thing I want in this world besides for {member} to die of some heretofore unknown form of eyehole cancer is to leave this godforsaken sever!`,
+    `{member}’s just as full of crap as {member} is chromosomes.`,
+    `I can envision millions of Americans rising up as one and demanding legislation that would require {member} legs to be amputated, burned, and buried next to Hitler.`,
+    `{member} won’t truly appreciate the awkwardness of this moment until they’re fondly reminiscing as a 35-year-old homosexual.`,
+    `Monetize this corkscrewed cock.`,
+]
+exports.help = () => `Say an insult! There are ${insults.length} insults.\n`;
 module.exports.run = message => {
     const { author, content, guild, channel } = message
     if (content.startsWith(".insult add ")) {
         // let insult = content.split('.insult add')[1];
         // console.log(insult)
-        // insterInsult(insult, author);
+        // instertInsult(insult, author);
     }
     else {
-        return message.channel.send(getInsult(message))
+        if (message.mentions.members) {
+            message.mentions.members.array().forEach(member => {
+                message.channel.send(getInsult(message, member));
+            })
+        } else {
+            return message.channel.send(getInsult(message))
+        }
     }
 }
 
 
 
-const getInsult = function(message, def) {
-    const insults = [
-        `If I cared about what you do on the weekend, I'd stick a shotgun in my mouth and pull the trigger with my toes.`,
-        `Swear to God, ${getRandomUsers(message)} makes me want to pump nerve gas through the vents.`,
-        `If I did want a grandchild, I’d just scrape all ${getRandomUsers(message)}'s previous mishaps into a big pile and knit a onesie for it.`,
-        `So don’t speak to me. Ever. And while you’re not ever speaking to me; jump up ${getRandomUsers(message)}'s ass and die.`,
-        `Do I Get Bonus Points If I Act Like I Care?`,
-        `What's The Opposite Of 'Thank You'? I'm Pretty Sure It Ends In 'You.'`,
-        `Don't be a ${getRandomUsers(message)}`,
-        `Don't break an arm jerking yourself off.`,
-        `${getRandomUsers(message)}? It's like the n-word and the c-word had a baby and it was raised by all the bad words for Jews.`,
-        `So your origin is what? You fell in a vat of redundancy?`,
-        `${getRandomUsers(message)} would suck a dick just to cut in line to suck a bigger dick.`,
-        `Right now the only thing I want in this world besides for ${getRandomUsers(message)} to die of some heretofore unknown form of eyehole cancer is to leave this godforsaken sever!`,
-        `${getRandomUsers(message)}’s just as full of crap as ${getRandomUsers(message)} is chromosomes.`,
-        `I can envision millions of Americans rising up as one and demanding legislation that would require ${getRandomUsers(message)} legs to be amputated, burned, and buried next to Hitler.`,
-        `${getRandomUsers(message)} won’t truly appreciate the awkwardness of this moment until they’re fondly reminiscing as a 35-year-old homosexual.`,
-    ]
-    return def ? insults[def] : insults[Math.floor(Math.random() * insults.length)];
+const getInsult = function(message, mentioned) {
+    return insults[Math.floor(Math.random() * insults.length)].replace("{member}", getRandomUsers(message, mentioned));
 }
 
-const getRandomUsers = function(message,n = 1) {
+const getRandomUsers = function(message, mentioned) {
+    if(mentioned) {
+        return mentioned;
+    }
     const members = message.channel.members.array();
     return members[Math.floor(Math.random() * members.length)];
 }
