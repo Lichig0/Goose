@@ -23,7 +23,7 @@ fs.readFile('settings.json', 'utf8', function (err, data) {
 
 module.exports = (client, message) => {
     const {content, author, guild, channel, mentions} = message;
-
+    if(!guild) return;
     //const data = [];
     let command = undefined;
 
@@ -32,11 +32,13 @@ module.exports = (client, message) => {
     } else {
         command = content.split(' ')[0].toLowerCase().slice(1);
     }
-    console.log(`
-    >command: ${command || content}
-    guild: ${guild}
-    channel: ${channel}
-    author: ${author}`);
+    if (command) {
+        console.log(`
+        >command: ${command || content}
+        guild: ${guild}
+        channel: ${channel}
+        author: ${author}`);
+    }
     const epeen = guild ? guild.member(author).permissions : new Permissions(Permissions.ALL);
     console.log(epeen);
     if(guild) {
@@ -48,7 +50,15 @@ module.exports = (client, message) => {
 
 
     if(commands[command]) {
-        return commands[command].run(message, epeen);
+        if (!guild) {
+            return;
+        }
+        const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
+        const kp = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
+        guild.members.fetch(author).then(m => {
+            const hasRole = m.roles.cache.find(r => r.name == "Bot Abuser")
+            if (!hasRole || kp || role_perm) return commands[command].run(message, epeen);
+        })
     }
 
     // Aliases
