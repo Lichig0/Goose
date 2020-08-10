@@ -1,7 +1,16 @@
 {
   "randomChat": 0.96,
   "randomDouble": 0.8,
+  "messageSplitter": "/[\n.;()]/",
   "arrayLimiter": 500000,
-  "prefix": "?",
-  "useHonk": false
+  "prefix": ".",
+  "useHonk": false,
+  "chatter": {
+    "sentence": {
+      "maxTries": 20
+    },
+    "corpus": {
+      "stateSize": 2
+    }
+  }
 }
