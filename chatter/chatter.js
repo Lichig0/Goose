@@ -37,7 +37,6 @@ module.exports.run = (message, client) => {
 const saveData = () => {
   fs.writeFile('cache.json', JSON.stringify(data), function (err) {
     if (err) return console.log(err);
-    console.log('Hello World > helloworld.txt');
   });
 }
 
@@ -100,7 +99,7 @@ const buildData = async (o = false, channels, data, times) => {
   const msgs = await Promise.all(tasks);
   msgs.forEach(mm => {
     mm.forEach((m, i, s) => {
-      const multi = m.cleanContent.split(/[\n.;]/);
+      const multi = m.cleanContent.split(/[\n.;()]/);
       const cache = { string: m.cleanContent, mid: m.id, guide: m.guild, channel: m.channel }
       multi.forEach(str => {
         cache.string = str;
@@ -127,7 +126,7 @@ const readMessages = (message, textChannels) => {
   }).catch((err) => {
     console.error(err);
   }).finally(() => {
-    markov = new Markov(data.flat(2), { stateSize: 2 })
+    markov = new Markov(data.flat(2), config.chatter.corpus)
     markov.buildCorpusAsync().then(() => {
       // message.react('💡');
       client.user.setStatus('online');
