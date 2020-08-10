@@ -6,10 +6,10 @@ module.exports.run = (message, epeen) => {
     // const epeen = guild ? guild.member(author).permissions : Discord.Permissions.FLAGS.ALL;
     const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
     if (!member) {
-        return message.reply(`Who are you trying to kick?`)
+        return message.reply(`Who are you trying to kick?`);
     }
     if (!member.kickable || !kick_perm) {
-        return message.reply(`No.`)
+        return message.reply(`Your authority is not recognized in Fort Kickass.`);
     }
     return member
         .kick()
