@@ -1,5 +1,5 @@
 const { Permissions } = require('discord.js');
-exports.help = () => `Kick a member.\n`;
+exports.help = () => `Kick a member.(User needs kick permission)\n`;
 module.exports.run = (message, epeen) => {
     const {author, channel, content, guild, mentions} = message;
     const member = mentions.members.first();
