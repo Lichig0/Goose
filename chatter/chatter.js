@@ -22,7 +22,7 @@ module.exports.run = (message, client) => {
     if (data.length == 1) delete data['0'];
     const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
     readMessages(message, textChannels);
-    reload = 500;
+    reload = config.reload || 500;
     return;
   } else if ((isHonk || isMentioned || rand > config.randomChat) && !author.bot) {
     guild.members.fetch(author).then(m => {
