@@ -10,17 +10,17 @@ let config = {};
 // TODO : turn this into a class?
 module.exports.run = (message, client) => {
   const { author, channel, content, guild, mentions } = message;
-
   const isMentioned = mentions.has(client.user.id);
   const isHonk = channel.name === 'honk';
   const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
-  const rand = Math.random();
-  console.log(rand);
+  const rand = Math.random(); console.log(rand);
   const honkChannel = (isMentioned && config.useHonk) ? theHonk : channel;
+  const disabled = config.chatter.disabledChannels || [];
+
   //guild.channels.create('honk',{type: 'text', topic: 'honk', rateLimitPerUser: 1, reason: 'Channel for bot use without spaming other channels'});
   if (rand > 0.98 || reload <= 0) {
     if (data.length == 1) delete data['0'];
-    const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable && !ch.nsfw);
+    const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
     readMessages(message, textChannels);
     reload = 500;
     return;

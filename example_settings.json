@@ -5,7 +5,13 @@
   "arrayLimiter": 500000,
   "prefix": ".",
   "useHonk": false,
+  "diabledCommands" : [
+    "say"
+  ],
   "chatter": {
+    "disabledChannels": [
+      "admin"
+    ],
     "sentence": {
       "maxTries": 20
     },

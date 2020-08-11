@@ -19,10 +19,23 @@ fs.readFile('settings.json', 'utf8', function (err, data) {
     }
     config = JSON.parse(data);
     config.prefix = config.prefix || '.'
+
 });
+
+const reloadConfig = () => {
+    fs.readFile('settings.json', 'utf8', function (err, data) {
+        if (err) {
+            return console.log(err);
+        }
+        config = JSON.parse(data);
+        config.prefix = config.prefix || '.'
+
+    });
+}
 
 module.exports = (client, message) => {
     const {content, author, guild, channel, mentions} = message;
+    const disabledCommand = config.diabledCommands || [];
     if(!guild) return;
     //const data = [];
     let command = undefined;
@@ -40,8 +53,7 @@ module.exports = (client, message) => {
         author: ${author}`);
     }
     const epeen = guild ? guild.member(author).permissions : new Permissions(Permissions.ALL);
-    console.log(epeen);
-    if(guild) {
+    if(guild && command) {
         const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
         const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
         const kp = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
@@ -49,7 +61,7 @@ module.exports = (client, message) => {
     }
 
 
-    if(commands[command]) {
+    if (commands[command] && !disabledCommand.includes(command)) {
         if (!guild) {
             return;
         }
@@ -71,6 +83,9 @@ module.exports = (client, message) => {
             Object.keys(commands).forEach(key => { helpText = helpText + `\`${key}\` ${commands[key].help ? commands[key].help() : ''}` + '\t' })
             return channel.send(helpText);
         break;
+        case 'fl':
+            reloadConfig();
+            return;
         default:
             return;
         break;
