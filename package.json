@@ -13,7 +13,7 @@
   "devDependencies": {},
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js --ignore *.json"
   },
   "keywords": [],
   "author": "",
