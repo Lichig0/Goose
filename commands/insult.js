@@ -1,5 +1,5 @@
 const sqlite3 = require('sqlite3');
-const instertInsult = require('../dbactions/insertInsult');
+const insultTable = require('../dbactions/insultTable');
 const insults = [
     `If I cared about what you do on the weekend, I'd stick a shotgun in my mouth and pull the trigger with my toes.`,
     `Swear to God, {member} makes me want to pump nerve gas through the vents.`,
@@ -19,20 +19,20 @@ const insults = [
     `Monetize this corkscrewed cock.`,
 ]
 exports.help = () => `Say an insult! There are ${insults.length} insults.\n`;
-module.exports.run = message => {
+module.exports.run = async message => {
     const { author, content, guild, channel } = message
-    if (content.startsWith(".insult add ")) {
-        // let insult = content.split('.insult add')[1];
+    if (content.startsWith("insult add ", 1)) {
+        let insult = content.split('insult add ')[1];
         // console.log(insult)
-        // instertInsult(insult, author);
+        insultTable.insert(insult, author, guild);
     }
     else {
-        if (message.mentions.members) {
+        if (message.mentions.members.length > 0) {
             message.mentions.members.array().forEach(member => {
-                message.channel.send(getInsult(message, member));
+                getInsult(message, member);
             })
         } else {
-            return message.channel.send(getInsult(message))
+            getInsult(message);
         }
     }
 }
@@ -40,7 +40,11 @@ module.exports.run = message => {
 
 
 const getInsult = function(message, mentioned) {
-    return insults[Math.floor(Math.random() * insults.length)].replace("{member}", getRandomUsers(message, mentioned));
+    insultTable.get(message.guild, (e,rows) => {
+        const fullInsults = insults;
+        rows.forEach(item => fullInsults.push(item.insult));
+        message.channel.send(fullInsults[Math.floor(Math.random() * fullInsults.length)].replace(/\{member\}/gi, getRandomUsers(message, mentioned)));
+    });
 }
 
 const getRandomUsers = function(message, mentioned) {
