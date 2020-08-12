@@ -3,6 +3,7 @@
   "randomDouble": 0.8,
   "messageSplitter": "/[\n.;()]/",
   "arrayLimiter": 500000,
+  "reload": 500,
   "prefix": ".",
   "useHonk": false,
   "diabledCommands" : [
