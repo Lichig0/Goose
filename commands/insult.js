@@ -40,10 +40,15 @@ module.exports.run = async message => {
 
 
 const getInsult = function(message, mentioned) {
+
+    const replaceMember = (match, offset, string) => {
+        return getRandomUsers(message, mentioned)
+    }
+
     insultTable.get(message.guild, (e,rows) => {
         const fullInsults = insults;
         rows.forEach(item => fullInsults.push(item.insult));
-        message.channel.send(fullInsults[Math.floor(Math.random() * fullInsults.length)].replace(/\{member\}/gi, getRandomUsers(message, mentioned)));
+        message.channel.send(fullInsults[Math.floor(Math.random() * fullInsults.length)].replace(/\{member\}/gi, replaceMember));
     });
 }
 
