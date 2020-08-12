@@ -5,9 +5,9 @@ module.exports = (client, member) => {
   if (!channel) return;
   // Send the message, mentioning the member
   channel.send(`${member}[${member.user.username}] left.`);
-  member.createDM().then(dm => {
+  if (member.user && member.user.dmChannel) {
     channel.createInvite({maxUses: 1}).then(invite => {
-      dm.send(`*Continue?* ${invite.url}`);
+      member.user.dmChannel.send(`*Continue?* ${invite.url}`);
     }).catch(error => {console.error(error)});
-  }).catch(error => { console.error(error) });
+  }
 }
