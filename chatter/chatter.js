@@ -18,14 +18,16 @@ module.exports.run = (message, client) => {
   const disabled = config.chatter.disabledChannels || [];
 
   //guild.channels.create('honk',{type: 'text', topic: 'honk', rateLimitPerUser: 1, reason: 'Channel for bot use without spaming other channels'});
-  if (rand > 0.98 || reload <= 0) {
-    if (data.length == 1) delete data['0'];
+  if (reload <= 0) {
+    if (data.length == 1) delete data['0']; // delete init data
+
     const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
     readMessages(message, textChannels);
     reload = config.reload || 500;
     return;
   } else if ((isHonk || isMentioned || rand > config.randomChat) && !author.bot) {
     guild.members.fetch(author).then(m => {
+      honkChannel.startTyping();
       const hasRole = m.roles.cache.find(r => r.name == "Bot Abuser")
       if (!hasRole) sendMarkovString(honkChannel, data, content);
     });
@@ -49,13 +51,10 @@ const loadData =(client) => {
     data = JSON.parse(data);
     markov = new Markov(Object.values(data).flat(2), { stateSize: 2 })
     markov.buildCorpusAsync().then(() => {
-      // message.react('💡');
       client.user.setStatus('online');
-
     }).catch((err) => {
       console.error(err);
       client.user.setStatus('idle');
-      // message.react('😵');
     });
     console.log('okay', data.length);
   });
@@ -93,11 +92,10 @@ const sendMarkovString = async (channel, data, content) => {
 
 const buildData = async (last = {}, channels, data, times) => {
   times++;
-
-  // const msgs = await channel.messages.fetch({ limit: 100, before: o });
   const tasks = channels.array().flatMap((ch) => fetchMessages(ch, last[ch.id]));
   const msgs = await Promise.all(tasks);
   const toCache = msgs.filter(m => m.size > 0)
+
   toCache.filter(m => m.size > 0).forEach(mm => {
     mm.forEach((m, i, s) => {
       const multi = m.cleanContent.split(/[\n.;()]/);
@@ -106,7 +104,7 @@ const buildData = async (last = {}, channels, data, times) => {
         if (str !== "") {
           cache.string = str;
           if (data[`${m.id}.${i}`] !== undefined) {
-            console.warn("Duplicate!", str, mm.size);
+            // console.warn("Duplicate!", mm.size);
             return;
           } else {
             data[`${m.id}.${i}`] = cache;
@@ -129,11 +127,12 @@ const fetchMessages = async (channel, o) => {
   return o.channel === channel.id ? channel.messages.fetch({ limit: 100, before: o.id }) : channel.messages.fetch({ limit: 100 })
 }
 
-const readMessages = (message, textChannels) => {
+const readMessages = async (message, textChannels) => {
   const {client} = message;
   let r = 0
+
   client.user.setStatus('dnd');
-  console.log(`Reading messages`);
+  console.log(`[Reading messages]`);
   const last = {};
   textChannels.forEach(tc=> last[tc.id] = {});
   last[message.channel.id] = message;
@@ -143,15 +142,14 @@ const readMessages = (message, textChannels) => {
   }).finally(() => {
     markov = new Markov(Object.values(data).flat(2), config.chatter.corpus)
     markov.buildCorpusAsync().then(() => {
-      // message.react('💡');
       client.user.setStatus('online');
-
     }).catch((err) => {
       console.error(err);
       client.user.setStatus('idle');
-      // message.react('😵');
+    }).finally(() => {
+      client.user.setStatus('online');
     });
-    console.log('Done.', Object.values(data).length);
+    console.log('[Done.]:', Object.values(data).length);
   });
 }
 
