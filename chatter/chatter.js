@@ -98,8 +98,8 @@ const buildData = async (last = {}, channels, data, times) => {
 
   toCache.filter(m => m.size > 0).forEach(mm => {
     mm.forEach((m, i, s) => {
-      const multi = m.cleanContent.split(/[\n.;()]/);
-      const cache = { string: m.cleanContent, id: m.id, guild: m.guild.id, channel: m.channel.id }
+      const multi = m.content.split(/[\n.;()]/);
+      const cache = { string: m.content, id: m.id, guild: m.guild.id, channel: m.channel.id }
       multi.forEach((str, i) => {
         if (str !== "") {
           cache.string = str;
