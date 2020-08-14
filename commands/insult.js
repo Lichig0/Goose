@@ -27,7 +27,7 @@ module.exports.run = async message => {
         insultTable.insert(insult, author, guild);
     }
     else {
-        if (message.mentions.members.length > 0) {
+        if (message.mentions.members.array().length > 0) {
             message.mentions.members.array().forEach(member => {
                 getInsult(message, member);
             })
@@ -42,7 +42,10 @@ module.exports.run = async message => {
 const getInsult = function(message, mentioned) {
 
     const replaceMember = (match, offset, string) => {
-        return getRandomUsers(message, mentioned)
+        if(mentioned && string.indexOf(match) === offset) {
+            return mentioned;
+        }
+        return getRandomUsers(message);
     }
 
     insultTable.get(message.guild, (e,rows) => {
@@ -52,10 +55,7 @@ const getInsult = function(message, mentioned) {
     });
 }
 
-const getRandomUsers = function(message, mentioned) {
-    if(mentioned) {
-        return mentioned;
-    }
+const getRandomUsers = function(message) {
     const members = message.channel.members.array();
     return members[Math.floor(Math.random() * members.length)];
 }
