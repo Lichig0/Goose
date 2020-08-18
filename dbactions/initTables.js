@@ -30,9 +30,10 @@ module.exports = (guilds) => {
 
   db.run(`CREATE TABLE IF NOT EXISTS chatt (
     id INTEGER PRIMARY KEY,
-    message TEXT NOT NULL,
-    channel TEXT NOT NULL,
-    guild TEXT NOT NULL)
+    messageId TEXT NOT NULL,
+    STRING TEXT NOT NULL,
+    channelId TEXT NOT NULL,
+    guildId TEXT NOT NULL)
     `);
 
   // close the database connection
