@@ -1,14 +1,14 @@
-const Markov = require('markov-strings').default
+const Markov = require('markov-strings').default;
 const fs = require('fs');
+const settings = require('../settings');
 const data = {0:{ string: 'honk' }};
-let freq = process.env.FREQUENCY || 0.995;
 let markov = new Markov(Object.values(data).flat(2), { stateSize: 2 });
 let reload = 0;
-let config = {};
 
 
 // TODO : turn this into a class?
 module.exports.run = (message, client) => {
+  const config = settings.settings;
   const { author, channel, content, guild, mentions } = message;
   const isMentioned = mentions.has(client.user.id);
   const isHonk = channel.name === 'honk';
@@ -28,19 +28,19 @@ module.exports.run = (message, client) => {
   } else if ((isHonk || isMentioned || rand > config.randomChat) && !author.bot) {
     guild.members.fetch(author).then(m => {
       honkChannel.startTyping();
-      const hasRole = m.roles.cache.find(r => r.name == "Bot Abuser")
+      const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
       if (!hasRole) sendMarkovString(honkChannel, data, content);
     });
   }
   reload--;
-}
+};
 
 
 const saveData = () => {
   fs.writeFile('cache.json', JSON.stringify(data), function (err) {
     if (err) return console.log(err);
   });
-}
+};
 
 const loadData =(client) => {
   client.user.setStatus('dnd');
@@ -49,7 +49,7 @@ const loadData =(client) => {
       return console.log(err);
     }
     data = JSON.parse(data);
-    markov = new Markov(Object.values(data).flat(2), { stateSize: 2 })
+    markov = new Markov(Object.values(data).flat(2), { stateSize: 2 });
     markov.buildCorpusAsync().then(() => {
       client.user.setStatus('online');
     }).catch((err) => {
@@ -58,15 +58,15 @@ const loadData =(client) => {
     });
     console.log('okay', data.length);
   });
-}
+};
 
 const sendMarkovString = async (channel, data, content) => {
   channel.startTyping();
   console.log('okay', Object.values(data).length);
-  const includesWord = (word) => {
-    console.log(content, word);
-    return content.includes(word);
-  }
+  // const includesWord = (word) => {
+  //   console.log(content, word);
+  //   return content.includes(word);
+  // };
 
   const options = {
     maxTries: 20, // Give up if I don't have a sentence after 20 tries (default is 10)
@@ -74,9 +74,9 @@ const sendMarkovString = async (channel, data, content) => {
     filter: (result) => {
       // return result.string.split(' ').length >= (Math.floor(Math.random() * 3) + 1) // At least 1-10 words
       return result.string.split (' ').length >= Math.pow(Math.floor(Math.random() * 3) + 1, Math.floor(Math.random() * 4 + 1)) ||
-        (channel.guild.emojis.cache.find(e => e.name == result.string.split(':')[1]))
+        (channel.guild.emojis.cache.find(e => e.name == result.string.split(':')[1]));
     }
-  }
+  };
   // await markov.buildCorpusAsync()
   // Generate a sentence
   markov.generateAsync(options).then((result) => {
@@ -87,31 +87,33 @@ const sendMarkovString = async (channel, data, content) => {
     console.log(e);
     channel.stopTyping();
   }).finally(() => channel.stopTyping(true));
-}
+};
 
 
 const buildData = async (last = {}, channels, data, times) => {
   times++;
+  const config = settings.settings;
   const tasks = channels.array().flatMap((ch) => fetchMessages(ch, last[ch.id]));
   const msgs = await Promise.all(tasks);
-  const toCache = msgs.filter(m => m.size > 0)
+  const toCache = msgs.filter(m => m.size > 0);
+
+  const splitter = RegExp(config.chatter.messageSplitter);
 
   toCache.filter(m => m.size > 0).forEach(mm => {
-    mm.forEach((m, i, s) => {
-      const multi = m.content.split(/[\n.;()]/);
-      const cache = { string: m.content, id: m.id, guild: m.guild.id, channel: m.channel.id }
+    mm.forEach((m) => {
+      const multi = m.content.split(splitter);
+      const cache = { string: m.content, id: m.id, guild: m.guild.id, channel: m.channel.id };
       multi.forEach((str, i) => {
-        if (str !== "") {
+        if (str !== '' || str !== ' ') { //skip empty strings
           cache.string = str;
           if (data[`${m.id}.${i}`] !== undefined) {
-            // console.warn("Duplicate!", mm.size);
             return;
           } else {
             data[`${m.id}.${i}`] = cache;
           }
         }
-      })
-      last[m.channel.id] = cache
+      });
+      last[m.channel.id] = cache;
     });
     if (mm.size < 100) {
       const i = msgs.indexOf(mm);
@@ -121,18 +123,19 @@ const buildData = async (last = {}, channels, data, times) => {
   if (Object.values(data).length < config.arrayLimiter && times < 500 && toCache.length > 0) {
     await buildData(last, channels, data, times);
   }
-}
+};
 
 const fetchMessages = async (channel, o) => {
   return o.channel === channel.id ? channel.messages.fetch({ limit: 100, before: o.id }) : channel.messages.fetch({ limit: 100 })
-}
+};
 
 const readMessages = async (message, textChannels) => {
   const {client} = message;
-  let r = 0
+  const config = settings.settings;
+  let r = 0;
 
   client.user.setStatus('dnd');
-  console.log(`[Reading messages]`);
+  console.log('[Reading messages]');
   const last = {};
   textChannels.forEach(tc=> last[tc.id] = {});
   last[message.channel.id] = message;
@@ -140,7 +143,7 @@ const readMessages = async (message, textChannels) => {
   }).catch((err) => {
     console.error(err);
   }).finally(() => {
-    markov = new Markov(Object.values(data).flat(2), config.chatter.corpus)
+    markov = new Markov(Object.values(data).flat(2), config.chatter.corpus);
     markov.buildCorpusAsync().then(() => {
       client.user.setStatus('online');
     }).catch((err) => {
@@ -151,21 +154,10 @@ const readMessages = async (message, textChannels) => {
     });
     console.log('[Done.]:', Object.values(data).length);
   });
-}
-
-const loadConfig = () => {
-  fs.readFile('settings.json', 'utf8', function (err, data) {
-    if(err) {
-      return console.log(err);
-    }
-    config = JSON.parse(data);
-    config.useHonk = config.useHonk == undefined ? true : false;
-  });
-}
-loadConfig();
+};
+settings.loadConfig();
 
 exports.saveData = saveData;
 exports.loadData = loadData;
 exports.buildData = readMessages;
-exports.loadConfig = loadConfig;
 
