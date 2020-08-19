@@ -11,14 +11,16 @@ exports.set = (members, guildId, callback) => {
     members = [members];
   }
   members.forEach(member => {
-    const roles = member.roles.cache.array();
-    db.run('INSERT INTO userRoles (roles, member, guild) VALUES (?,?,?) ON CONFLICT (member) AND (guild) DO UPDATE SET member = (?) and guild = (?)', [roles, member, guildId, member, guildId], function (err) {
-      if (err) {
-        return console.log(err.message);
-      }
-      // get the last insert id
-      console.log(`A row has been inserted with rowid ${this.lastID}`);
-    });
+    const roles = member.roles.cache.array().flatMap(r=>r.id);
+    const id = member.id&guildId;
+    db.run('INSERT INTO userRoles (id, roles, member, guild) VALUES ($id,$roles,$member,$guildId) ON CONFLICT (id) DO UPDATE SET roles=$roles WHERE id = $id',
+      {$id:id, $roles:roles, $member:member, $guildId:guildId}, function (err) {
+        if (err) {
+          return console.log(err.message);
+        }
+        // get the last insert id
+        console.log(`A row has been inserted with rowid ${this.lastID}`);
+      },callback);
   });
 
   db.close((err) => {
@@ -29,10 +31,14 @@ exports.set = (members, guildId, callback) => {
 };
 
 exports.update = (member, roles, callback) => {
-  // UPDATE INSULTS
-  // SET insult = "{member} is a dick muncher"
-  // WHERE insult IS "{!user} is a dick muncher";
-  db.run('UPDATE userRoles SET roles = (?) WHERE member = (?) AND guild = (?)', [roles, member.id, member.guild.id]);
+  let db = new sqlite3.Database('goosedb.sqlite', (err) => {
+    if (err) {
+      return console.error(err.message);
+    }
+  });
+  const id = member.id&member.guild.id;
+  db.run('UPDATE userRoles SET roles = $roles WHERE id = $id',
+    {$id:id,$roles:roles}, callback);
 };
 
 exports.get = (member, callback) => {
@@ -41,13 +47,9 @@ exports.get = (member, callback) => {
       return console.error(err.message);
     }
   });
+
   const {guild} = member;
-  db.all('SELECT roles FROM userRoles WHERE guild IS (?) AND user is (?)', [guild.id, member.id],(err) => {
-    if(err) {
-      return console.error(err);
-    }
-  }, callback).close((err) => {
-    if (err) return console.error(err);
-  });
+  const id = member.id&guild.id;
+  db.all('SELECT roles FROM userRoles WHERE id IS $id', {$id:id},callback);
 
 };

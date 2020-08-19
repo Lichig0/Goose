@@ -1,9 +1,21 @@
+const userRolesTabe = require('../dbactions/userRolesTable');
+
 module.exports = (client, member) => {
   console.log(`${member} joined.`);
-  const role = member.guild.roles.cache.find((r) => r.name == 'Member');
-  console.log(`found ${role}`);
-  if (role !== undefined) member.roles.add(role);
-  member.createDM();
-  // Send the message, mentioning the member
-  // channel.send(`${member}[${member.user.username}] Joined.`);
+  userRolesTabe.get(member, (err, rolesString) => {
+    const roles = rolesString[0].roles.split(',');
+    const foundRoles = [];
+    roles.forEach(role => {
+      const gr = member.guild.roles.cache.get(role);
+      if(gr) {
+        foundRoles.push(gr);
+      }
+    });
+    member.roles.add(foundRoles).catch((e) => {
+      console.error('[Failed to add role.]',e);
+    });
+  });
+  member.createDM().catch(e=>{
+    console.error('[Could not open DM]',e);
+  });
 };
