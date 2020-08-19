@@ -43,4 +43,4 @@ module.exports = (guilds) => {
     }
     console.log('Close the database connection.');
   });
-}
+};

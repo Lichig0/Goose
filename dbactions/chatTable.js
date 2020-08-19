@@ -8,7 +8,7 @@ exports.insert = (insult, author, guild) => {
   });
 
 
-  db.run(`INSERT INTO insults (insult, author, guild) VALUES (?,?,?);`, [insult, author, guild], function (err) {
+  db.run('INSERT INTO insults (insult, author, guild) VALUES (?,?,?);', [insult, author, guild], function (err) {
     if (err) {
       return console.error(err.message);
     }
@@ -19,7 +19,7 @@ exports.insert = (insult, author, guild) => {
       return console.error(err.message);
     }
   });
-}
+};
 
 exports.get = (guild, callback) => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
@@ -29,7 +29,7 @@ exports.get = (guild, callback) => {
   });
 
 
-  db.all(`SELECT insult FROM insults WHERE guild IS (?)`, [guild], (err) => {
+  db.all('SELECT insult FROM insults WHERE guild IS (?)', [guild], (err) => {
     if (err) {
       return console.log(err);
     }
@@ -38,4 +38,4 @@ exports.get = (guild, callback) => {
       return console.error(err.message);
     }
   });
-}
+};

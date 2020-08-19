@@ -12,7 +12,7 @@ exports.set = (members, guildId, callback) => {
   }
   members.forEach(member => {
     const roles = member.roles.cache.array();
-    db.run(`INSERT INTO userRoles (roles, member, guild) VALUES (?,?,?) ON CONFLICT (member) AND (guild) DO UPDATE SET member = (?) and guild = (?)`, [roles, member, guildId, member, guildId], function (err) {
+    db.run('INSERT INTO userRoles (roles, member, guild) VALUES (?,?,?) ON CONFLICT (member) AND (guild) DO UPDATE SET member = (?) and guild = (?)', [roles, member, guildId, member, guildId], function (err) {
       if (err) {
         return console.log(err.message);
       }
@@ -26,14 +26,14 @@ exports.set = (members, guildId, callback) => {
       return console.error(err.message);
     }
   });
-}
+};
 
 exports.update = (member, roles, callback) => {
   // UPDATE INSULTS
   // SET insult = "{member} is a dick muncher"
   // WHERE insult IS "{!user} is a dick muncher";
-  db.run(`UPDATE userRoles SET roles = (?) WHERE member = (?) AND guild = (?)`, [roles, member.id, member.guild.id])
-}
+  db.run('UPDATE userRoles SET roles = (?) WHERE member = (?) AND guild = (?)', [roles, member.id, member.guild.id]);
+};
 
 exports.get = (member, callback) => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
@@ -48,6 +48,6 @@ exports.get = (member, callback) => {
     }
   }, callback).close((err) => {
     if (err) return console.error(err);
-  })
+  });
 
-}
+};

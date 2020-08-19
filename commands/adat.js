@@ -8,14 +8,14 @@ module.exports.run = (message) => {
       console.log(message, author);
       channel.createInvite({ maxUses: 1 }).then(invite => {
         author.createDM().then(dm => {
-          dm.send(`When you're not ADAT: ${invite.url}`)
+          dm.send(`When you're not ADAT: ${invite.url}`);
         }).catch(error => console.error(error));
       }).catch(error => console.error(error));
-      channel.send(`ADAT! -${m.tag.tag}`)
-    }).catch(error => message.reply(`Error.`))
-  })
-}
+      channel.send(`ADAT! -${m.tag.tag}`);
+    }).catch(error => message.reply('Error.'));
+  });
+};
 
-const help = () => `This will kick the command user; and (hopefully) send the user an invite to come back.\n`
+const help = () => 'This will kick the command user; and (hopefully) send the user an invite to come back.\n';
 
 exports.help = help;

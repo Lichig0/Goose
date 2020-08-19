@@ -1,7 +1,6 @@
-const chatter = require('../chatter/chatter');
 const { Permissions } = require('discord.js');
 const userRolesTable = require('../dbactions/userRolesTable');
-exports.help = () => `(Admin) memorize user roles. \n`;
+exports.help = () => '(Admin) memorize user roles. \n';
 module.exports.run = (message, epeen) => {
   const admin_perm = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
   const {guild, channel} = message;
@@ -13,5 +12,5 @@ module.exports.run = (message, epeen) => {
     //   const roles =  member.roles.cache.array();
     // });
   }
-  return
-}
+  return;
+};

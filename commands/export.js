@@ -1,6 +1,6 @@
 const fs = require('fs');
 const { MessageAttachment } = require('discord.js');
-exports.help = () => `Export conversation cache json to you(this will likely fail)\n`;
+exports.help = () => 'Export conversation cache json to you(this will likely fail)\n';
 module.exports.run = (message) => {
   const { author, channel } = message;
 
@@ -18,4 +18,4 @@ module.exports.run = (message) => {
       dm.stopTyping();
     });
   }).catch(error => console.error(error));
-}
+};

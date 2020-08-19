@@ -1,4 +1,4 @@
-const Discord = require("discord.js");
+const Discord = require('discord.js');
 
 
 module.exports = (client, messageDelete) => {
@@ -20,25 +20,25 @@ module.exports = (client, messageDelete) => {
 
         .setColor(messageDelete.guild.member(client.user).displayHexColor)
 
-        .setFooter(`Deleted Image`)
-        .setTimestamp()
+        .setFooter('Deleted Image')
+        .setTimestamp();
 
       deleteChannel.send(logembed);
       console.log(attachment.proxyURL);
-    })
+    });
   } else {
     const logembed = new Discord.MessageEmbed()
       //.setTitle('Message Deleted')
       .setAuthor(messageDelete.author.tag, messageDelete.author.displayAvatarURL)
       .setDescription(`**Message sent by ${messageDelete.author.tag} deleted in <#${messageDelete.channel.id}>**`)
-      .addField("Message Content", `${messageDelete.content}`)
+      .addField('Message Content', `${messageDelete.content}`)
 
       .setColor(messageDelete.guild.member(client.user).displayHexColor)
 
-      .setFooter(`Deleted Message`)
-      .setTimestamp()
+      .setFooter('Deleted Message')
+      .setTimestamp();
 
     deleteChannel.send(logembed);
 
   }
-}
+};

@@ -8,6 +8,6 @@ module.exports = (client, member) => {
   if (member.user && member.user.dmChannel) {
     channel.createInvite({maxUses: 1}).then(invite => {
       member.user.dmChannel.send(`*Continue?* ${invite.url}`);
-    }).catch(error => {console.error(error)});
+    }).catch(error => {console.error(error);});
   }
-}
+};
