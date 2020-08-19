@@ -1,15 +1,19 @@
 {
-  "randomChat": 0.96,
+  "randomChat": 0.98,
   "randomDouble": 0.8,
-  "messageSplitter": "/[\n.;()]/",
-  "arrayLimiter": 500000,
-  "reload": 500,
+  "arrayLimiter": 75000,
   "prefix": ".",
   "useHonk": false,
-  "diabledCommands" : [
-    "say"
+  "diabledCommands": [
+    "say",
+    "export",
+    "load",
+    "save"
   ],
   "chatter": {
+    "messageSplitter": "[\n.;()]",
+    "minimumScore": 2,
+    "maxTries": 30,
     "disabledChannels": [
       "admin"
     ],

@@ -62,19 +62,26 @@ const loadData =(client) => {
 
 const sendMarkovString = async (channel, data, content) => {
   channel.startTyping();
+  const config = settings.settings;
   console.log('okay', Object.values(data).length);
-  // const includesWord = (word) => {
-  //   console.log(content, word);
-  //   return content.includes(word);
-  // };
-
+  const contextScore = (markovString) => {
+    let score = 0;
+    // console.log(content, markovString);
+    markovString.split(/[ ,.!?;()"/]/).forEach(word => {
+      if(!word == '' && !word == ' ') {
+        if(content.includes(word)) score++;
+      }
+    });
+    return score;
+  };
+  const minimumScore = config.chatter.minimumScore || 2;
+  const maxTries = config.chatter.maxTries || 30;
   const options = {
-    maxTries: 20, // Give up if I don't have a sentence after 20 tries (default is 10)
+    maxTries, // Give up if I don't have a sentence after 20 tries (default is 10)
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
-      // return result.string.split(' ').length >= (Math.floor(Math.random() * 3) + 1) // At least 1-10 words
-      return result.string.split (' ').length >= Math.pow(Math.floor(Math.random() * 3) + 1, Math.floor(Math.random() * 4 + 1)) ||
-        (channel.guild.emojis.cache.find(e => e.name == result.string.split(':')[1]));
+      return result.string.split (' ').length >= Math.pow(Math.floor(Math.random() * 3) + 1, Math.floor(Math.random() * 4 + 1)) &&
+        contextScore(result.string) >= minimumScore && result.score >= minimumScore;
     }
   };
   // await markov.buildCorpusAsync()
@@ -84,7 +91,9 @@ const sendMarkovString = async (channel, data, content) => {
     channel.stopTyping();
     channel.send(chatter);
   }).catch((e) => {
-    console.log(e);
+    console.log('[Couldn\'t generate context setence]');
+    options.filter = (result) => result.string.split(' ').length >= Math.pow(Math.floor(Math.random() * 3) + 1, Math.floor(Math.random() * 4 + 1));
+    markov.generateAsync(options).then(result => channel.send(result.string)).catch(e).finally(()=>channel.stopTyping(true));
     channel.stopTyping();
   }).finally(() => channel.stopTyping(true));
 };
@@ -126,7 +135,7 @@ const buildData = async (last = {}, channels, data, times) => {
 };
 
 const fetchMessages = async (channel, o) => {
-  return o.channel === channel.id ? channel.messages.fetch({ limit: 100, before: o.id }) : channel.messages.fetch({ limit: 100 })
+  return o.channel === channel.id ? channel.messages.fetch({ limit: 100, before: o.id }) : channel.messages.fetch({ limit: 100 });
 };
 
 const readMessages = async (message, textChannels) => {
