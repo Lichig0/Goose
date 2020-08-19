@@ -105,6 +105,6 @@ dist
 
 #SQLite DBs
 *.sqlite
-goosedb.session.sql
+*.sql
 cache.json
 settings.json
