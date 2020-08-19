@@ -1,7 +1,7 @@
 const https = require('https');
 
 module.exports.run = message => {
-  const { author, channel, content } = message;
+  const { channel, content } = message;
   const terms = content.split(' ').slice(1).join('+');
   const search = `https://www.google.com/search?q=${terms}`;
   // const search = `https://customsearch.googleapis.com/customsearch/v1?q=${terms}key=${process.env.GOOGLE_API_KEY}`

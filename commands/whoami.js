@@ -7,7 +7,7 @@ module.exports.run = (message) => {
     .setAuthor(author.tag)
     .setDescription(`**Details of ${author.tag} **`)
     .setTimestamp();
-  for(prop in author) {
+  for(let prop in author) {
     if(prop === 'flags') continue;
     logembed.addField(prop,author[prop]);
   }

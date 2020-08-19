@@ -1,7 +1,7 @@
 const { Permissions } = require('discord.js');
 exports.help = () => 'Kick a member.(User needs kick permission)\n';
 module.exports.run = (message, epeen) => {
-  const {author, channel, content, guild, mentions} = message;
+  const {channel, content, mentions} = message;
   const member = mentions.members.first();
   // const epeen = guild ? guild.member(author).permissions : Discord.Permissions.FLAGS.ALL;
   const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
@@ -24,5 +24,5 @@ module.exports.run = (message, epeen) => {
       }).catch(error => console.error(error));
       channel.send(`Bye. ${member.user.tag}`);
     })
-    .catch(error => message.reply('Error.'));
+    .catch(() => message.reply('Error.'));
 };

@@ -1,7 +1,6 @@
 const { Permissions } = require('discord.js');
 const fs = require('fs');
 const chatter = require('../chatter/chatter');
-const { cpuUsage } = require('process');
 
 
 const commands = {};
@@ -34,7 +33,7 @@ const reloadConfig = () => {
 };
 
 module.exports = (client, message) => {
-  const {content, author, guild, channel, mentions} = message;
+  const {content, author, guild, channel} = message;
   const disabledCommand = config.diabledCommands || [];
   if(!guild) return;
   //const data = [];
@@ -74,20 +73,17 @@ module.exports = (client, message) => {
   }
 
   // Aliases
+  let helpText = 'Commands are:\n\t';
   switch(command) {
   case 'kys':
     return commands['leave'].run(message, epeen);
-    break;
   case 'help':
-    let helpText = 'Commands are:\n\t';
     Object.keys(commands).filter(com => !disabledCommand.includes(com)).forEach(key => { helpText = helpText + `\`${key}\` ${commands[key].help ? commands[key].help() : ''}` + '\t'; });
     return channel.send(helpText);
-    break;
   case 'fl':
     reloadConfig();
     return;
   default:
     return;
-    break;
   }
 };

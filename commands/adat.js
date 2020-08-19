@@ -12,7 +12,7 @@ module.exports.run = (message) => {
         }).catch(error => console.error(error));
       }).catch(error => console.error(error));
       channel.send(`ADAT! -${m.tag.tag}`);
-    }).catch(error => message.reply('Error.'));
+    }).catch(() => message.reply('Error.'));
   });
 };
 
