@@ -16,6 +16,32 @@ exports.get = (id, callback) => {
   });
 };
 
+exports.add = (newQuote, message) => {
+  let db = new sqlite3.Database('goosedb.sqlite', (err) => {
+    if (err) {
+      return console.error(err.message);
+    }
+  });
+  // const notes = '';
+  // const tags = '';
+  const score = '0';
+  const votes = '0';
+  db.run('INSERT INTO qdb' +
+    ' (body, created, author_id, score, votes)' +
+    ' VALUES ($body, $created, $author_id, $score, $votes)', { $body: newQuote, $created: Date(), $author_id: message.author.id, $score: score, $votes: votes }, function (err) {
+    if (err) {
+      return console.log(err.message);
+    }
+    // get the last insert id
+    console.log(`A row has been inserted with rowid ${this.lastID}`);
+  }).close((err) => {
+    if (err) {
+      return console.error(err.message);
+    }
+    console.log('Close the database connection.');
+  });
+};
+
 exports.load = (filename = 'dbactions/qdb.json') => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
