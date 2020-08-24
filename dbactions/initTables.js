@@ -28,6 +28,20 @@ module.exports = (guilds) => {
     guild TEXT NOT NULL)
     `);
 
+  db.run(`CREATE TABLE IF NOT EXISTS qdb (
+    id INTEGER PRIMARY KEY,
+    body TEXT,
+    notes TEXT,
+    tags TEXT,
+    created TEXT,
+    status TEXT,
+    deleted TEXT,
+    author_id TEXT,
+    author_ip TEXT,
+    score TEXT,
+    votes TEXT)
+    `);
+
   db.run(`CREATE TABLE IF NOT EXISTS chatt (
     id INTEGER PRIMARY KEY,
     messageId TEXT NOT NULL,

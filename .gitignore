@@ -108,3 +108,4 @@ dist
 *.sql
 cache.json
 settings.json
+dbactions/*.json
