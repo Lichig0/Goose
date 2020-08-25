@@ -11,22 +11,25 @@ exports.set = (members, guildId, callback) => {
     members = [members];
   }
   members.forEach(member => {
-    const roles = member.roles.cache.array().flatMap(r=>r.id);
-    const id = member.id&guildId;
-    db.run('INSERT INTO userRoles (id, roles, member, guild) VALUES ($id,$roles,$member,$guildId) ON CONFLICT (id) DO UPDATE SET roles=$roles WHERE id = $id',
-      {$id:id, $roles:roles, $member:member, $guildId:guildId}, function (err) {
+    db.serialize(() => {
+      db.parallelize(() => {
+        const roles = member.roles.cache.array().flatMap(r=>r.id);
+        const id = member.id&guildId;
+        db.run('INSERT INTO userRoles (id, roles, member, guild) VALUES ($id,$roles,$member,$guildId) ON CONFLICT (id) DO UPDATE SET roles=$roles WHERE id = $id',
+          {$id:id, $roles:roles, $member:member, $guildId:guildId}, function (err) {
+            if (err) {
+              return console.log(err.message);
+            }
+            // get the last insert id
+            console.log(`A row has been inserted with rowid ${this.lastID}`);
+          },callback);
+      });
+      db.close((err) => {
         if (err) {
-          return console.log(err.message);
+          return console.error(err.message);
         }
-        // get the last insert id
-        console.log(`A row has been inserted with rowid ${this.lastID}`);
-      },callback);
-  });
-
-  db.close((err) => {
-    if (err) {
-      return console.error(err.message);
-    }
+      });
+    });
   });
 };
 
