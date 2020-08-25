@@ -23,6 +23,23 @@ exports.get = (id, callback) => {
   }
 };
 
+exports.like = (like, callback) => {
+  let db = new sqlite3.Database('goosedb.sqlite', (err) => {
+    if (err) {
+      return console.error(err.message);
+    }
+  });
+  if (!like) {
+    return [];
+  }
+  const wildLike = `%${like}%`;
+  db.all('SELECT * FROM qdb WHERE tags OR body LIKE $like', {$like:wildLike}, callback).close((err) => {
+    if (err) {
+      return console.error(err.message);
+    }
+  });
+};
+
 exports.add = (newQuote, message) => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {

@@ -41,6 +41,8 @@ exports.run = (message, epeen) => {
   } else if(content.startsWith(GET_STRRING, 1)) {
     const qid = Number(content.split(GET_STRRING)[1]);
     qdb.get(qid, sendCallback);
+  } else if(content.split(COMMAND_NAME)[1].length > 0) {
+    qdb.like(content.split(COMMAND_NAME)[1], sendCallback);
   }
   else {
     qdb.get(undefined, sendCallback);
