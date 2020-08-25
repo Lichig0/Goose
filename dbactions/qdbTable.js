@@ -7,13 +7,20 @@ exports.get = (id, callback) => {
       return console.error(err.message);
     }
   });
-
-
-  db.all('SELECT * FROM qdb', callback).close((err) => {
-    if (err) {
-      return console.error(err.message);
-    }
-  });
+  const idInt = Number(id);
+  if(!Number.isNaN(idInt)) {
+    db.all('SELECT * FROM qdb WHERE id = $id',{$id:idInt}, callback).close((err) => {
+      if (err) {
+        return console.error(err.message);
+      }
+    });
+  } else {
+    db.all('SELECT * FROM qdb', callback).close((err) => {
+      if (err) {
+        return console.error(err.message);
+      }
+    });
+  }
 };
 
 exports.add = (newQuote, message) => {
