@@ -12,6 +12,5 @@ fs.readdir('./events/', (err, files) => {
   });
 });
 initTables();
-console.log(client.guilds);
 
 client.login(process.env.BOT_TOKEN);
