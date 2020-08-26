@@ -12,6 +12,7 @@ exports.run = (message, epeen) => {
   const ADD_STRING = `${COMMAND_NAME} add`;
   const LOAD_STRING = `${COMMAND_NAME} load`;
   const GET_STRRING = `${COMMAND_NAME} #`;
+  // const VOTE = `${COMMAND_NAME} vote`;
 
   const sendCallback = (e, body) => {
     if (e) {
@@ -20,13 +21,14 @@ exports.run = (message, epeen) => {
     const quote = body[Math.floor(Math.random() * body.length)];
     if (quote) {
       const embed = new MessageEmbed();
-      const { id, body, notes, tags, created, score, votes } = quote;
-      embed.addField('Quote:', body);
-      embed.setTitle(`#${id}`);
+      const { id, body, author_id, notes, tags, created, score, votes } = quote;
+      embed.setTitle(`Quote #${id}`);
+      embed.setDescription(body);
       if (notes) embed.addField('Notes:', notes);
       console.log(score, votes);
-      // if (score) embed.addField('Score:', score);
-      // if (votes) embed.addField('Votes:', votes);
+      if (score) embed.addField('Score', score, true);
+      if (votes) embed.addField('Votes', votes, true);
+      if (author_id) embed.addField('Added by', author_id, true);
       if (tags) embed.setFooter(tags);
       if (created) embed.setTimestamp(new Date(created));
       message.channel.send(embed).catch(e => console.error('Failed to send.', e));

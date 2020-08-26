@@ -52,7 +52,7 @@ exports.add = (newQuote, message) => {
   const votes = '0';
   db.run('INSERT INTO qdb' +
     ' (body, created, author_id, score, votes)' +
-    ' VALUES ($body, $created, $author_id, $score, $votes)', { $body: newQuote, $created: Date(), $author_id: message.author.id, $score: score, $votes: votes }, function (err) {
+    ' VALUES ($body, $created, $author_id, $score, $votes)', { $body: newQuote, $created: Date(), $author_id: message.author, $score: score, $votes: votes }, function (err) {
     if (err) {
       return console.log(err.message);
     }
