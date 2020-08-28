@@ -1,6 +1,13 @@
 const sqlite3 = require('sqlite3');
 const fs = require('fs');
 
+const onClose = (error) => {
+  if(error) {
+    return console.error(error);
+  }
+  console.log('Close the database connection.');
+};
+
 exports.get = (id, callback) => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
@@ -9,11 +16,7 @@ exports.get = (id, callback) => {
   });
   const idInt = Number(id);
   if(!Number.isNaN(idInt)) {
-    db.all('SELECT * FROM qdb WHERE id = $id',{$id:idInt}, callback).close((err) => {
-      if (err) {
-        return console.error(err.message);
-      }
-    });
+    db.all('SELECT * FROM qdb WHERE id = $id',{$id:idInt}, callback).close(onClose);
   } else {
     db.all('SELECT * FROM qdb', callback).close((err) => {
       if (err) {
@@ -33,11 +36,27 @@ exports.like = (like, callback) => {
     return [];
   }
   const wildLike = `%${like}%`;
-  db.all('SELECT * FROM qdb WHERE tags OR body LIKE $like', {$like:wildLike}, callback).close((err) => {
+  db.all('SELECT * FROM qdb WHERE tags OR body LIKE $like', {$like:wildLike}, callback).close(onClose);
+};
+
+exports.delete = (qid, author, callback) => {
+  let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
       return console.error(err.message);
     }
   });
+  // delete from qdb where id=17 and author_id="<@166052926777851904>"
+  db.run('DELETE FROM qdb WHERE id=$id and author_id=$author', {$id:qid, $author:author}, callback).close(onClose);
+};
+
+exports.vote= (qid, score, votes, callback) => {
+  let db = new sqlite3.Database('goosedb.sqlite', (err) => {
+    if (err) {
+      return console.error(err.message);
+    }
+  });
+
+  db.run('UPDATE qdb set score=$score, votes=$votes WHERE id=$id', {$score:score, $votes:votes, $id:qid}, callback).close(onClose);
 };
 
 exports.add = (newQuote, message) => {
@@ -58,12 +77,7 @@ exports.add = (newQuote, message) => {
     }
     // get the last insert id
     console.log(`A row has been inserted with rowid ${this.lastID}`);
-  }).close((err) => {
-    if (err) {
-      return console.error(err.message);
-    }
-    console.log('Close the database connection.');
-  });
+  }).close(onClose);
 };
 
 exports.load = (filename = 'dbactions/qdb.json') => {
@@ -96,12 +110,7 @@ exports.load = (filename = 'dbactions/qdb.json') => {
           });
         });
       });
-      db.close((err) => {
-        if (err) {
-          return console.error(err.message);
-        }
-        console.log('Close the database connection.');
-      });
+      db.close(onClose);
     });
   });
 };
