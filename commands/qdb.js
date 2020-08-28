@@ -43,8 +43,11 @@ exports.run = (message, epeen) => {
         sendMessage.react('👎').catch(console.error);
         const collector = sendMessage.createReactionCollector(filter, { time });
         collector.on('end', collected => {
-          const upVote = collected.get('👍').count -1;
-          const downVote = collected.get('👎').count - 1;
+          const upVote = collected.get('👍') ? collected.get('👍').count -1 : 0;
+          const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
+          if (upVote == 0 && downVote == 0) {
+            return;
+          }
           const results = Number(score) + (upVote - downVote);
           const newVotes = (Number(votes || 0)) + (upVote+downVote);
           const scoreField = embed.fields.find(field=> field.name === 'Score');
