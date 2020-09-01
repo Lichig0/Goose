@@ -5,7 +5,7 @@ const DEFAULTS = {
   requiredVotes: 5,
   enabled: false,
   voteTime: 60,
-  length: 120
+  timeOut: 120
 };
 
 exports.help = () => 'Cast curse on a member. (User needs role permission)\n';
@@ -67,6 +67,7 @@ module.exports.run = (message, epeen, who = undefined) => {
     // start polling
     const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
     const time = config.voteTime || DEFAULTS.voteTime;
+    const timeOut = config.timeOut || DEFAULTS.timeOut;
     const requiredVotes = config.requiredVotes || DEFAULTS.requiredVotes;
 
     message.react('👍').catch(console.error);
@@ -85,7 +86,7 @@ module.exports.run = (message, epeen, who = undefined) => {
       });
       if (results) {
         message.react('✅');
-        return curseMembers();
+        return curseMembers(timeOut);
       } else {
         message.react('❌');
         return sendDenial();

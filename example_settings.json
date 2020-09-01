@@ -28,11 +28,12 @@
   "kick": {
     "requiredVotes": 5,
     "enabled": false,
-    "voteTime": 60000
+    "voteTime": 60
   },
   "curse": {
     "requiredVotes": 5,
     "enabled": false,
-    "voteTime": 60000
+    "voteTime": 60,
+    "timeOut": 120
   }
 }
