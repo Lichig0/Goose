@@ -1,9 +1,5 @@
 {
-  "randomChat": 0.98,
-  "randomDouble": 0.8,
-  "arrayLimiter": 75000,
   "prefix": ".",
-  "useHonk": false,
   "diabledCommands": [
     "say",
     "export",
@@ -11,6 +7,10 @@
     "save"
   ],
   "chatter": {
+    "randomChat": 0.98,
+    "randomDouble": 0.8,
+    "arrayLimiter": 75000,
+    "useHonk": false,
     "messageSplitter": "[\n.;()]",
     "minimumScore": 2,
     "maxTries": 30,
@@ -23,5 +23,15 @@
     "corpus": {
       "stateSize": 2
     }
+  },
+  "kick": {
+    "requiredVotes": 5,
+    "enabled": false,
+    "voteTime": 60000
+  },
+  "curse": {
+    "requiredVotes": 5,
+    "enabled": false,
+    "voteTime": 60000
   }
 }

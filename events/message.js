@@ -1,6 +1,7 @@
 const { Permissions } = require('discord.js');
 const fs = require('fs');
 const chatter = require('../chatter/chatter');
+const settings = require('../settings');
 
 
 const commands = {};
@@ -9,37 +10,23 @@ fs.readdir('./commands/', (err, files) => {
     const commandName = file.split('.')[0];
     commands[commandName] = require(`../commands/${file}`);
   });
-});
-console.log(commands);
-let config = {};
-fs.readFile('settings.json', 'utf8', function (err, data) {
-  if (err) {
-    return console.log(err);
-  }
-  config = JSON.parse(data);
-  config.prefix = config.prefix || '.';
-
+  console.log(commands);
 });
 
 const reloadConfig = () => {
-  fs.readFile('settings.json', 'utf8', function (err, data) {
-    if (err) {
-      return console.log(err);
-    }
-    config = JSON.parse(data);
-    config.prefix = config.prefix || '.';
-
-  });
+  settings.loadConfig();
 };
 
 module.exports = (client, message) => {
   const {content, author, guild, channel} = message;
+  const config = settings.settings;
   const disabledCommand = config.diabledCommands || [];
+  const prefix = config.prefix || '.';
   if(!guild) return;
   //const data = [];
   let command = undefined;
 
-  if (!content.startsWith(config.prefix) || !guild) {
+  if (!content.startsWith(prefix) || !guild) {
     chatter.run(message, client);
   } else {
     command = content.split(' ')[0].toLowerCase().slice(1);

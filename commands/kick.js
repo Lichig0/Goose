@@ -1,16 +1,63 @@
 const { Permissions } = require('discord.js');
-exports.help = () => 'Kick a member.(User needs kick permission)\n';
+const settings = require('../settings');
+
+const DEFAULTS = {
+  requiredVotes: 5,
+  enabled: false,
+  voteTime: 60000
+};
+
+exports.help = () => {
+  const config = settings.settings.kick;
+  const rv = config.requiredVotes || DEFAULTS.requiredVotes;
+  return `'Kick a member. (User needs kick permission, or ${rv})\n`;
+};
+
 module.exports.run = (message, epeen) => {
-  const {channel, content, mentions} = message;
+  const { mentions} = message;
   const member = mentions.members.first();
-  // const epeen = guild ? guild.member(author).permissions : Discord.Permissions.FLAGS.ALL;
+  const config = settings.kick || DEFAULTS;
+  const enabled = config.enabled || DEFAULTS.enabled;
   const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
   if (!member) {
-    return message.reply('Who are you trying to kick?');
+    return message.reply('Who are you trying to kick?').catch(console.error);
   }
-  if (!member.kickable || !kick_perm) {
-    return message.reply('Your authority is not recognized in Fort Kickass.');
+  if(!member.kickable) {
+    return message.reply('I\'m sorry, I cannot do that.').catch(console.error);
   }
+  if (kick_perm) {
+    return kick(member, message);
+  } else if(!kick_perm && enabled) {
+    const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
+    const time = config.voteTime || DEFAULTS.voteTime;
+    const requiredVotes = config.requiredVotes || DEFAULTS.requiredVotes;
+
+    message.react('👍').catch(console.error);
+    message.react('👎').catch(console.error);
+
+    const collector = message.createReactionCollector(filter, { time });
+    collector.on('end', collected => {
+      const upVote = collected.get('👍') ? collected.get('👍').count - 1 : 0;
+      const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
+
+      const results = (upVote - downVote) >= requiredVotes || false;
+      message.reactions.removeAll().catch(e => {
+        console.error(e);
+        message.react('✅');
+      });
+      if (results) {
+        return kick(member, message);
+      } else {
+        return message.reply('Your authority is not recognized in Fort Kickass.').catch(console.error);
+      }
+    });
+  } else {
+    return message.reply('Your authority is not recognized in Fort Kickass.').catch(console.error);
+  }
+};
+
+const kick = (member, message) => {
+  const { channel, content } = message;
   return member
     .kick()
     .then(() => {
@@ -22,7 +69,7 @@ module.exports.run = (message, epeen) => {
           dm.send(invite.url);
         }).catch(error => console.error(error));
       }).catch(error => console.error(error));
-      channel.send(`Bye. ${member.user.tag}`);
+      channel.send(`Get kicked nerd. ${member.user.tag}`);
     })
     .catch(() => message.reply('Error.'));
 };

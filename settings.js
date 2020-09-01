@@ -12,7 +12,7 @@ exports.loadConfig = () => {
 };
 exports.setConfig = newSettings => {
   if(newSettings) exports.settings = newSettings;
-  fs.writeFile('settings.json',JSON.stringify(exports.settings), (err) => {
+  fs.writeFile('settings.json',JSON.stringify(exports.settings,' '), (err) => {
     if (err) {
       console.error(err);
     }

@@ -1,6 +1,17 @@
 const { Permissions } = require('discord.js');
+const settings = require('../settings');
+
+const DEFAULTS = {
+  requiredVotes: 5,
+  enabled: false,
+  voteTime: 60,
+  length: 120
+};
+
 exports.help = () => 'Cast curse on a member. (User needs role permission)\n';
 module.exports.run = (message, epeen, who = undefined) => {
+  const config = settings.settings.curse || DEFAULTS;
+  const enabled = config.enabled || DEFAULTS.enabled;
   const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
   let members = who || message.mentions.members;
   const guild = message.guild;
@@ -30,15 +41,58 @@ module.exports.run = (message, epeen, who = undefined) => {
     });
 
   }
-  members.array().forEach(member => {
-    if (!member.manageable || !role_perm) {
-      return message.channel.send(`***Honk.*** (${member.user.username})`);
-    }
+
+  const sendDenial = member => member ? message.channel.send(`***Honk.*** (${member.user.username})`).catch(console.error): message.react('🦆').catch(console.error);
+  const curse = (member, timeout) => {
     if (!message.content.includes('lift')) {
-      return member.roles.add(role);
+      member.roles.add(role).catch(console.error);
+      if (timeout) setTimeout(() => member.roles.remove(role).catch(console.error), timeout);
     } else {
-      return member.roles.remove(role);
+      return member.roles.remove(role).catch(console.error);
     }
-  });
+  };
+  const curseMembers = (timeout) => {
+    members.array().forEach(member => {
+      if (!member.manageable) {
+        return sendDenial(member);
+      }
+      return curse(member, timeout);
+    });
+  };
+
+  if(role_perm) {
+    curseMembers();
+  }
+  if(!role_perm && enabled) {
+    // start polling
+    const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
+    const time = config.voteTime || DEFAULTS.voteTime;
+    const requiredVotes = config.requiredVotes || DEFAULTS.requiredVotes;
+
+    message.react('👍').catch(console.error);
+    message.react('👎').catch(console.error);
+
+    const collector = message.createReactionCollector(filter, { time });
+    collector.on('end', collected => {
+      const upVote = collected.get('👍') ? collected.get('👍').count - 1 : 0;
+      const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
+
+      const results = (upVote - downVote) >= requiredVotes || false;
+      message.reactions.removeAll().catch(e => {
+        console.error(e);
+        message.react('👍').catch(console.error);
+        message.react('👎').catch(console.error);
+      });
+      if (results) {
+        message.react('✅');
+        return curseMembers();
+      } else {
+        message.react('❌');
+        return sendDenial();
+      }
+    });
+  } else {
+    return sendDenial();
+  }
 
 };
