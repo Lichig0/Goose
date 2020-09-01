@@ -7,6 +7,7 @@
     "discord.js": "^12.2.0",
     "dotenv": "^8.2.0",
     "markov-strings": "^2.1.1",
+    "mathjs": "^7.2.0",
     "nodemon": "^2.0.4",
     "sqlite3": "^5.0.0"
   },
