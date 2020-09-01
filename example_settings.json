@@ -11,6 +11,7 @@
     "randomDouble": 0.8,
     "arrayLimiter": 75000,
     "useHonk": false,
+    "reload": 500,
     "messageSplitter": "[\n.;()]",
     "minimumScore": 2,
     "maxTries": 30,

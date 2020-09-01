@@ -8,14 +8,14 @@ let reload = 0;
 
 // TODO : turn this into a class?
 module.exports.run = (message, client) => {
-  const config = settings.settings;
+  const config = settings.settings.chatter;
   const { author, channel, content, guild, mentions } = message;
   const isMentioned = mentions.has(client.user.id);
   const isHonk = channel.name === 'honk';
   const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
   const rand = Math.random(); console.log(rand);
   const honkChannel = (isMentioned && config.useHonk) ? theHonk : channel;
-  const disabled = config.chatter.disabledChannels || [];
+  const disabled = config.disabledChannels || [];
 
   //guild.channels.create('honk',{type: 'text', topic: 'honk', rateLimitPerUser: 1, reason: 'Channel for bot use without spaming other channels'});
   if (reload <= 0) {
@@ -62,7 +62,7 @@ const loadData =(client) => {
 
 const sendMarkovString = async (channel, data, content) => {
   channel.startTyping();
-  const config = settings.settings;
+  const config = settings.settings.chatter;
   console.log('okay', Object.values(data).length);
   const contextScore = (markovString) => {
     let score = 0;
@@ -74,8 +74,8 @@ const sendMarkovString = async (channel, data, content) => {
     });
     return score;
   };
-  const minimumScore = config.chatter.minimumScore || 2;
-  const maxTries = config.chatter.maxTries || 30;
+  const minimumScore = config.minimumScore || 2;
+  const maxTries = config.maxTries || 30;
   const options = {
     maxTries, // Give up if I don't have a sentence after 20 tries (default is 10)
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
@@ -101,12 +101,12 @@ const sendMarkovString = async (channel, data, content) => {
 
 const buildData = async (last = {}, channels, data, times) => {
   times++;
-  const config = settings.settings;
+  const config = settings.settings.chatter;
   const tasks = channels.array().flatMap((ch) => fetchMessages(ch, last[ch.id]));
   const msgs = await Promise.all(tasks);
   const toCache = msgs.filter(m => m.size > 0);
 
-  const splitter = RegExp(config.chatter.messageSplitter);
+  const splitter = RegExp(config.messageSplitter);
 
   toCache.filter(m => m.size > 0).forEach(mm => {
     mm.forEach((m) => {
@@ -140,7 +140,7 @@ const fetchMessages = async (channel, o) => {
 
 const readMessages = async (message, textChannels) => {
   const {client} = message;
-  const config = settings.settings;
+  const config = settings.settings.chatter;
   let r = 0;
 
   client.user.setStatus('dnd');
@@ -152,7 +152,7 @@ const readMessages = async (message, textChannels) => {
   }).catch((err) => {
     console.error(err);
   }).finally(() => {
-    markov = new Markov(Object.values(data).flat(2), config.chatter.corpus);
+    markov = new Markov(Object.values(data).flat(2), config.corpus);
     markov.buildCorpusAsync().then(() => {
       client.user.setStatus('online');
     }).catch((err) => {
