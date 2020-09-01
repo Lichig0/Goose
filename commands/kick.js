@@ -4,7 +4,7 @@ const settings = require('../settings');
 const DEFAULTS = {
   requiredVotes: 5,
   enabled: false,
-  voteTime: 60000
+  voteTime: 60
 };
 
 exports.help = () => {
@@ -29,7 +29,7 @@ module.exports.run = (message, epeen) => {
     return kick(member, message);
   } else if(!kick_perm && enabled) {
     const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
-    const time = config.voteTime || DEFAULTS.voteTime;
+    const time = (config.voteTime || DEFAULTS.voteTime) * 1000;
     const requiredVotes = config.requiredVotes || DEFAULTS.requiredVotes;
 
     message.react('👍').catch(console.error);

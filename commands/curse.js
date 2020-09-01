@@ -66,8 +66,8 @@ module.exports.run = (message, epeen, who = undefined) => {
   if(!role_perm && enabled) {
     // start polling
     const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
-    const time = config.voteTime || DEFAULTS.voteTime;
-    const timeOut = config.timeOut || DEFAULTS.timeOut;
+    const time = (config.voteTime || DEFAULTS.voteTime) * 1000;
+    const timeOut = (config.timeOut || DEFAULTS.timeOut) * 1000;
     const requiredVotes = config.requiredVotes || DEFAULTS.requiredVotes;
 
     message.react('👍').catch(console.error);
