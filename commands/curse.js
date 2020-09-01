@@ -42,7 +42,9 @@ module.exports.run = (message, epeen, who = undefined) => {
 
   }
 
-  const sendDenial = member => member ? message.channel.send(`***Honk.*** (${member.user.username})`).catch(console.error): message.react('🦆').catch(console.error);
+  const sendDenial = member => {
+    return member ? message.channel.send(`***Honk.*** (${member.user.username})`).catch(console.error): message.react('🦆').catch(console.error);
+  };
   const curse = (member, timeout) => {
     if (!message.content.includes('lift')) {
       member.roles.add(role).catch(console.error);
@@ -61,7 +63,7 @@ module.exports.run = (message, epeen, who = undefined) => {
   };
 
   if(role_perm) {
-    curseMembers();
+    return curseMembers();
   }
   if(!role_perm && enabled) {
     // start polling
