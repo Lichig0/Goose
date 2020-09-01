@@ -59,7 +59,7 @@ exports.vote= (qid, score, votes, callback) => {
   db.run('UPDATE qdb set score=$score, votes=$votes WHERE id=$id', {$score:score, $votes:votes, $id:qid}, callback).close(onClose);
 };
 
-exports.add = (newQuote, message) => {
+exports.add = (newQuote, message, attachmentUrl, blob = Buffer.from([]).toString('base64')) => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
       return console.error(err.message);
@@ -70,8 +70,8 @@ exports.add = (newQuote, message) => {
   const score = '0';
   const votes = '0';
   db.run('INSERT INTO qdb' +
-    ' (body, created, author_id, score, votes)' +
-    ' VALUES ($body, $created, $author_id, $score, $votes)', { $body: newQuote, $created: Date(), $author_id: message.author, $score: score, $votes: votes }, function (err) {
+    ' (body, created, author_id, score, votes, attachment, attachmentUrl)' +
+    ' VALUES ($body, $created, $author_id, $score, $votes, $blob, $au)', { $body: newQuote, $created: Date(), $author_id: message.author, $score: score, $votes: votes, $blob:blob, $au:attachmentUrl }, function (err) {
     if (err) {
       return console.log(err.message);
     }

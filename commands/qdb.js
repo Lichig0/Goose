@@ -1,5 +1,6 @@
 const path = require('path');
-const { Permissions, MessageEmbed } = require('discord.js');
+const request = require('request').defaults({ encoding: null });
+const { Permissions, MessageEmbed, MessageAttachment } = require('discord.js');
 const settings = require('../settings');
 const qdb = require('../dbactions/qdbTable');
 
@@ -23,7 +24,13 @@ exports.run = (message, epeen) => {
     const quote = body[Math.floor(Math.random() * body.length)];
     if (quote) {
       const embed = new MessageEmbed();
-      const { id, body, author_id, notes, tags, created, score, votes } = quote;
+      const { id, body, author_id, notes, tags, created, score, votes, attachment, attachmentUrl } = quote;
+      if (attachmentUrl) {
+        embed.setImage(attachmentUrl);
+      } else if(attachment) {
+        const buf = Buffer.from(attachment, 'base64');
+        embed.attachFiles(new MessageAttachment(buf));
+      }
       embed.setTitle(`Quote #${id}`);
       embed.setDescription(body);
       if (notes) embed.addField('Notes:', notes);
@@ -55,12 +62,14 @@ exports.run = (message, epeen) => {
           scoreField.value = results;
           votesField.value = newVotes;
           qdb.vote(qid, results, newVotes);
-          sendMessage.edit('', {embed});
-          sendMessage.reactions.removeAll();
+          sendMessage.edit('', {embed}).catch(console.error);
+          sendMessage.reactions.removeAll().catch(e => {
+            console.error(e);
+            message.react('👍').catch(console.error);
+            message.react('👎').catch(console.error);
+          });
+          sendMessage.react('✅').catch(console.error);
         });
-        // sendMessage.awaitReactions(()=>true, {time: 15000, maxUsers: 100}).then(collected => {
-        //   console.log(collected, qid);
-        // });
       })).catch(e => console.error('Failed to send.', e));
     }
   };
@@ -69,7 +78,17 @@ exports.run = (message, epeen) => {
     qdb.load();
   } else if (content.startsWith(ADD_STRING, 1)) {
     const newQuote = content.split(ADD_STRING)[1];
-    qdb.add(newQuote, message);
+    if(message.attachments.size > 0) {
+      request.get(message.attachments.first().attachment, function (error, response, body) {
+        if (!error && response.statusCode == 200) {
+          const d = Buffer.from(body).toString('base64');
+          console.log(d);
+          qdb.add(newQuote, message, message.attachments.first().attachment, d);
+        }
+      });
+    } else {
+      qdb.add(newQuote, message);
+    }
   } else if (content.startsWith(DELETE_STRING,1)) {
     const qid = Number(content.split(DELETE_STRING)[1]);
     qdb.delete(qid, message.author);

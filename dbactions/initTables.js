@@ -21,6 +21,17 @@ module.exports = (guilds) => {
     author TEXT NOT NULL,
     guild TEXT NOT NULL)`);
 
+  db.run(`CREATE TABLE IF NOT EXISTS bountyBoard (
+    id INTEGER PRIMARY KEY,
+    assignee TEXT NOT NULL,
+    game TEXT NOT NULL,
+    requirement TEXT NOT NULL,
+    reward REAL NOT NULL,
+    optCondition TEXT,
+    optReward REAL,
+    status TEXT NOT NULL,
+    guild TEXT NOT NULL)`);
+
   db.run(`CREATE TABLE IF NOT EXISTS userRoles (
     id INTEGER PRIMARY KEY,
     roles TEXT NOT NULL,
@@ -39,7 +50,9 @@ module.exports = (guilds) => {
     author_id TEXT,
     author_ip TEXT,
     score TEXT,
-    votes TEXT)
+    votes TEXT,
+    attachment BLOB,
+    attachmentUrl TEXT)
     `);
 
   db.run(`CREATE TABLE IF NOT EXISTS chatt (
@@ -58,3 +71,6 @@ module.exports = (guilds) => {
     console.log('Close the database connection.');
   });
 };
+
+// ALTER TABLE equipment
+// ADD COLUMN location text;
