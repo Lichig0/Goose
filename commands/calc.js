@@ -1,13 +1,19 @@
 const path = require('path');
 const math = require('mathjs');
 
-const COMMAND_NAME = path.basename(__filename, '.js');
+const COMMAND_NAME = `${path.basename(__filename, '.js')} `;
+const parser = math.parser();
 
 exports.help = () => 'Load the config (for chatter)\n';
 
 exports.run = (message) => {
   const { content } = message;
   const equation = content.split(COMMAND_NAME)[1];
-  message.channel.send(math.evaluate(equation)).catch(console.error);
+  try {
+    const result = parser.evaluate(equation.trim());
+    message.channel.send(result.name || result.toString()).catch(console.error);
+  } catch (e){
+    if(e.message) message.channel.send(e.message).catch(console.error);
+  }
   return;
 };
