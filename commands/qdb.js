@@ -65,8 +65,8 @@ exports.run = (message, epeen) => {
           sendMessage.edit('', {embed}).catch(console.error);
           sendMessage.reactions.removeAll().catch(e => {
             console.error(e);
-            message.react('👍').catch(console.error);
-            message.react('👎').catch(console.error);
+            sendMessage.react('👍').catch(console.error);
+            sendMessage.react('👎').catch(console.error);
           });
           sendMessage.react('✅').catch(console.error);
         });
