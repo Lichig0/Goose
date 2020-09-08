@@ -1,6 +1,7 @@
 const Markov = require('markov-strings').default;
 const fs = require('fs');
 const settings = require('../settings');
+const Discord = require('discord.js');
 const data = {0:{ string: 'honk' }};
 let markov = new Markov(Object.values(data).flat(2), { stateSize: 2 });
 let reload = 0;
@@ -87,13 +88,19 @@ const sendMarkovString = async (channel, data, content) => {
   // await markov.buildCorpusAsync()
   // Generate a sentence
   markov.generateAsync(options).then((result) => {
+    const config = settings.settings.chatter;
     let chatter = result.string;
     channel.stopTyping();
-    channel.send(chatter);
-  }).catch((e) => {
+    if(!config.mentions) chatter = Discord.Util.removeMentions(chatter);
+    channel.send(chatter).catch(console.warn);
+  }).catch(() => {
     console.log('[Couldn\'t generate context setence]');
     options.filter = (result) => result.string.split(' ').length >= Math.pow(Math.floor(Math.random() * 3) + 1, Math.floor(Math.random() * 4 + 1));
-    markov.generateAsync(options).then(result => channel.send(result.string)).catch(e).finally(()=>channel.stopTyping(true));
+    markov.generateAsync(options).then(result => {
+      let chatter = result.string;
+      if (!config.mentions) chatter = Discord.Util.removeMentions(chatter);
+      channel.send(chatter);
+    }).catch(console.warn).finally(()=>channel.stopTyping(true));
     channel.stopTyping();
   }).finally(() => channel.stopTyping(true));
 };

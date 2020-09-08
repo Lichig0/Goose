@@ -15,6 +15,7 @@
     "messageSplitter": "[\n.;()]",
     "minimumScore": 2,
     "maxTries": 30,
+    "mentions": false,
     "disabledChannels": [
       "admin"
     ],
