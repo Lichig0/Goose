@@ -92,7 +92,7 @@ const sendMarkovString = async (channel, data, content) => {
     let chatter = result.string;
     channel.stopTyping();
     let files = [];
-    result.refs.forEach(ref => files = files.concat(ref.attachments.array()));
+    if (!config.disableImage) result.refs.forEach(ref => files = files.concat(ref.attachments.array()));
     if(!config.mentions) chatter = Discord.Util.removeMentions(chatter);
     channel.send(chatter, {files}).catch(console.warn);
   }).catch(() => {
@@ -101,7 +101,7 @@ const sendMarkovString = async (channel, data, content) => {
     markov.generateAsync(options).then(result => {
       let chatter = result.string;
       let files = [];
-      result.refs.forEach(ref => files = files.concat(ref.attachments.array()));
+      if (!config.disableImage) result.refs.forEach(ref => files = files.concat(ref.attachments.array()));
       if (!config.mentions) chatter = Discord.Util.removeMentions(chatter);
       channel.send(chatter, {files});
     }).catch(console.warn).finally(()=>channel.stopTyping(true));
