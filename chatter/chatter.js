@@ -43,7 +43,7 @@ const saveData = () => {
   });
 };
 
-const loadData =(client) => {
+const loadData = (client) => {
   client.user.setStatus('dnd');
   fs.readFile('cache.json', 'utf8', function (err, data) {
     if (err) {
@@ -91,15 +91,19 @@ const sendMarkovString = async (channel, data, content) => {
     const config = settings.settings.chatter;
     let chatter = result.string;
     channel.stopTyping();
+    let files = [];
+    result.refs.forEach(ref => files = files.concat(ref.attachments.array()));
     if(!config.mentions) chatter = Discord.Util.removeMentions(chatter);
-    channel.send(chatter).catch(console.warn);
+    channel.send(chatter, {files}).catch(console.warn);
   }).catch(() => {
-    console.log('[Couldn\'t generate context setence]');
+    console.log('[Couldn\'t generate context sentence]');
     options.filter = (result) => result.string.split(' ').length >= Math.pow(Math.floor(Math.random() * 3) + 1, Math.floor(Math.random() * 4 + 1));
     markov.generateAsync(options).then(result => {
       let chatter = result.string;
+      let files = [];
+      result.refs.forEach(ref => files = files.concat(ref.attachments.array()));
       if (!config.mentions) chatter = Discord.Util.removeMentions(chatter);
-      channel.send(chatter);
+      channel.send(chatter, {files});
     }).catch(console.warn).finally(()=>channel.stopTyping(true));
     channel.stopTyping();
   }).finally(() => channel.stopTyping(true));
@@ -118,9 +122,9 @@ const buildData = async (last = {}, channels, data, times) => {
   toCache.filter(m => m.size > 0).forEach(mm => {
     mm.forEach((m) => {
       const multi = m.content.split(splitter);
-      const cache = { string: m.content, id: m.id, guild: m.guild.id, channel: m.channel.id };
+      const cache = { string: m.content, id: m.id, guild: m.guild.id, channel: m.channel.id, attachments: m.attachments};
       multi.forEach((str, i) => {
-        if (str !== '' || str !== ' ') { //skip empty strings
+        if ((str !== '' && str !== ' ') || cache.attachments.size > 0) { //skip empty strings
           cache.string = str;
           if (data[`${m.id}.${i}`] !== undefined) {
             return;
