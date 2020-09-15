@@ -82,7 +82,7 @@ const sendMarkovString = async (channel, data, content) => {
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
       return result.string.split (' ').length >= Math.pow(Math.floor(Math.random() * 3) + 1, Math.floor(Math.random() * 4 + 1)) &&
-        contextScore(result.string) >= minimumScore && result.score >= minimumScore;
+        (contextScore(result.string) + result.score) >= minimumScore;
     }
   };
   // await markov.buildCorpusAsync()
