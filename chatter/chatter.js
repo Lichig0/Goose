@@ -81,8 +81,7 @@ const sendMarkovString = async (channel, data, content) => {
     maxTries, // Give up if I don't have a sentence after 20 tries (default is 10)
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
-      return result.string.split (' ').length >= Math.pow(Math.floor(Math.random() * 3) + 1, Math.floor(Math.random() * 4 + 1)) &&
-        (contextScore(result.string) + result.score) >= minimumScore;
+      return (contextScore(result.string) + result.score) >= minimumScore;
     }
   };
   // await markov.buildCorpusAsync()
@@ -91,9 +90,10 @@ const sendMarkovString = async (channel, data, content) => {
     const config = settings.settings.chatter;
     let chatter = result.string;
     channel.stopTyping();
-    let files = [];
-    if (!config.disableImage) result.refs.forEach(ref => files = files.concat(ref.attachments.array()));
+    let attachments = [];
+    if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments.array()));
     if(!config.mentions) chatter = Discord.Util.removeMentions(chatter);
+    const files = attachments.length > 0 ? [attachments[Math.floor(Math.random() * attachments.length)]] : [];
     channel.send(chatter, {files}).catch(console.warn);
   }).catch(() => {
     console.log('[Couldn\'t generate context sentence]');
@@ -124,13 +124,15 @@ const buildData = async (last = {}, channels, data, times) => {
       const multi = m.content.split(splitter);
       const cache = { string: m.content, id: m.id, guild: m.guild.id, channel: m.channel.id, attachments: m.attachments};
       multi.forEach((str, i) => {
-        if ((str !== '' && str !== ' ') || cache.attachments.size > 0) { //skip empty strings
+        if ((str !== '' && str !== ' ')) { //skip empty strings
           cache.string = str;
           if (data[`${m.id}.${i}`] !== undefined) {
             return;
           } else {
             data[`${m.id}.${i}`] = cache;
           }
+        } else if (cache.attachments.size > 0 && data[`${m.id}.${0}`] === undefined) {
+          data[`${m.id}.${i}`] = {...cache, string:`the ${cache.attachments.first().name}`};
         }
       });
       last[m.channel.id] = cache;
