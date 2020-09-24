@@ -4,6 +4,7 @@ const settings = require('../settings');
 const Discord = require('discord.js');
 const data = {0:{ string: 'honk' }};
 let markov = new Markov(Object.values(data).flat(2), { stateSize: 2 });
+markov.buildCorpusAsync().catch(console.warn).finally(console.log);
 let reload = 0;
 
 
@@ -18,7 +19,7 @@ module.exports.run = (message, client) => {
   const honkChannel = (isMentioned && config.useHonk) ? theHonk : channel;
   const disabled = config.disabledChannels || [];
 
-  //guild.channels.create('honk',{type: 'text', topic: 'honk', rateLimitPerUser: 1, reason: 'Channel for bot use without spaming other channels'});
+  //guild.channels.create('honk',{type: 'text', topic: 'honk', rateLimitPerUser: 1, reason: 'Channel for bot use without spamming other channels'});
   if (reload <= 0) {
     if (data.length == 1) delete data['0']; // delete init data
 
@@ -120,8 +121,10 @@ const buildData = async (last = {}, channels, data, times) => {
   const splitter = RegExp(config.messageSplitter);
 
   toCache.filter(m => m.size > 0).forEach(mm => {
+    const expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
+    const regex = new RegExp(expression);
     mm.forEach((m) => {
-      const multi = m.content.split(splitter);
+      const multi = m.content.match(regex) ? [m.content] : m.content.split(splitter);
       const cache = { string: m.content, id: m.id, guild: m.guild.id, channel: m.channel.id, attachments: m.attachments};
       multi.forEach((str, i) => {
         if ((str !== '' && str !== ' ')) { //skip empty strings
