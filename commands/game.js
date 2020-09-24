@@ -12,9 +12,10 @@ exports.run = (message) => {
   // const admin_perm = epeen.has(Permissions.FLAGS.ADMINISTRATOR) || (message.member.user.id === '341338359807082506');
   const COMMAND = `${COMMAND_NAME} `;
   const GET_STRING = `${COMMAND_NAME} #`;
+  const RAND_STRING = `${COMMAND_NAME} ?`;
 
-  if (content.startsWith(GET_STRING, 1)) {
-    const guid = content.split(GET_STRING)[1];
+  if (content.startsWith(GET_STRING, 1) || content.startsWith(RAND_STRING, 1)) {
+    const guid = content.startsWith(RAND_STRING, 1) ? Math.floor(Math.random() * 90000) : content.split(GET_STRING)[1] ;
     const options = {
       id: guid,
       format: 'json',
@@ -27,21 +28,22 @@ exports.run = (message) => {
     gb.getGame(options).then( response => {
       if(response === null) { return channel.send('Not found.').catch(console.warn); }
       const json = JSON.parse(response);
+      if (json.status_code !== 1) { return channel.send(json.error).catch(console.warn); }
       const {name, guid, image, aliases, deck, platforms, similar_games, site_detail_url,
         genres, franchises, developers, original_release_date,
         expected_release_year, expected_release_month, expected_release_day, expected_release_quarter
       } = json.results;
 
       let plats = [];
-      platforms.forEach(platform => plats.push(platform.name));
+      platforms ? platforms.forEach(platform => plats.push(platform.name)) : plats.push('No data.');
       let similarGames = [];
-      similar_games.forEach(similar => similarGames.push(similar.name));
+      similar_games ? similar_games.forEach(similar => similarGames.push(similar.name)) : similarGames.push('No data.');
       let devs = [];
-      developers.forEach(dev => devs.push(dev.name));
+      developers ? developers.forEach(dev => devs.push(dev.name)) : devs.push('No data.') ;
       let frans = [];
-      franchises.forEach(franchise => frans.push(franchise.name));
+      franchises ? franchises.forEach(franchise => frans.push(franchise.name)) : frans.push('No data.');
       let genre = [];
-      genres.forEach(g => genre.push(g.name));
+      genres ? genres.forEach(g => genre.push(g.name)) : genre.push('No data.');
 
       const embed = new MessageEmbed();
       embed.setTitle(name).setDescription(deck).setURL(site_detail_url);
@@ -74,21 +76,31 @@ exports.run = (message) => {
       const j = JSON.parse(response);
       const games = j.results;
       const game = games[0];
+      if(game === undefined) return channel.send('No result.').catch(console.warn);
       const { name, guid, image, aliases, deck,
         original_release_date, site_detail_url,
         platforms, expected_release_day, expected_release_month,
         expected_release_year, expected_release_quarter } = game;
+
       let plats = [];
       platforms.forEach(platform => plats.push(platform.name));
+
+      let otherGames = [];
+      games.forEach( (g, i) => {
+        if(i > 0 && i <= 10) {
+          otherGames.push(g.name);
+        }
+      });
+
       const embed = new MessageEmbed();
       embed.setTitle(name).setDescription(deck).setURL(site_detail_url);
       embed.setFooter(guid);
       embed.setThumbnail(image.original_url);
       embed.addField('Platforms', plats, true);
       if(aliases) embed.addField('Alias(es)', aliases);
-      console.log(platforms);
       if(original_release_date) embed.addField('Released', original_release_date, true);
       if (!original_release_date) embed.addField('Expected release', `${expected_release_year || '????'} - ${expected_release_month || '??' } - ${expected_release_day || '??'} Q${expected_release_quarter || '?'}`);
+      if (otherGames.toString() !== '')embed.addField('More results', otherGames.toString(), true);
       channel.send(embed).catch(console.warn);
     }).catch(console.error);
   }
