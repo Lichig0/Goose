@@ -20,7 +20,7 @@ const reloadConfig = () => {
 module.exports = (client, message) => {
   const {content, author, guild, channel} = message;
   const config = settings.settings;
-  const disabledCommand = config.diabledCommands || [];
+  const disabledCommand = config.disabledCommands || [];
   const prefix = config.prefix || '.';
   if(!guild) return;
   //const data = [];

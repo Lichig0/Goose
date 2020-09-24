@@ -1,7 +1,7 @@
 const path = require('path');
 const { MessageEmbed } = require('discord.js');
 const GiantBomb = require('giant-bomb');
-const gb = new GiantBomb(process.env.GIANT_BOMB_KEY, 'Goose bot Bounty Board. Retrieve game info for bounties.');
+const gb = new GiantBomb(process.env.GIANT_BOMB_KEY, 'Goose bot game search for Bounty Board. Retrieve game info for bounties.');
 
 const COMMAND_NAME = path.basename(__filename, '.js');
 exports.help = () => {

@@ -14,7 +14,7 @@ exports.run = (message, epeen) => {
   const ADD_STRING = `${COMMAND_NAME} add`;
   const LOAD_STRING = `${COMMAND_NAME} load`;
   const DELETE_STRING = `${COMMAND_NAME} delete #`;
-  const GET_STRRING = `${COMMAND_NAME} #`;
+  const GET_STRING = `${COMMAND_NAME} #`;
   // const VOTE = `${COMMAND_NAME} vote`;
 
   const sendCallback = (e, body) => {
@@ -92,8 +92,8 @@ exports.run = (message, epeen) => {
   } else if (content.startsWith(DELETE_STRING,1)) {
     const qid = Number(content.split(DELETE_STRING)[1]);
     qdb.delete(qid, message.author);
-  } else if(content.startsWith(GET_STRRING, 1)) {
-    const qid = Number(content.split(GET_STRRING)[1]);
+  } else if(content.startsWith(GET_STRING, 1)) {
+    const qid = Number(content.split(GET_STRING)[1]);
     qdb.get(qid, sendCallback);
   } else if(content.split(COMMAND_NAME)[1].length > 0) {
     qdb.like(content.split(COMMAND_NAME)[1], sendCallback);
