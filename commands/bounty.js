@@ -42,13 +42,13 @@ const COMMAND_NAME = path.basename(__filename, '.js');
 
 exports.help = () => {
   let help = 'Game Bounty Board.(WIP)\n';
-  help += '`add` `game name` | `condition` | `$(5-20)` | `expireTime(dd/mm/yyyy)` | `optional condition` | `reward for optional condition` (WIP)\n';
-  help += '`list` lists bounties\n';
-  help += '`claim` `game name` claim a bounty\n';
-  help += '`rules` show bounty rules\n';
-  help += '`complete` (WIP) not implemented\n';
-  help += '`failed` (WIP) not implemented\n';
-  help += '`delete #``bounty number` delete your bounty (WIP)\n';
+  help += '> `add` `game name` | `condition` | `$(5-20)` | `expireTime(dd/mm/yyyy)` | `optional condition` | `reward for optional condition` (WIP)\n';
+  help += '> `list` lists bounties\n';
+  help += '> `claim` `game name` claim a bounty\n';
+  help += '> `rules` show bounty rules\n';
+  help += '> `complete` (WIP) not implemented\n';
+  help += '> `failed` (WIP) not implemented\n';
+  help += '> `delete #`bounty number` delete your bounty (WIP)\n';
   return help;
 };
 /*

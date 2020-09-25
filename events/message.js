@@ -67,7 +67,7 @@ module.exports = (client, message) => {
   case 'kys':
     return commands['leave'].run(message, epeen);
   case 'help':
-    Object.keys(commands).filter(com => !disabledCommand.includes(com)).forEach(key => { helpText = helpText + `\`${key}\` ${commands[key].help ? commands[key].help() : ''}` + '\t'; });
+    Object.keys(commands).filter(com => !disabledCommand.includes(com)).forEach(key => { helpText = helpText + `> --\`${key}\` ${commands[key].help ? commands[key].help() : ''}` + '\t\n'; });
     return channel.send(helpText);
   case 'fl':
     reloadConfig();

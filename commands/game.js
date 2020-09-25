@@ -5,7 +5,7 @@ const gb = new GiantBomb(process.env.GIANT_BOMB_KEY, 'Goose bot game search for 
 
 const COMMAND_NAME = path.basename(__filename, '.js');
 exports.help = () => {
-  return 'game [game name} | game #[game ID]\n ex: game Super Mario 64\n game #2931';
+  return '`game` `game name` \n> `game #game ID`\n> ex: game Super Mario 64\n> game #2931\n';
 };
 exports.run = (message) => {
   const { content, channel } = message;
