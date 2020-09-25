@@ -4,7 +4,7 @@ const settings = require('../settings');
 const Discord = require('discord.js');
 const data = {0:{ string: 'honk' }};
 let markov = new Markov(Object.values(data).flat(2), { stateSize: 2 });
-markov.buildCorpusAsync().catch(console.warn).finally(console.log);
+markov.buildCorpus();
 let reload = 0;
 
 
@@ -63,7 +63,11 @@ const loadData = (client) => {
 };
 
 const sendMarkovString = async (channel, data, content) => {
-  channel.startTyping();
+  let chatter = '';
+  let files = [];
+  channel.startTyping().then(() => {
+    channel.send(chatter, { files }).catch(console.warn);
+  });
   const config = settings.settings.chatter;
   console.log('okay', Object.values(data).length);
   const contextScore = (markovString) => {
@@ -89,24 +93,21 @@ const sendMarkovString = async (channel, data, content) => {
   // Generate a sentence
   markov.generateAsync(options).then((result) => {
     const config = settings.settings.chatter;
-    let chatter = result.string;
-    channel.stopTyping();
+    chatter = result.string;
     let attachments = [];
     if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments.array()));
     if(!config.mentions) chatter = Discord.Util.removeMentions(chatter);
-    const files = attachments.length > 0 ? [attachments[Math.floor(Math.random() * attachments.length)]] : [];
-    channel.send(chatter, {files}).catch(console.warn);
+    files = attachments.length > 0 ? [attachments[Math.floor(Math.random() * attachments.length)]] : [];
+    channel.stopTyping(true);
   }).catch(() => {
     console.log('[Couldn\'t generate context sentence]');
-    options.filter = (result) => result.string.split(' ').length >= Math.pow(Math.floor(Math.random() * 3) + 1, Math.floor(Math.random() * 4 + 1));
+    options.filter = (result) => result.score >= 2;
     markov.generateAsync(options).then(result => {
-      let chatter = result.string;
-      let files = [];
+      chatter = result.string;
       if (!config.disableImage) result.refs.forEach(ref => files = files.concat(ref.attachments.array()));
       if (!config.mentions) chatter = Discord.Util.removeMentions(chatter);
-      channel.send(chatter, {files});
+      channel.stopTyping(true);
     }).catch(console.warn).finally(()=>channel.stopTyping(true));
-    channel.stopTyping();
   }).finally(() => channel.stopTyping(true));
 };
 
@@ -121,7 +122,7 @@ const buildData = async (last = {}, channels, data, times) => {
   const splitter = RegExp(config.messageSplitter);
 
   toCache.filter(m => m.size > 0).forEach(mm => {
-    const expression = /[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)?/gi;
+    const expression = /[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi;
     const regex = new RegExp(expression);
     mm.forEach((m) => {
       const multi = m.content.match(regex) ? [m.content] : m.content.split(splitter);
@@ -159,7 +160,7 @@ const readMessages = async (message, textChannels) => {
   const config = settings.settings.chatter;
   let r = 0;
 
-  client.user.setStatus('dnd');
+  await client.user.setStatus('dnd');
   console.log('[Reading messages]');
   const last = {};
   textChannels.forEach(tc=> last[tc.id] = {});
@@ -168,15 +169,21 @@ const readMessages = async (message, textChannels) => {
   }).catch((err) => {
     console.error(err);
   }).finally(() => {
-    markov = new Markov(Object.values(data).flat(2), config.corpus);
-    markov.buildCorpusAsync().then(() => {
-      client.user.setStatus('online');
-    }).catch((err) => {
-      console.error(err);
-      client.user.setStatus('idle');
-    }).finally(() => {
-      client.user.setStatus('online');
-    });
+    console.log('[Assembling...]');
+    assembleCorpus(client, config);
+    console.log('[Ready!]');
+  });
+};
+
+const assembleCorpus = async (client, config) => {
+  markov = new Markov(Object.values(data).flat(2), config.corpus);
+  markov.buildCorpusAsync().then(() => {
+    client.user.setStatus('online');
+  }).catch((err) => {
+    console.error(err);
+    client.user.setStatus('idle');
+  }).finally(() => {
+    client.user.setStatus('online');
     console.log('[Done.]:', Object.values(data).length);
   });
 };
