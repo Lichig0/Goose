@@ -29,7 +29,6 @@ module.exports.run = (message, client) => {
     return;
   } else if ((isHonk || isMentioned || rand > config.randomChat) && !author.bot) {
     guild.members.fetch(author).then(m => {
-      honkChannel.startTyping();
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
       if (!hasRole) sendMarkovString(honkChannel, data, content);
     });
