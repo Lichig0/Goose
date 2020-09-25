@@ -62,6 +62,8 @@ module.exports = (client, message) => {
   // Aliases
   let helpText = 'Commands are:\n\t';
   switch(command) {
+  case 'g':
+    return commands['google'].run(message, epeen);
   case 'kys':
     return commands['leave'].run(message, epeen);
   case 'help':
