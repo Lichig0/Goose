@@ -21,16 +21,29 @@ module.exports = (guilds) => {
     author TEXT NOT NULL,
     guild TEXT NOT NULL)`);
 
+  db.run(`CREATE TABLE IF NOT EXISTS wiki (
+    id INTEGER PRIMARY KEY,
+    term TEXT NOT NULL,
+    definition TEXT,
+    author TEXT NOT NULL,
+    guild TEXT NOT NULL)`);
+
   db.run(`CREATE TABLE IF NOT EXISTS bountyBoard (
     id INTEGER PRIMARY KEY,
-    assignee TEXT NOT NULL,
-    game TEXT NOT NULL,
-    requirement TEXT NOT NULL,
+    guid TEXT NOT NULL,
+    gameName TEXT NOT NULL,
+    assigneeId TEXT,
+    authorId TEXT NOT NULL,
+    condition TEXT NOT NULL,
     reward REAL NOT NULL,
     optCondition TEXT,
     optReward REAL,
-    status TEXT NOT NULL,
-    guild TEXT NOT NULL)`);
+    status INTEGER NOT NULL,
+    postDate TEXT NOT NULL,
+    expireDate TEXT,
+    thumbUrl TEXT,
+    guild TEXT NOT NULL)
+    `);
 
   db.run(`CREATE TABLE IF NOT EXISTS userRoles (
     id INTEGER PRIMARY KEY,
