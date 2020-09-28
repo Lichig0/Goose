@@ -158,5 +158,5 @@ exports.delete = (qid, author, callback) => {
     }
   });
   // delete from qdb where id=17 and author_id="<@166052926777851904>"
-  db.run('DELETE FROM bountyBoard WHERE id=$id and author_id=$author', { $id: qid, $author: author }, callback).close(onClose);
+  db.run('DELETE FROM bountyBoard WHERE id=$id and authorId=$author', { $id: qid, $author: author }, callback).close(onClose);
 };
