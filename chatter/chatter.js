@@ -219,6 +219,7 @@ const readMessages = async (message, textChannels) => {
   }).catch((err) => {
     console.error(err);
   }).finally(() => {
+    client.user.setStatus('online');
     console.log('[Done.]:', Object.values(data).length);
   });
 };
