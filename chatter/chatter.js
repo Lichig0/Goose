@@ -5,7 +5,7 @@ const Discord = require('discord.js');
 const data = {0:{ string: 'honk' }};
 let markov = new Markov({ stateSize: 2 });
 
-let reload = 0;
+let reload = true;
 
 const addData = (d = data) => {
   if (Object.values(d).length === 0) {
@@ -28,12 +28,12 @@ module.exports.run = (message, client) => {
 
   //guild.channels.create('honk',{type: 'text', topic: 'honk', rateLimitPerUser: 1, reason: 'Channel for bot use without spamming other channels'});
   addMessage(message);
-  if (reload <= 0) {
+  if (reload === true) {
     if (data.length == 1) delete data['0']; // delete init data
 
     const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
     readMessages(message, textChannels);
-    reload = config.reload || 500;
+    reload = false;
     return;
   } else if ((isHonk || isMentioned || rand > config.randomChat) && !author.bot) {
     guild.members.fetch(author).then(m => {
