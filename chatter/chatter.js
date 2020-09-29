@@ -8,6 +8,7 @@ let mostRecent, makeNoise;
 let markov = new Markov({ stateSize: 2 });
 
 let reload = true;
+let readRetry = 0;
 
 // TODO : turn this into a class?
 module.exports.run = (message, client) => {
@@ -51,21 +52,16 @@ const saveData = () => {
   });
 };
 
-const loadData = (client) => {
+const loadData = async (client) => {
   client.user.setStatus('dnd');
-  fs.readFile('cache.json', 'utf8', function (err, data) {
+  fs.readFile('cache.json', 'utf8', function (err, d) {
     if (err) {
+      client.user.setStatus('online');
       return console.log(err);
     }
-    data = JSON.parse(data);
-    markov = new Markov(Object.values(data).flat(2), { stateSize: 2 });
-    markov.buildCorpusAsync().then(() => {
-      client.user.setStatus('online');
-    }).catch((err) => {
-      console.error(err);
-      client.user.setStatus('idle');
-    });
-    console.log('okay', data.length);
+    Object.assign(data, JSON.parse(d));
+    markov.addData(Object.values(data).flat(2));
+    client.user.setStatus('online');
   });
 };
 
@@ -193,6 +189,10 @@ const readMessages = async (message, textChannels) => {
     console.log('[Ready!]');
   }).catch((err) => {
     console.error(err);
+    if (readRetry < 3) {
+      readRetry++;
+      readMessages(message, textChannels);
+    }
   }).finally(() => {
     client.user.setStatus('online');
     client.user.setActivity('🦆', { type: 'WATCHING' });
