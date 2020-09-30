@@ -11,7 +11,7 @@ let reload = true;
 let readRetry = 0;
 
 // TODO : turn this into a class?
-module.exports.run = (message, client) => {
+module.exports.run = (message = mostRecent, client) => {
   const config = settings.settings.chatter;
   const { author, channel, content, guild, mentions } = message;
   const isMentioned = mentions.has(client.user.id);
@@ -23,12 +23,12 @@ module.exports.run = (message, client) => {
 
   //guild.channels.create('honk',{type: 'text', topic: 'honk', rateLimitPerUser: 1, reason: 'Channel for bot use without spamming other channels'});
   addMessage(message);
-  mostRecent = message;
+  mostRecent = message; // what could possibly go wrong
   if(makeNoise) {
     makeNoise.refresh();
   } else {
     // makeNoise = client.setTimeout(sendMarkovString, (config.frequency * 60000) || 60 * 60000, honkChannel, data, mostRecent.content);
-    makeNoise = client.setTimeout(exports.run, (config.frequency * 60000) || 60 * 60000, mostRecent, client);
+    makeNoise = client.setTimeout(exports.run, (config.frequency * 60000) || 60 * 60000, undefined, client);
   }
   if (reload === true) {
     if (data.length == 1) delete data['0']; // delete init data
