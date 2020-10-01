@@ -4,7 +4,7 @@ const settings = require('../settings');
 const Discord = require('discord.js');
 const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
 const data = {0:{ string: 'honk' }};
-let mostRecent, makeNoise;
+let mostRecent, makeNoise, noiseTimeout;
 let markov = new Markov({ stateSize: 2 });
 
 let reload = true;
@@ -20,16 +20,23 @@ module.exports.run = (message = mostRecent, client) => {
   const rand = Math.random(); console.log(rand);
   const honkChannel = (isMentioned && config.useHonk) ? theHonk : channel;
   const disabled = config.disabledChannels || [];
+  const noiseFrequency = (config.frequency * 60000) || 60 * 60000;
 
-  //guild.channels.create('honk',{type: 'text', topic: 'honk', rateLimitPerUser: 1, reason: 'Channel for bot use without spamming other channels'});
-  addMessage(message);
-  mostRecent = message; // what could possibly go wrong
   if(makeNoise) {
-    makeNoise.refresh();
+    if (noiseTimeout !== noiseFrequency) {
+      makeNoise.close();
+    } else {
+      makeNoise.refresh();
+    }
   } else {
-    // makeNoise = client.setTimeout(sendMarkovString, (config.frequency * 60000) || 60 * 60000, honkChannel, data, mostRecent.content);
-    makeNoise = client.setTimeout(exports.run, (config.frequency * 60000) || 60 * 60000, undefined, client);
+    noiseTimeout = noiseFrequency;
+    makeNoise = client.setTimeout(() => {
+      console.log('[Make Noise]');
+      exports.run(mostRecent, client);
+    }, noiseTimeout);
   }
+  addMessage(message);
+  mostRecent = message;
   if (reload === true) {
     if (data.length == 1) delete data['0']; // delete init data
 
@@ -47,7 +54,10 @@ module.exports.run = (message = mostRecent, client) => {
 
 
 const saveData = () => {
-  fs.writeFile('cache.json', JSON.stringify(data), function (err) {
+  const save = {};
+  save.data = data;
+  save.corpus = markov.export();
+  fs.writeFile('cache.json', JSON.stringify(save), function (err) {
     if (err) return console.log(err);
   });
 };
@@ -59,8 +69,9 @@ const loadData = async (client) => {
       client.user.setStatus('online');
       return console.log(err);
     }
-    Object.assign(data, JSON.parse(d));
-    markov.addData(Object.values(data).flat(2));
+    const save = JSON.parse(d);
+    Object.assign(data, save.data);
+    markov.import(save.corpus);
     client.user.setStatus('online');
   });
 };
@@ -195,7 +206,7 @@ const readMessages = async (message, textChannels) => {
     }
   }).finally(() => {
     client.user.setStatus('online');
-    client.user.setActivity('🦆', { type: 'WATCHING' });
+    client.user.setActivity('👀', { type: 'WATCHING' });
     console.log('[Done.]:', Object.values(data).length);
   });
 };
