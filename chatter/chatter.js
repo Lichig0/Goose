@@ -138,12 +138,14 @@ const sendMarkovString = async (channel, data, content) => {
 
 const addMessage = (m, splitRegex = undefined) => {
   const config = settings.settings.chatter;
+  const preFormat = config.preFormat || false;
   const splitter = splitRegex instanceof RegExp ? splitRegex : new RegExp(config.messageSplitter);
   const multi = m.content.match(urlRegex) ? [m.content] : m.content.split(splitter);
   const cache = { string: m.content, id: m.id, guild: m.guild.id, channel: m.channel.id, attachments: m.attachments };
   multi.forEach((str, i) => {
-    if ((str !== '' && str !== ' ')) { //skip empty strings
-      cache.string = str;
+    const trimmedString = str.trim();
+    if (trimmedString !== '') { //skip empty strings
+      cache.string = preFormat ? `${trimmedString.replace(trimmedString[0], trimmedString[0].toUpperCase())}.` : trimmedString; // Experimental
       if (data[`${m.id}.${i}`] !== undefined) {
         return;
       } else {
@@ -151,7 +153,7 @@ const addMessage = (m, splitRegex = undefined) => {
         markov.addData([cache]);
       }
     } else if (cache.attachments.size > 0 && data[`${m.id}.${0}`] === undefined) {
-      data[`${m.id}.${i}`] = { ...cache, string: `the ${cache.attachments.first().name}` };
+      data[`${m.id}.${i}`] = { ...cache, trimmedStringing: `the ${cache.attachments.first().name}` };
       markov.addData([{ ...cache, string: `the ${cache.attachments.first().name}` }]);
     }
   });
