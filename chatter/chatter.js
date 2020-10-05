@@ -32,7 +32,7 @@ module.exports.run = (message = mostRecent, client) => {
   } else {
     noiseTimeout = noiseFrequency;
     makeNoise = client.setTimeout(() => {
-      console.log('[Make Noise]');
+      console.log('[Make Noise]', mostRecent.channel.name);
       exports.run(mostRecent, client);
     }, noiseTimeout);
   }
@@ -89,13 +89,14 @@ const generateAsync = async (options = {}) => {
 };
 
 const sendMarkovString = async (channel, data, content) => {
+  console.log('okay', Object.values(data).length);
   let chatter = '🤫';
   let files = [];
+  const config = settings.settings.chatter;
   channel.startTyping().then(() => {
+    if (!config.mentions) chatter = Discord.Util.cleanContent(chatter, channel.lastMessage);
     channel.send(chatter, { files }).catch(console.warn);
   });
-  const config = settings.settings.chatter;
-  console.log('okay', Object.values(data).length);
   const contextScore = (markovString) => {
     let score = 0;
     // console.log(content, markovString);
@@ -123,7 +124,6 @@ const sendMarkovString = async (channel, data, content) => {
     chatter = result.string;
     let attachments = [];
     if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments.array()));
-    if(!config.mentions) chatter = Discord.Util.removeMentions(chatter);
     files = attachments.length > 0 ? [attachments[Math.floor(Math.random() * attachments.length)]] : [];
     channel.stopTyping(true);
   }).catch(() => {
@@ -132,7 +132,6 @@ const sendMarkovString = async (channel, data, content) => {
     generateAsync(options).then(result => {
       chatter = result.string;
       if (!config.disableImage) result.refs.forEach(ref => files = files.concat(ref.attachments.array()));
-      if (!config.mentions) chatter = Discord.Util.removeMentions(chatter);
       channel.stopTyping(true);
     }).catch(console.warn).finally(()=>channel.stopTyping(true));
   });
