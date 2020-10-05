@@ -8,5 +8,11 @@
       "previewLimit": 50
     }
   ],
-  "sqltools.useNodeRuntime": true
+  "sqltools.useNodeRuntime": true,
+  "cSpell.words": [
+    "dbactions",
+    "epeen",
+    "goosedb",
+    "prng"
+  ]
 }
