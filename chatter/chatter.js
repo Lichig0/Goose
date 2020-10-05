@@ -25,6 +25,7 @@ module.exports.run = (message = mostRecent, client) => {
   if(makeNoise) {
     if (noiseTimeout !== noiseFrequency) {
       makeNoise.close();
+      makeNoise = undefined;
     } else {
       makeNoise.refresh();
     }
@@ -98,6 +99,7 @@ const sendMarkovString = async (channel, data, content) => {
   const contextScore = (markovString) => {
     let score = 0;
     // console.log(content, markovString);
+    if(markovString.startsWith('<:')) score = score+10;
     markovString.split(/[ ,.!?;()"/]/).forEach(word => {
       if(!word == '' && !word == ' ') {
         if(content.includes(word)) score++;
