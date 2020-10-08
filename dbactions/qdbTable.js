@@ -36,7 +36,7 @@ exports.like = (like, callback) => {
     return [];
   }
   const wildLike = `%${like}%`;
-  db.all('SELECT * FROM qdb WHERE tags OR body LIKE $like', {$like:wildLike}, callback).close(onClose);
+  db.all('SELECT * FROM qdb WHERE body LIKE $like', {$like:wildLike}, callback).close(onClose);
 };
 
 exports.delete = (qid, author, callback) => {
@@ -59,7 +59,7 @@ exports.vote= (qid, score, votes, callback) => {
   db.run('UPDATE qdb set score=$score, votes=$votes WHERE id=$id', {$score:score, $votes:votes, $id:qid}, callback).close(onClose);
 };
 
-exports.add = (newQuote, message, attachmentUrl, blob = Buffer.from([]).toString('base64')) => {
+exports.add = (newQuote, message, callback, attachmentUrl, blob = Buffer.from([]).toString('base64')) => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
       return console.error(err.message);
@@ -77,6 +77,7 @@ exports.add = (newQuote, message, attachmentUrl, blob = Buffer.from([]).toString
     }
     // get the last insert id
     console.log(`A row has been inserted with rowid ${this.lastID}`);
+    callback(this);
   }).close(onClose);
 };
 

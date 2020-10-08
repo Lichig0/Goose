@@ -1,6 +1,6 @@
 const path = require('path');
 const request = require('request').defaults({ encoding: null });
-const { Permissions, MessageEmbed, MessageAttachment } = require('discord.js');
+const { Permissions, MessageEmbed, MessageAttachment, Util } = require('discord.js');
 const settings = require('../settings');
 const qdb = require('../dbactions/qdbTable');
 
@@ -40,37 +40,39 @@ exports.run = (message, epeen) => {
       embed.addField('Added by', (author_id || 'Anonymous'), true);
       if (tags) embed.setFooter(tags);
       if (created) embed.setTimestamp(new Date(created));
-      message.channel.send(embed).then((sendMessage => {
-
-        const qid = id;
-        const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
-        const config = settings.qdb || {};
-        const time = config.voteTime || 60000;
-        sendMessage.react('👍').catch(console.error);
-        sendMessage.react('👎').catch(console.error);
-        const collector = sendMessage.createReactionCollector(filter, { time });
-        collector.on('end', collected => {
-          const upVote = collected.get('👍') ? collected.get('👍').count -1 : 0;
-          const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
-          if (upVote == 0 && downVote == 0) {
-            return;
-          }
-          const results = Number(score) + (upVote - downVote);
-          const newVotes = (Number(votes || 0)) + (upVote+downVote);
-          const scoreField = embed.fields.find(field=> field.name === 'Score');
-          const votesField = embed.fields.find(field => field.name === 'Votes');
-          scoreField.value = results;
-          votesField.value = newVotes;
-          qdb.vote(qid, results, newVotes);
-          sendMessage.edit('', {embed}).catch(console.error);
-          sendMessage.reactions.removeAll().catch(e => {
-            console.error(e);
-            sendMessage.react('👍').catch(console.error);
-            sendMessage.react('👎').catch(console.error);
+      Util.splitMessage(body).forEach(splitBody => {
+        embed.setDescription(splitBody);
+        message.channel.send(embed).then((sendMessage => {
+          const qid = id;
+          const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
+          const config = settings.qdb || {};
+          const time = config.voteTime || 60000;
+          sendMessage.react('👍').catch(console.error);
+          sendMessage.react('👎').catch(console.error);
+          const collector = sendMessage.createReactionCollector(filter, { time });
+          collector.on('end', collected => {
+            const upVote = collected.get('👍') ? collected.get('👍').count -1 : 0;
+            const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
+            if (upVote == 0 && downVote == 0) {
+              return;
+            }
+            const results = Number(score) + (upVote - downVote);
+            const newVotes = (Number(votes || 0)) + (upVote+downVote);
+            const scoreField = embed.fields.find(field=> field.name === 'Score');
+            const votesField = embed.fields.find(field => field.name === 'Votes');
+            scoreField.value = results;
+            votesField.value = newVotes;
+            qdb.vote(qid, results, newVotes);
+            sendMessage.edit('', {embed}).catch(console.error);
+            sendMessage.reactions.removeAll().catch(e => {
+              console.error(e);
+              sendMessage.react('👍').catch(console.error);
+              sendMessage.react('👎').catch(console.error);
+            });
+            sendMessage.react('✅').catch(console.error);
           });
-          sendMessage.react('✅').catch(console.error);
-        });
-      })).catch(e => console.error('Failed to send.', e));
+        })).catch(e => console.error('Failed to send.', e));
+      });
     }
   };
 
@@ -78,16 +80,21 @@ exports.run = (message, epeen) => {
     qdb.load();
   } else if (content.startsWith(ADD_STRING, 1)) {
     const newQuote = content.split(ADD_STRING)[1];
+    const addCallback = (entry) => {
+      console.log(entry);
+      qdb.get(entry.lastID, sendCallback);
+    };
+
     if(message.attachments.size > 0) {
       request.get(message.attachments.first().attachment, function (error, response, body) {
         if (!error && response.statusCode == 200) {
           const d = Buffer.from(body).toString('base64');
           console.log(d);
-          qdb.add(newQuote, message, message.attachments.first().attachment, d);
+          qdb.add(newQuote, message, addCallback, message.attachments.first().attachment, d);
         }
       });
     } else {
-      qdb.add(newQuote, message);
+      qdb.add(newQuote, message, addCallback);
     }
   } else if (content.startsWith(DELETE_STRING,1)) {
     const qid = Number(content.split(DELETE_STRING)[1]);
