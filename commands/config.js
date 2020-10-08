@@ -5,23 +5,51 @@ const { Permissions } = require('discord.js');
 
 const COMMAND_NAME = path.basename(__filename, '.js');
 
-exports.help = () => 'Load the config (for chatter)\n';
+exports.help = () => 'Configuration Utility for Admins.\n';
 
 exports.run = (message, epeen) => {
-  const { content } = message;
+  const { content, channel } = message;
   const admin_perm = epeen.has(Permissions.FLAGS.ADMINISTRATOR) || (message.member.user.id === '341338359807082506');
   if (admin_perm) {
     settings.loadConfig();
 
     const SET_STRING = `${COMMAND_NAME} set `;
+    const VAL_STRING = `${COMMAND_NAME} value`;
+
     if (content.startsWith(SET_STRING, 1)) {
       const newSetting = content.split(SET_STRING)[1];
       const [field, value] = newSetting.split(':').length == 2 ? newSetting.split(':') : [undefined, undefined];
-      set(field, value);
+      exports.set(field, value);
       settings.setConfig();
+    } else if (content.startsWith(VAL_STRING, 1)) {
+      const parameters = content.split(VAL_STRING)[1].trim();
+      const val = exports.get(parameters);
+      val.toString() === '' ? channel.send('Could not find value') : channel.send(val.toString());
+    } else {
+      const parameters = content.split(COMMAND_NAME)[1].trim();
+      const [path, newValue] = parameters.split(' ');
+      if (newValue) {
+        exports.set(path, newValue);
+        settings.setConfig();
+      }
+      const val = exports.get(path);
+      val.toString() === '' ? channel.send('Could not find value') : channel.send(val.toString());
     }
   }
   return;
+};
+
+exports.get = (path) => {
+  let schema = settings.settings;  // a moving reference to internal objects within obj
+  const props = path.split('.');
+
+  for (let i in props) {
+    let elem = props[i];
+    // if (!schema[elem]) schema[elem] = {};
+    schema = schema[elem] || {};
+  }
+  const v = schema;
+  return v instanceof Object ? Object.keys(v) : v;
 };
 
 exports.loadConfig = () => {
@@ -34,7 +62,7 @@ exports.loadConfig = () => {
 };
 exports.loadConfig();
 
-function set(path, value) {
+exports.set = (path, value) => {
   let schema = settings.settings;  // a moving reference to internal objects within obj
   let props = path.split('.');
   let len = props.length;
@@ -46,9 +74,13 @@ function set(path, value) {
   }
   for (let i in props) {
     let elem = props[i];
-    if (!schema[elem]) schema[elem] = {};
-    schema = schema[elem];
+    // if (!schema[elem]) schema[elem] = {};
+    if(i == props.length-1) {
+      schema[elem] = resolvedValue;
+    } else {
+      schema = schema[elem] || {};
+    }
   }
   schema[props[len - 1]] = resolvedValue;
   return schema;
-}
+};
