@@ -3,6 +3,7 @@ const Discord = require('discord.js');
 
 module.exports = (client, messageDelete) => {
   const deleteChannel = messageDelete.guild.channels.cache.find(ch => ch.name === 'deleted');
+  console.log('[Message Deleted]');
   if(!deleteChannel) {
     console.error('No Delete channel');
     return;
