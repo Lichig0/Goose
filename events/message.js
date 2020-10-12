@@ -57,6 +57,7 @@ module.exports = (client, message) => {
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
       if (!hasRole || kp || role_perm) return commands[command].run(message, epeen);
     });
+    return;
   }
 
   const helpGen = () => {
