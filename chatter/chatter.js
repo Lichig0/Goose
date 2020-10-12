@@ -100,11 +100,17 @@ const sendMarkovString = async (channel, data, content) => {
   const contextScore = (markovString) => {
     let score = 0;
     // console.log(content, markovString);
-    if(markovString.startsWith('<:')) score = score+10;
     markovString.split(/[ ,.!?;()"/]/).forEach(word => {
       if(!word == '' && !word == ' ') {
         if(content.includes(word)) score++;
       }
+    });
+    return score;
+  };
+  const refsScore = (refs) => {
+    let score = 0;
+    refs.forEach(ref => {
+      score += ref.channel === channel.id ? 2 : -1;
     });
     return score;
   };
@@ -114,7 +120,7 @@ const sendMarkovString = async (channel, data, content) => {
     maxTries, // Give up if I don't have a sentence after 20 tries (default is 10)
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
-      return (contextScore(result.string) + result.score) >= minimumScore;
+      return (contextScore(result.string) + result.score + refsScore(result.refs)) >= minimumScore;
     }
   };
   // await markov.buildCorpusAsync()
