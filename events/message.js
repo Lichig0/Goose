@@ -59,20 +59,32 @@ module.exports = (client, message) => {
     });
   }
 
+  const helpGen = () => {
+    let helpText = 'Commands are: \n > ';
+    const commandHelp = content.split(command)[1].trim();
+    if (commands[commandHelp] !== undefined) {
+      helpText = commands[commandHelp].help();
+    } else {
+      Object.keys(commands).filter(com => !disabledCommand.includes(com)).forEach(key => { helpText = helpText + `\`${key}\` `;});
+    }
+    return helpText;
+  };
   // Aliases
-  let helpText = 'Commands are:\n\t';
   switch(command) {
   case 'g':
     return commands['google'].run(message, epeen);
   case 'kys':
     return commands['leave'].run(message, epeen);
   case 'help':
-    Object.keys(commands).filter(com => !disabledCommand.includes(com)).forEach(key => { helpText = helpText + `> --\`${key}\` ${commands[key].help ? commands[key].help() : ''}` + '\t\n'; });
-    return channel.send(helpText);
+    return channel.send(helpGen());
   case 'fl':
     reloadConfig();
     return;
+  case '':
+  case undefined:
+    return;
   default:
+    message.react(client.emojis.cache.random().id).catch(console.error);
     return;
   }
 };
