@@ -17,7 +17,13 @@
   },
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js --ignore *.json"
+    "dev": "nodemon index.js"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "*.sqlite",
+      "*.json"
+    ]
   },
   "keywords": [],
   "author": "",
