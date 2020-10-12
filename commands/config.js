@@ -41,6 +41,9 @@ exports.run = (message, epeen) => {
 
 exports.get = (path) => {
   let schema = settings.settings;  // a moving reference to internal objects within obj
+  if (path === '') {
+    return Object.keys(schema);
+  }
   const props = path.split('.');
 
   for (let i in props) {
@@ -49,7 +52,13 @@ exports.get = (path) => {
     schema = schema[elem] || {};
   }
   const v = schema;
-  return v instanceof Object ? Object.keys(v) : v;
+  if(v instanceof Array) {
+    return v;
+  } else if(v instanceof Object) {
+    return Object.keys(v);
+  } else {
+    return v;
+  }
 };
 
 exports.loadConfig = () => {
@@ -68,19 +77,42 @@ exports.set = (path, value) => {
   let len = props.length;
 
   let resolvedValue = Number(value) || (value === 'true') || (value !== 'false' && value);
+  const setV = (p) => {
+    if (p instanceof Array) {
+      const i = p.indexOf(resolvedValue);
+      if (i >= 0) {
+        p.splice(i, 1);
+      } else {
+        p.push(resolvedValue);
+      }
+    } else {
+      p = resolvedValue;
+    }
+  };
   if(len === 1 ) {
-    schema[path] = resolvedValue;
+    // schema[path] = resolvedValue;
+    setV(schema[path]);
     return;
   }
   for (let i in props) {
     let elem = props[i];
     // if (!schema[elem]) schema[elem] = {};
     if(i == props.length-1) {
-      schema[elem] = resolvedValue;
+      return schema[elem] instanceof Array ? setV(schema[elem]) : schema[elem] = resolvedValue;
     } else {
       schema = schema[elem] || {};
     }
   }
-  schema[props[len - 1]] = resolvedValue;
+  // if (schema[props[len - 1]] instanceof Array) {
+  //   const i = schema[props[len - 1]].indexOf(resolvedValue);
+  //   if (i <= 0) {
+  //     schema[props[len - 1]].remove(i, 1);
+  //   } else {
+  //     schema[props[len - 1]].push(resolvedValue);
+  //   }
+  // } else {
+  //   schema[props[len - 1]] = resolvedValue;
+  // }
+  setV(schema[props[len - 1]]);
   return schema;
 };
