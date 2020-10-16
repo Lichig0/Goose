@@ -1,6 +1,6 @@
 const sqlite3 = require('sqlite3');
 
-module.exports = (guilds) => {
+module.exports = () => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
       return console.error(err.message);
@@ -49,7 +49,8 @@ module.exports = (guilds) => {
     id INTEGER PRIMARY KEY,
     roles TEXT NOT NULL,
     member TEXT NOT NULL,
-    guild TEXT NOT NULL)
+    guild TEXT NOT NULL,
+    UNIQUE (member, guild))
     `);
 
   db.run(`CREATE TABLE IF NOT EXISTS qdb (
@@ -84,6 +85,3 @@ module.exports = (guilds) => {
     console.log('Close the database connection.');
   });
 };
-
-// ALTER TABLE equipment
-// ADD COLUMN location text;
