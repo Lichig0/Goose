@@ -2,8 +2,9 @@ const Markov = require('markov-strings').default;
 const fs = require('fs');
 const settings = require('../settings');
 const Discord = require('discord.js');
+const { coreThoughts } = require('./coreThoughts');
 const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
-const data = {0:{ string: 'honk' }};
+const data = coreThoughts(ct => markov.addData(Object.values(ct)));
 let mostRecent, makeNoise, noiseTimeout;
 let markov = new Markov({ stateSize: 2 });
 
@@ -14,12 +15,14 @@ let readRetry = 0;
 module.exports.run = (message = mostRecent, client) => {
   const config = settings.settings.chatter;
   const { author, channel, content, guild, mentions } = message;
+  const triggerWords = config.triggerWords || [];
   const isMentioned = mentions.has(client.user.id);
   const isHonk = channel.name === 'honk';
   const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
   const rand = Math.random(); console.log(rand);
   const honkChannel = (isMentioned && config.useHonk) ? theHonk : channel;
   const disabled = config.disabledChannels || [];
+  const ignored = config.ignoredChannels || [];
   const noiseFrequency = (config.frequency * 60000) || 60 * 60000;
 
   if(makeNoise) {
@@ -38,6 +41,11 @@ module.exports.run = (message = mostRecent, client) => {
   }
   addMessage(message);
   mostRecent = message;
+
+  const hasTriggerWord = (m) => {
+    return !(triggerWords.findIndex(tw => m.toLowerCase().includes(tw)) < 0);
+  };
+
   if (reload === true) {
     if (data.length == 1) delete data['0']; // delete init data
 
@@ -45,7 +53,7 @@ module.exports.run = (message = mostRecent, client) => {
     readMessages(message, textChannels);
     reload = false;
     return;
-  } else if ((isHonk || isMentioned || rand > config.randomChat) && !author.bot) {
+  } else if ((isHonk || isMentioned || rand > config.randomChat || hasTriggerWord(content)) && !author.bot && !ignored.includes(channel.name)) {
     guild.members.fetch(author).then(m => {
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
       if (!hasRole) sendMarkovString(honkChannel, data, content);
@@ -109,10 +117,22 @@ const sendMarkovString = async (channel, data, content) => {
   };
   const refsScore = (refs) => {
     let score = 0;
+    const channelInfluence = config.channelInfluence || 2;
     refs.forEach(ref => {
-      score += ref.channel === channel.id ? 2 : -1;
+      score += ref.channel === channel.id ? channelInfluence : -channelInfluence;
     });
     return score;
+  };
+  const hasPairs = (str) => {
+    const needsPairs = ['"', '\'', '`'];
+    let pass = true;
+    needsPairs.forEach(char => {
+      if (str.split(char).length % 2 !== 1) {
+        pass = false;
+        return pass;
+      }
+    });
+    return pass;
   };
   const minimumScore = config.minimumScore || 2;
   const maxTries = config.maxTries || 30;
@@ -120,7 +140,7 @@ const sendMarkovString = async (channel, data, content) => {
     maxTries, // Give up if I don't have a sentence after 20 tries (default is 10)
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
-      return (contextScore(result.string) + result.score + refsScore(result.refs)) >= minimumScore;
+      return (contextScore(result.string) + result.score + refsScore(result.refs)) >= minimumScore && hasPairs(result.string);
     }
   };
   // await markov.buildCorpusAsync()
