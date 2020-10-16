@@ -11,7 +11,13 @@ module.exports.run = (message) => {
             console.log(message, author);
           }).catch(console.error);
         });
-      }).catch(console.error);
+      }).catch(error => {
+        console.error(error);
+        channel.send('Couldn\'t send an invite. Sucks for them.').catch(console.error);
+        m.kick().then(() => {
+          console.log(message, author);
+        }).catch(console.error);
+      });
     }).catch(console.error);
 
     channel.send(`ADAT! -${m.tag.tag}`);
