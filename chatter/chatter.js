@@ -47,13 +47,11 @@ module.exports.run = (message = mostRecent, client) => {
   };
 
   if (reload === true) {
-    if (data.length == 1) delete data['0']; // delete init data
-
     const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
     readMessages(message, textChannels);
     reload = false;
-    return;
-  } else if ((isHonk || isMentioned || rand > config.randomChat || hasTriggerWord(content)) && !author.bot && !ignored.includes(channel.name)) {
+  }
+  if ((isHonk || isMentioned || rand > config.randomChat || hasTriggerWord(content)) && !author.bot && !ignored.includes(channel.name)) {
     guild.members.fetch(author).then(m => {
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
       if (!hasRole) sendMarkovString(honkChannel, data, content);
