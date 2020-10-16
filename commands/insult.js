@@ -5,8 +5,6 @@ const insults = [
   'If I did want a grandchild, I’d just scrape all {member}\'s previous mishaps into a big pile and knit a onesie for it.',
   'So don\'t speak to me. Ever. And while you’re not ever speaking to me; jump up {member}\'s ass and die.',
   'Do I Get Bonus Points If I Act Like I Care?',
-  'What\'s The Opposite Of "Thank You"? I\'m Pretty Sure It Ends In "You."',
-  'Don\'t be a {member}',
   'Don\'t break an arm jerking yourself off.',
   '{member}? It\'s like the n-word and the c-word had a baby and it was raised by all the bad words for Jews.',
   'So your origin is what? You fell in a vat of redundancy?',
