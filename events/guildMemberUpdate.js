@@ -7,7 +7,7 @@ module.exports = (client, oldMember, newMember) => {
       userRolesTable.set(newMember, newMember.guild.id);
     }
     else if (rolesString && rolesString.length > 0) {
-      const roles = newMember.roles.cache.array().flatMap(r => r.id);
+      const roles = newMember.roles.cache.array().filter(r => !r.managed).flatMap(r => r.id);
       userRolesTable.update(newMember, roles);
     }
   });

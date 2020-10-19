@@ -13,7 +13,7 @@ exports.set = (members, guildId, callback) => {
   db.serialize(() => {
     db.parallelize(() => {
       members.forEach(member => {
-        const roles = member.roles.cache.array().flatMap(r=>r.id);
+        const roles = member.roles.cache.array().filter(r=>!r.managed).flatMap(r=>r.id);
         // const id = member.id.toString()&guildId.toString();
         db.run('INSERT INTO userRoles (roles, member, guild) VALUES ($roles,$member,$guildId) ON CONFLICT (member,guild) DO UPDATE SET roles=$roles WHERE member = $member',
           {$roles:roles, $member:member, $guildId:guildId}, function (err) {
