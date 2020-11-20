@@ -2,9 +2,10 @@ const Markov = require('markov-strings').default;
 const fs = require('fs');
 const settings = require('../settings');
 const Discord = require('discord.js');
-const { coreThoughts } = require('./coreThoughts');
+const coreThoughts = require('./coreThoughts');
+const insult = require('../commands/insult');
 const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
-const data = coreThoughts(ct => markov.addData(Object.values(ct)));
+const data = coreThoughts.coreThoughts(ct => markov.addData(Object.values(ct)));
 let mostRecent, makeNoise, noiseTimeout;
 let markov = new Markov({ stateSize: 2 });
 
@@ -56,7 +57,14 @@ module.exports.run = (message = mostRecent, client) => {
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
       if (!hasRole) sendMarkovString(honkChannel, data, content);
     });
-  }
+  } else if (rand >= 0.666 && rand <= 0.67) {
+    // run insult
+    console.log('CRITICAL ROLL')
+    insult.run(message, client);
+  } else if (rand >= 0.69 && rand < 0.695) {
+    const ct = coreThoughts.raw || [];
+    message.channel.send(ct[Math.floor(Math.random() * ct.length)]);
+  } 
 };
 
 

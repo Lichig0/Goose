@@ -1,13 +1,14 @@
 const fs = require('fs');
 
 exports.coreCorpus = {};
+exports.raw = [];
 
 exports.coreThoughts = (cb) => {
   fs.readFile('./chatter/ct.json', 'utf8', function (err, data) {
     if (err) {
       return console.log(err);
     }
-    const coreThoughts = JSON.parse(data);
+    const coreThoughts = exports.raw = JSON.parse(data);
     if(coreThoughts instanceof Array) {
       coreThoughts.forEach((coreThought, index) => {
         exports.coreCorpus[`core${index}`] = {
