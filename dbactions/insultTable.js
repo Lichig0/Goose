@@ -1,6 +1,6 @@
 const sqlite3 = require('sqlite3');
 
-exports.insert = (insult, author, guild) => {
+exports.insert = (insult, author, guild, callback) => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
       return console.error(err.message);
@@ -10,6 +10,7 @@ exports.insert = (insult, author, guild) => {
 
 
   db.run('INSERT INTO insults (insult, author, guild) VALUES (?,?,?);', [insult, author, guild], function (err) {
+    callback(err);
     if (err) {
       return console.log(err.message);
     }

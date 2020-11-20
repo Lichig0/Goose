@@ -28,7 +28,13 @@ module.exports.run = async message => {
   if (content.startsWith('insult add ', 1)) {
     let insult = content.split('insult add ')[1];
     // console.log(insult)
-    insultTable.insert(insult, author, guild);
+    insultTable.insert(insult, author, guild, err => {
+      if(err) {
+        message.react('❌');
+      } else {
+        message.react('✅');
+      }
+    });
   }
   else {
     if (message.mentions.members.array().length > 0) {
