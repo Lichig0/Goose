@@ -1,14 +1,16 @@
-const Markov = require('markov-strings').default;
-const fs = require('fs');
-const settings = require('../settings');
 const Discord = require('discord.js');
+const fs = require('fs');
+const mathjs = require('mathjs');
+const Markov = require('markov-strings').default;
+const settings = require('../settings');
 const coreThoughts = require('./coreThoughts');
 const insult = require('../commands/insult');
+
 const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
 const data = coreThoughts.coreThoughts(ct => markov.addData(Object.values(ct)));
+
 let mostRecent, makeNoise, noiseTimeout;
 let markov = new Markov({ stateSize: 2 });
-
 let reload = true;
 let readRetry = 0;
 
@@ -55,19 +57,24 @@ module.exports.run = (message = mostRecent, client) => {
   if ((isHonk || isMentioned || rand > config.randomChat || hasTriggerWord(content)) && !author.bot && !ignored.includes(channel.name)) {
     guild.members.fetch(author).then(m => {
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
-      if (!hasRole) sendMarkovString(honkChannel, data, content);
+      if (!hasRole) {
+        // Roll for critical
+        const critRoll = mathjs.random() > 0.998;
+        critRoll ? sendSourString(honkChannel, message, client) : sendMarkovString(honkChannel, data, content);
+      }
     });
-  } else if (rand >= 0.666 && rand <= 0.667) {
-    // run insult
-    console.log('CRITICAL ROLL')
-    insult.run(message, client);
-  } else if (rand >= 0.69 && rand < 0.691) {
-    const ct = coreThoughts.raw || [];
-    console.log('crit');
-   // message.channel.send(ct[Math.floor(Math.random() * ct.length)]);
-  } 
+  }
 };
 
+const sendSourString = (channel, message, client) => {
+  const isHeads = mathjs.random() > 0.5;
+  if(isHeads) {
+    insult.run(message, client);
+  } else {
+    const ct = coreThoughts.raw || [];
+    channel.send(mathjs.pickRandom(ct));
+  }
+}
 
 const saveData = () => {
   const save = {};
