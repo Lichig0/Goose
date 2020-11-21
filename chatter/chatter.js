@@ -63,7 +63,8 @@ module.exports.run = (message = mostRecent, client) => {
     insult.run(message, client);
   } else if (rand >= 0.69 && rand < 0.691) {
     const ct = coreThoughts.raw || [];
-    message.channel.send(ct[Math.floor(Math.random() * ct.length)]);
+    console.log('crit');
+   // message.channel.send(ct[Math.floor(Math.random() * ct.length)]);
   } 
 };
 
