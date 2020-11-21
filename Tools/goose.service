@@ -1,14 +1,14 @@
 [Unit]
-Description=goose bot: https://discord.com/api/oauth2/authorize?client_id=738373193127166053&permissions=272833619&redirect_uri=https%3A%2F%2Fdiscord.com%2Fapi%2Foauth2%2Fauthorize%3Fclient_id%
+Description=goose bot
 Documentation=https://discord.com/developers
 After=network.target
 
 [Service]
-Environment=BOT_TOKEN=NzM4MzczMTkzMTI3MTY2MDUz.XyK9nw.iKwROqa3onB6ZkE8ePV0H1et6ik
+Environment=BOT_TOKEN=
 Type=simple
-User=happy
-WorkingDirectory=/home/happy/bot/Goose
-ExecStart=/home/happy/.nvm/versions/node/v12.18.3/bin/node /home/happy/bot/Goose/index.js
+User=
+WorkingDirectory=
+ExecStart=node index.js
 Restart=on-failure
 
 [Install]
