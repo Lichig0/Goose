@@ -57,11 +57,11 @@ module.exports.run = (message = mostRecent, client) => {
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
       if (!hasRole) sendMarkovString(honkChannel, data, content);
     });
-  } else if (rand >= 0.666 && rand <= 0.67) {
+  } else if (rand >= 0.666 && rand <= 0.667) {
     // run insult
     console.log('CRITICAL ROLL')
     insult.run(message, client);
-  } else if (rand >= 0.69 && rand < 0.695) {
+  } else if (rand >= 0.69 && rand < 0.691) {
     const ct = coreThoughts.raw || [];
     message.channel.send(ct[Math.floor(Math.random() * ct.length)]);
   } 
