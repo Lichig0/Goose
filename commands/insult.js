@@ -22,7 +22,8 @@ exports.help = () => {
     return `Say an insult! There are ${numInsults} insults.\n`;
   });
   return 'Say an insult; Tag users to target them.';
-}
+};
+
 module.exports.run = async message => {
   const { author, content, guild } = message;
   if (content.startsWith('insult add ', 1)) {

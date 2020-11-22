@@ -6,13 +6,19 @@
     "load",
     "save"
   ],
+  "insult": {
+     "mentions": false
+  },
   "chatter": {
     "randomChat": 0.98,
-    "randomDouble": 0.8,
+    "triggerWords": [
+      "goose",
+      "gooz"
+    ],
     "arrayLimiter": 75000,
     "useHonk": false,
-    "reload": 500,
     "messageSplitter": "[\n.;()]",
+    "preFormat": true,
     "minimumScore": 2,
     "maxTries": 30,
     "mentions": false,

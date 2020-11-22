@@ -11,22 +11,32 @@ const data = coreThoughts.coreThoughts(ct => markov.addData(Object.values(ct)));
 
 let mostRecent, makeNoise, noiseTimeout;
 let markov = new Markov({ stateSize: 2 });
-let reload = true;
-let readRetry = 0;
+// let markovSet = { };
+
+module.exports.init = (client) => {
+  const config = settings.settings.chatter;
+  const disabled = config.disabledChannels || [];
+  client.guilds.cache.each(guild => {
+    const channelsToScrape = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
+    scrapeHistory(guild, channelsToScrape);
+  });
+};
 
 // TODO : turn this into a class?
 module.exports.run = (message = mostRecent, client) => {
-  const config = settings.settings.chatter;
   const { author, channel, content, guild, mentions } = message;
+  
+  const config = settings.settings.chatter;
   const triggerWords = config.triggerWords || [];
-  const isMentioned = mentions.has(client.user.id);
-  const isHonk = channel.name === 'honk';
-  const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
-  const rand = Math.random(); console.log(rand);
-  const honkChannel = (isMentioned && config.useHonk) ? theHonk : channel;
-  const disabled = config.disabledChannels || [];
   const ignored = config.ignoredChannels || [];
   const noiseFrequency = (config.frequency * 60000) || 60 * 60000;
+  
+  const isMentioned = mentions.has(client.user.id);
+  const honkChannel = (isMentioned && config.useHonk) ? theHonk : channel;
+
+  const isHonk = channel.name === 'honk';
+  const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
+  const randRoll = Math.random(); console.log(randRoll);
 
   if(makeNoise) {
     if (noiseTimeout !== noiseFrequency) {
@@ -49,12 +59,8 @@ module.exports.run = (message = mostRecent, client) => {
     return !(triggerWords.findIndex(tw => m.toLowerCase().includes(tw)) < 0);
   };
 
-  if (reload === true) {
-    const textChannels = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
-    readMessages(message, textChannels);
-    reload = false;
-  }
-  if ((isHonk || isMentioned || rand > config.randomChat || hasTriggerWord(content)) && !author.bot && !ignored.includes(channel.name)) {
+  
+  if ((isHonk || isMentioned || randRoll > config.randomChat || hasTriggerWord(content)) && !author.bot && !ignored.includes(channel.name)) {
     guild.members.fetch(author).then(m => {
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
       if (!hasRole) {
@@ -74,7 +80,7 @@ const sendSourString = (channel, message, client) => {
     const ct = coreThoughts.raw || [];
     channel.send(mathjs.pickRandom(ct));
   }
-}
+};
 
 const saveData = () => {
   const save = {};
@@ -164,7 +170,7 @@ const sendMarkovString = async (channel, data, content) => {
     chatter = result.string;
     let attachments = [];
     if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments.array()));
-    files = attachments.length > 0 ? [attachments[Math.floor(Math.random() * attachments.length)]] : [];
+    files = attachments.length > 0 ? [mathjs.pickRandom(attachments)] : [];
     channel.stopTyping(true);
   }).catch(() => {
     console.log('[Couldn\'t generate context sentence]');
@@ -177,24 +183,26 @@ const sendMarkovString = async (channel, data, content) => {
   });
 };
 
-const addMessage = (m, splitRegex = undefined) => {
+const addMessage = (message, splitRegex = undefined) => {
+  const { id, guild, content, channel, attachments } = message;
   const config = settings.settings.chatter;
   const preFormat = config.preFormat || false;
   const splitter = splitRegex instanceof RegExp ? splitRegex : new RegExp(config.messageSplitter);
-  const multi = m.content.match(urlRegex) ? [m.content] : m.content.split(splitter);
-  const cache = { string: m.content, id: m.id, guild: m.guild.id, channel: m.channel.id, attachments: m.attachments };
-  multi.forEach((str, i) => {
+  
+  const subMessage = content.match(urlRegex) ? [content] : content.split(splitter);
+  const cache = { string: content, id, guild: guild.id, channel: channel.id, attachments: attachments };
+  subMessage.forEach((str, i) => {
     const trimmedString = str.trim();
     if (trimmedString !== '') { //skip empty strings
       cache.string = preFormat ? `${trimmedString.replace(trimmedString[0], trimmedString[0].toUpperCase())}.` : trimmedString; // Experimental
-      if (data[`${m.id}.${i}`] !== undefined) {
+      if (data[`${id}.${i}`] !== undefined) {
         return;
       } else {
-        data[`${m.id}.${i}`] = cache;
+        data[`${id}.${i}`] = cache;
         markov.addData([cache]);
       }
-    } else if (cache.attachments.size > 0 && data[`${m.id}.${0}`] === undefined) {
-      data[`${m.id}.${i}`] = { ...cache, trimmedStringing: `the ${cache.attachments.first().name}` };
+    } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined) {
+      data[`${id}.${i}`] = { ...cache, trimmedStringing: `the ${cache.attachments.first().name}` };
       markov.addData([{ ...cache, string: `the ${cache.attachments.first().name}` }]);
     }
   });
@@ -228,16 +236,17 @@ const fetchMessages = async (channel, o) => {
   return o.channel === channel.id ? channel.messages.fetch({ limit: 100, before: o.id }) : channel.messages.fetch({ limit: 100 });
 };
 
-const readMessages = async (message, textChannels) => {
-  const {client} = message;
+const scrapeHistory = async (guild, textChannels, readRetry = 0) => {
+  const {client} = guild;
   let r = 0;
 
   await client.user.setStatus('dnd');
   await client.user.setActivity('📖🔍🤔', { type: 'WATCHING' });
-  console.log('[Reading messages]');
+  console.log(`[Scraping History]: ${guild.name}`);
+
   const last = {};
   textChannels.forEach(tc=> last[tc.id] = {});
-  last[message.channel.id] = message;
+  // last[message.channel.id] = message;
   buildData(last, textChannels, data, r).then(() => {
     client.user.setStatus('online');
     console.log('[Ready!]');
@@ -245,12 +254,12 @@ const readMessages = async (message, textChannels) => {
     console.error(err);
     if (readRetry < 3) {
       readRetry++;
-      readMessages(message, textChannels);
+      scrapeHistory(guild, textChannels, readRetry);
     }
   }).finally(() => {
     client.user.setStatus('online');
     client.user.setActivity('👀', { type: 'WATCHING' });
-    console.log('[Done.]:', Object.values(data).length);
+    console.log('[Done.]:', guild.name , Object.values(data).length);
   });
 };
 
@@ -258,5 +267,5 @@ settings.loadConfig();
 
 exports.saveData = saveData;
 exports.loadData = loadData;
-exports.buildData = readMessages;
+exports.buildData = scrapeHistory;
 
