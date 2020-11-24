@@ -1,5 +1,16 @@
 const sqlite3 = require('sqlite3');
 
+exports.init = (db, callback) => {
+  db.run(`CREATE TABLE IF NOT EXISTS userRoles (
+    id INTEGER PRIMARY KEY,
+    roles TEXT NOT NULL,
+    member TEXT NOT NULL,
+    guild TEXT NOT NULL,
+    UNIQUE (member, guild))
+  `);
+  callback();
+};
+
 exports.set = (members, guildId, callback) => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
@@ -14,9 +25,8 @@ exports.set = (members, guildId, callback) => {
     db.parallelize(() => {
       members.forEach(member => {
         const roles = member.roles.cache.array().filter(r=>!r.managed).flatMap(r=>r.id);
-        // const id = member.id.toString()&guildId.toString();
         db.run('INSERT INTO userRoles (roles, member, guild) VALUES ($roles,$member,$guildId) ON CONFLICT (member,guild) DO UPDATE SET roles=$roles WHERE member = $member',
-          {$roles:roles, $member:member, $guildId:guildId}, function (err) {
+          {$roles:roles, $member:member.id, $guildId:guildId}, function (err) {
             if (err) {
               return console.log(err.message);
             }
@@ -39,9 +49,8 @@ exports.update = (member, roles, callback) => {
       return console.error(err.message);
     }
   });
-  // const id = member.id&member.guild.id;
   db.run('UPDATE userRoles SET roles = $roles WHERE guild = $guild AND member = $member',
-    {$member:member,$guild:member.guild.id,$roles:roles}, callback);
+    {$member:member.id,$guild:member.guild.id,$roles:roles}, callback);
 };
 
 exports.get = (member, callback) => {
@@ -52,6 +61,6 @@ exports.get = (member, callback) => {
   });
 
   const {guild} = member;
-  db.all('SELECT roles FROM userRoles WHERE guild = $guild AND member = $member', {$guild:guild.id, $member:member},callback);
+  db.all('SELECT roles FROM userRoles WHERE guild = $guild AND member = $member', {$guild:guild.id, $member:member.id}, callback);
 
 };

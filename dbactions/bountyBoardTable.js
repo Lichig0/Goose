@@ -12,7 +12,7 @@ id INTEGER PRIMARY KEY,
 
 const sqlite3 = require('sqlite3');
 
-exports.init = (db) => {
+exports.init = (db, callback) => {
   db.run(`CREATE TABLE IF NOT EXISTS bountyBoard (
     id INTEGER PRIMARY KEY,
     guid TEXT NOT NULL,
@@ -27,8 +27,9 @@ exports.init = (db) => {
     postDate TEXT NOT NULL,
     expireDate TEXT,
     thumbUrl TEXT,
-    proof BLOB,
-    guild TEXT NOT NULL)`);
+    guild TEXT NOT NULL)
+    `);
+  callback();
 };
 
 const onClose = (error) => {

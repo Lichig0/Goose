@@ -1,11 +1,31 @@
 const sqlite3 = require('sqlite3');
 const fs = require('fs');
 
+
 const onClose = (error) => {
   if(error) {
     return console.error(error);
   }
   console.log('Close the database connection.');
+};
+
+exports.init = (db, callback) => {
+  db.run(`CREATE TABLE IF NOT EXISTS qdb (
+    id INTEGER PRIMARY KEY,
+    body TEXT,
+    notes TEXT,
+    tags TEXT,
+    created TEXT,
+    status TEXT,
+    deleted TEXT,
+    author_id TEXT,
+    author_ip TEXT,
+    score TEXT,
+    votes TEXT,
+    attachment BLOB,
+    attachmentUrl TEXT)
+    `);
+  callback();
 };
 
 exports.get = (id, callback) => {

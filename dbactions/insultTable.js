@@ -1,5 +1,15 @@
 const sqlite3 = require('sqlite3');
 
+exports.init = (db, callback) => {
+  // Insults
+  db.run(`CREATE TABLE IF NOT EXISTS insults (
+      id INTEGER PRIMARY KEY,
+      insult TEXT NOT NULL,
+      author TEXT NOT NULL,
+      guild TEXT NOT NULL)`);
+  callback();
+};
+
 exports.insert = (insult, author, guild, callback) => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
