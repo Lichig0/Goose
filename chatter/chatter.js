@@ -5,13 +5,20 @@ const Markov = require('markov-strings').default;
 const settings = require('../settings');
 const coreThoughts = require('./coreThoughts');
 const insult = require('../commands/insult');
+const Chance = require('chance');
 
 const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
 const data = coreThoughts.coreThoughts(ct => markov.addData(Object.values(ct)));
 
+const chance = new Chance();
+let messagesSince = 0;
 let mostRecent, makeNoise, noiseTimeout;
 let markov = new Markov({ stateSize: 2 });
 // let markovSet = { };
+const audit = {
+  timestamp: Date.now()
+};
+module.exports.audit = () => audit;
 
 module.exports.init = (client) => {
   const config = settings.settings.chatter;
@@ -36,7 +43,10 @@ module.exports.run = (message = mostRecent, client) => {
 
   const isHonk = channel.name === 'honk';
   const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
-  const randRoll = Math.random(); console.log(randRoll);
+  // const randRoll = Math.random(); console.log(randRoll);
+  const nuRandRoll = chance.bool({ likelihood: (config.randomChat)}); console.log(nuRandRoll, `${messagesSince/(config.randomChat*100)}`, channel.name, author.tag);
+  nuRandRoll ? messagesSince = 0 : messagesSince++;
+  
 
   if(makeNoise) {
     if (noiseTimeout !== noiseFrequency) {
@@ -59,13 +69,30 @@ module.exports.run = (message = mostRecent, client) => {
     return !(triggerWords.findIndex(tw => m.toLowerCase().includes(tw)) < 0);
   };
 
+  const searchForEggs = (message) => {
+    const { content } = message;
+    if(content.toLowerCase().includes('this discord sucks')) {
+      return () => {
+        return {likelihood: 100, string: 'Fucking leave then.'}
+      }
+    }
+  }
+
   
-  if ((isHonk || isMentioned || randRoll > config.randomChat || hasTriggerWord(content)) && !author.bot && !ignored.includes(channel.name)) {
+  if ((isHonk || isMentioned || nuRandRoll || hasTriggerWord(content)) && !author.bot && !ignored.includes(channel.name)) {
     guild.members.fetch(author).then(m => {
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
       if (!hasRole) {
+        audit.sentOn = content;
+        const easterEgg = searchForEggs(message);
+        if(easterEgg) {
+          // Roll for rotten egg
+          const rottenRoll = chance.bool({likelihood: easterEgg().likelihood});
+          if (rottenRoll) return honkChannel.send(easterEgg().string).then(() => audit.timestamp = Date.now()).catch(console.error);
+        }
         // Roll for critical
-        const critRoll = mathjs.random() > 0.998;
+        const critRoll = chance.bool({likelihood: 1.2});
+        if (critRoll) console.log('Critical roll!');
         critRoll ? sendSourString(honkChannel, message, client) : sendMarkovString(honkChannel, data, content);
       }
     });
@@ -73,13 +100,38 @@ module.exports.run = (message = mostRecent, client) => {
 };
 
 const sendSourString = (channel, message, client) => {
-  const isHeads = mathjs.random() > 0.5;
-  if(isHeads) {
-    insult.run(message, client);
-  } else {
-    const ct = coreThoughts.raw || [];
-    channel.send(mathjs.pickRandom(ct));
-  }
+  const sourString = [
+    {
+      name: 'insult',
+      weight: 1,
+      task: () => {
+        insult.run(message, client);
+      }
+    },
+    {
+      name: 'coreThought',
+      weight: 1.2,
+      task: () => {
+        const ct = coreThoughts.raw || [];
+        channel.send(chance.pickone(ct));
+        audit.timestamp = Date.now();
+      }
+    },
+    {
+      name: 'react',
+      weight: 4,
+      task: () => {
+        message.react(client.emojis.cache.random().id).catch(console.error);
+      }
+    }
+  ]
+  const ws = [];
+  const tsks = [];
+  sourString.forEach((v) => {
+    ws.push(v.weight);
+    tsks.push(v.task);
+  })
+  chance.weighted(tsks, ws)();
 };
 
 const saveData = () => {
@@ -124,17 +176,27 @@ const sendMarkovString = async (channel, data, content) => {
   channel.startTyping().then(() => {
     if (!config.mentions) chatter = Discord.Util.cleanContent(chatter, channel.lastMessage);
     channel.send(chatter, { files }).catch(console.warn);
+    audit.timestamp = Date.now();
   });
+  
   const contextScore = (markovString) => {
     let score = 0;
     // console.log(content, markovString);
-    markovString.split(/[ ,.!?;()"/]/).forEach(word => {
+    const words = markovString.split(/[ ,.!?;()"/]/);
+    words.forEach(word => {
       if(!word == '' && !word == ' ') {
         if(content.includes(word)) score++;
       }
     });
+    score = score + (-0.03*(words.length-12)^(2)+3);
     return score;
   };
+  const nsfwCheck = (refs) => {
+    const safe = false;
+    refs.forEach(ref => {
+
+    })
+  }
   const refsScore = (refs) => {
     let score = 0;
     const channelInfluence = config.channelInfluence || 2;
@@ -143,6 +205,7 @@ const sendMarkovString = async (channel, data, content) => {
     });
     return score;
   };
+
   const hasPairs = (str) => {
     const needsPairs = ['"', '\'', '`'];
     let pass = true;
@@ -154,13 +217,14 @@ const sendMarkovString = async (channel, data, content) => {
     });
     return pass;
   };
+
   const minimumScore = config.minimumScore || 2;
   const maxTries = config.maxTries || 30;
   const options = {
     maxTries, // Give up if I don't have a sentence after 20 tries (default is 10)
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
-      return (contextScore(result.string) + result.score + refsScore(result.refs)) >= minimumScore && hasPairs(result.string);
+      return (contextScore(result.string) + result.score + refsScore(result.refs)) >= minimumScore && hasPairs(result.string) && (channel.nsfw === result.refs.reduce((a,b) => a || b.nsfw).nsfw  );
     }
   };
   // await markov.buildCorpusAsync()
@@ -170,6 +234,7 @@ const sendMarkovString = async (channel, data, content) => {
     chatter = result.string;
     let attachments = [];
     if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments.array()));
+    audit.refs = result.refs.flatMap(r => r.string);
     files = attachments.length > 0 ? [mathjs.pickRandom(attachments)] : [];
     channel.stopTyping(true);
   }).catch(() => {
@@ -177,6 +242,7 @@ const sendMarkovString = async (channel, data, content) => {
     options.filter = (result) => result.score >= 2;
     generateAsync(options).then(result => {
       chatter = result.string;
+      audit.refs = result.refs.flatMap(r => r.string);;
       if (!config.disableImage) result.refs.forEach(ref => files = files.concat(ref.attachments.array()));
       channel.stopTyping(true);
     }).catch(console.warn).finally(()=>channel.stopTyping(true));
@@ -190,7 +256,7 @@ const addMessage = (message, splitRegex = undefined) => {
   const splitter = splitRegex instanceof RegExp ? splitRegex : new RegExp(config.messageSplitter);
   
   const subMessage = content.match(urlRegex) ? [content] : content.split(splitter);
-  const cache = { string: content, id, guild: guild.id, channel: channel.id, attachments: attachments };
+  const cache = { string: content, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw };
   subMessage.forEach((str, i) => {
     const trimmedString = str.trim();
     if (trimmedString !== '') { //skip empty strings
