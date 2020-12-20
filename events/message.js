@@ -70,6 +70,18 @@ module.exports = (client, message) => {
     }
     return helpText;
   };
+
+  const genAudit = () => {
+    const auditCommand = content.split('audit')[1].trim();
+    let auditJSON;
+    if (commands[auditCommand] !== undefined) {
+      auditJSON = commands[auditCommand].audit();
+    } else if (auditCommand === 'chatter') {
+      auditJSON = JSON.stringify(chatter.audit(), null, 2);
+    }
+    return `Audit:\n ${'```'}${JSON.stringify(auditJSON, null, 2)}${'```'}`;
+  }
+
   // Aliases
   switch(command) {
   case 'g':
@@ -77,7 +89,12 @@ module.exports = (client, message) => {
   case 'kys':
     return commands['leave'].run(message, epeen);
   case 'help':
-    return channel.send(helpGen());
+    return channel.send(helpGen()).catch(console.error);
+  case 'audit':
+    if( epeen.has(Permissions.FLAGS.ADMINISTRATOR)) {
+      return channel.send(genAudit()).catch(console.error);
+    }
+    break;
   case 'fl':
     reloadConfig();
     return;
