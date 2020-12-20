@@ -1,6 +1,12 @@
 const {Permissions} = require('discord.js');
 const commands = {};
 const fs = require('fs');
+
+const audit = {
+  timestamp: Date.now()
+};
+module.exports.audit = () => audit;
+
 exports.help = () => 'Make me say something.\n';
 fs.readdir('./commands/', (err, files) => {
   files.forEach(file => {
@@ -13,6 +19,9 @@ module.exports.run = (message, epeen) => {
   const { content } = message;
   let says = content.split(' ').slice(1).join(' '); // remove says
   let channels = [message.channel];
+  audit.timestamp = Date.now();
+  audit.lastUsedBy = `${message.author.tag}[${message.author.id}]`;
+  audit.usedIn = `${message.channel.name}[${message.channel.id}]`;
   if (message.mentions && message.mentions.channels.size > 0) {
     channels = message.mentions.channels.array();
     channels.forEach(ch => {
