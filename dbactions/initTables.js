@@ -25,7 +25,7 @@ module.exports = () => {
             console.log(`Initialized ${dbTable}`);
           });
         } else {
-          console.warn(`${dbt} does not have init`);
+          console.warn(`${dbTable} does not have init`);
         }
       }
     });
