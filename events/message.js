@@ -3,6 +3,8 @@ const fs = require('fs');
 const chatter = require('../chatter/chatter');
 const settings = require('../settings');
 
+const G = 'G';
+
 
 const commands = {};
 fs.readdir('./commands/', (err, files) => {
@@ -55,7 +57,7 @@ module.exports = (client, message) => {
     const kp = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
     guild.members.fetch(author).then(m => {
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
-      if (!hasRole || kp || role_perm) return commands[command].run(message, epeen);
+      if (!hasRole || kp || role_perm) return commands[command].run(message, epeen, client);
     });
     return;
   }
@@ -71,13 +73,14 @@ module.exports = (client, message) => {
     return helpText;
   };
 
-  const genAudit = () => {
+  const genAudit = (message) => {
     const auditCommand = content.split('audit')[1].trim();
+    const [commandName, auditParams] = auditCommand.split(' ');
     let auditJSON;
-    if (commands[auditCommand] !== undefined) {
-      auditJSON = commands[auditCommand].audit();
-    } else if (auditCommand === 'chatter') {
-      auditJSON = JSON.stringify(chatter.audit(), null, 2);
+    if (commands[commandName] !== undefined) {
+      auditJSON = commands[commandName].audit(auditParams);
+    } else if (commandName === 'chatter') {
+      auditJSON = chatter.audit(auditParams);
     }
     return `Audit:\n ${'```'}${JSON.stringify(auditJSON, null, 2)}${'```'}`;
   }
@@ -91,8 +94,8 @@ module.exports = (client, message) => {
   case 'help':
     return channel.send(helpGen()).catch(console.error);
   case 'audit':
-    if( epeen.has(Permissions.FLAGS.ADMINISTRATOR)) {
-      return channel.send(genAudit()).catch(console.error);
+    if( epeen.has(Permissions.FLAGS.ADMINISTRATOR) || true) {
+      return channel.send(genAudit(message)).catch(console.error);
     }
     break;
   case 'fl':

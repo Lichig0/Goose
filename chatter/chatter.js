@@ -14,11 +14,25 @@ const chance = new Chance();
 let messagesSince = 0;
 let mostRecent, makeNoise, noiseTimeout;
 let markov = new Markov({ stateSize: 2 });
-// let markovSet = { };
-const audit = {
+const auditHistory = {}
+let audit = {
   timestamp: Date.now()
 };
-module.exports.audit = () => audit;
+
+const sendChatter = (channel, text, options) => {
+  const a = audit;
+  channel.send(text, options).then((sentMessage) => {
+    a.timestamp = Date.now()
+    auditHistory[sentMessage.id] = a;
+  }).catch(console.error);
+}
+
+module.exports.audit = (params) => {
+  if (auditHistory[params] !== undefined) {
+    return auditHistory[params]
+  }
+  return audit;
+}
 
 module.exports.init = (client) => {
   const config = settings.settings.chatter;
@@ -29,8 +43,8 @@ module.exports.init = (client) => {
   });
 };
 
-// TODO : turn this into a class?
 module.exports.run = (message = mostRecent, client) => {
+  audit = {};
   const { author, channel, content, guild, mentions } = message;
   
   const config = settings.settings.chatter;
@@ -88,11 +102,13 @@ module.exports.run = (message = mostRecent, client) => {
         if(easterEgg) {
           // Roll for rotten egg
           const rottenRoll = chance.bool({likelihood: easterEgg().likelihood});
-          if (rottenRoll) return honkChannel.send(easterEgg().string).then(() => audit.timestamp = Date.now()).catch(console.error);
+          // if (rottenRoll) return honkChannel.send(easterEgg().string).then(() => audit.timestamp = Date.now()).catch(console.error);
+          if (rottenRoll) return sendChatter(honkChannel, easterEgg().string);
         }
         // Roll for critical
         const critRoll = chance.bool({likelihood: 1.2});
         if (critRoll) console.log('Critical roll!');
+        // critRoll ? sendSourString(honkChannel, message, client) : sendMarkovString(honkChannel, data, content);
         critRoll ? sendSourString(honkChannel, message, client) : sendMarkovString(honkChannel, data, content);
       }
     });
@@ -113,7 +129,8 @@ const sendSourString = (channel, message, client) => {
       weight: 1.2,
       task: () => {
         const ct = coreThoughts.raw || [];
-        channel.send(chance.pickone(ct));
+        // channel.send(chance.pickone(ct));
+        sendChatter(chance.pickone(ct));
         audit.timestamp = Date.now();
       }
     },
@@ -175,7 +192,8 @@ const sendMarkovString = async (channel, data, content) => {
   const config = settings.settings.chatter;
   channel.startTyping().then(() => {
     if (!config.mentions) chatter = Discord.Util.cleanContent(chatter, channel.lastMessage);
-    channel.send(chatter, { files }).catch(console.warn);
+    sendChatter(channel, chatter, { files }).catch(console.warn);
+    // channel.send(chatter, { files }).catch(console.warn);
     audit.timestamp = Date.now();
   });
   
