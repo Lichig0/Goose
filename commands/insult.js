@@ -1,6 +1,9 @@
 const insultTable = require('../dbactions/insultTable');
 const Discord = require('discord.js');
 const settings = require('../settings');
+const Chance = require('chance');
+
+const chance = new Chance();
 const insults = [
   'If I cared about what you do on the weekend, I\'d stick a shotgun in my mouth and pull the trigger with my toes.',
   'Swear to God, {member} makes me want to pump nerve gas through the vents.',
@@ -64,7 +67,8 @@ const getInsult = function (message, mentioned) {
   insultTable.get(message.guild, (e, rows) => {
     const fullInsults = insults;
     rows.forEach(item => fullInsults.push(item.insult));
-    let chat = fullInsults[Math.floor(Math.random() * fullInsults.length)].replace(/\{member\}/gi, replaceMember);
+    let chat = chance.pickone(fullInsults).replace(/\{member\}/gi, replaceMember);
+    // let chat = fullInsults[Math.floor(Math.random() * fullInsults.length)].replace(/\{member\}/gi, replaceMember);
     if (!mentions) chat = Discord.Util.cleanContent(chat, message);
     message.channel.send(chat);
   });
