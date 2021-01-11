@@ -16,8 +16,8 @@ exports.help = () => {
 module.exports.run = (message, epeen) => {
   const { mentions} = message;
   const member = mentions.members.first();
-  const config = settings.kick || DEFAULTS;
-  const enabled = config.enabled || DEFAULTS.enabled;
+  const config = settings.settings.kick || DEFAULTS;
+  const enabled = config.enabled;
   const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
   if (!member) {
     return message.reply('Who are you trying to kick?').catch(console.error);
@@ -27,7 +27,7 @@ module.exports.run = (message, epeen) => {
   }
   if (kick_perm) {
     return kick(member, message);
-  } else if(!kick_perm && enabled) {
+  } else if(enabled) {
     const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
     const time = (config.voteTime || DEFAULTS.voteTime) * 1000;
     const requiredVotes = config.requiredVotes || DEFAULTS.requiredVotes;
