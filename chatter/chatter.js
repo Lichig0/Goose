@@ -8,6 +8,7 @@ const insult = require('../commands/insult');
 const Chance = require('chance');
 
 const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
+const userIDRegex = new RegExp(/\<\@([0-9]{18})\>/);
 const data = coreThoughts.coreThoughts(ct => markov.addData(Object.values(ct)));
 
 const chance = new Chance();
