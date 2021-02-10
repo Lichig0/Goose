@@ -200,7 +200,8 @@ const sendMarkovString = async (channel, data, content) => {
   
   const contextScore = (markovString) => {
     let score = 0;
-    // console.log(content, markovString);
+    
+    // Word Count
     const words = markovString.split(/[ ,.!?;()"/]/);
     words.forEach(word => {
       if(!word == '' && !word == ' ') {
@@ -258,7 +259,7 @@ const sendMarkovString = async (channel, data, content) => {
     channel.stopTyping(true);
   }).catch(() => {
     console.log('[Couldn\'t generate context sentence]');
-    chatter = client.emojis.cache.random().id;
+    chatter = channel.client.emojis.cache.random().id;
     audit.refs = 'Skipped';
     channel.stopTyping(true);
   });
