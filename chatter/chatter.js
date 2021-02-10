@@ -258,13 +258,9 @@ const sendMarkovString = async (channel, data, content) => {
     channel.stopTyping(true);
   }).catch(() => {
     console.log('[Couldn\'t generate context sentence]');
-    options.filter = (result) => result.score >= 2;
-    generateAsync(options).then(result => {
-      chatter = result.string;
-      audit.refs = result.refs.flatMap(r => r.string);;
-      if (!config.disableImage) result.refs.forEach(ref => files = files.concat(ref.attachments.array()));
-      channel.stopTyping(true);
-    }).catch(console.warn).finally(()=>channel.stopTyping(true));
+    chatter = client.emojis.cache.random().id;
+    audit.refs = 'Skipped';
+    channel.stopTyping(true);
   });
 };
 
@@ -287,8 +283,11 @@ const addMessage = (message, splitRegex = undefined) => {
         markov.addData([cache]);
       }
     } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined) {
-      data[`${id}.${i}`] = { ...cache, trimmedStringing: `the ${cache.attachments.first().name}` };
-      markov.addData([{ ...cache, string: `the ${cache.attachments.first().name}` }]);
+      data[`${id}.${i}`] = { 
+        ...cache,
+        trimmedString: `la li lu le lo`
+      };
+      markov.addData([{ ...cache, string: `la li lu le lo` }]);
     }
   });
   return cache;
