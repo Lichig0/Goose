@@ -259,7 +259,7 @@ const sendMarkovString = async (channel, data, content) => {
     channel.stopTyping(true);
   }).catch(() => {
     console.log('[Couldn\'t generate context sentence]');
-    chatter = channel.client.emojis.cache.random().id;
+    chatter = channel.client.emojis.cache.random().toString();
     audit.refs = 'Skipped';
     channel.stopTyping(true);
   });
