@@ -193,7 +193,7 @@ const sendMarkovString = async (channel, data, content) => {
   const config = settings.settings.chatter;
   channel.startTyping().then(() => {
     if (!config.mentions) chatter = Discord.Util.cleanContent(chatter, channel.lastMessage);
-    sendChatter(channel, chatter, { files }).catch(console.warn);
+    sendChatter(channel, chatter, { files });
     // channel.send(chatter, { files }).catch(console.warn);
     audit.timestamp = Date.now();
   });
