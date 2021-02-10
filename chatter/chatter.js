@@ -244,7 +244,18 @@ const sendMarkovString = async (channel, data, content) => {
     maxTries, // Give up if I don't have a sentence after 20 tries (default is 10)
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
-      return (contextScore(result.string) + result.score + refsScore(result.refs)) >= minimumScore && hasPairs(result.string) && (channel.nsfw === result.refs.reduce((a,b) => a || b.nsfw).nsfw  );
+      const reducer = (accumulator, value) => {
+        if(value.nsfw) console.log('saw nsfw!!!!!');
+        return (accumulator || value.nsfw);
+      }
+      const metScoreConstraints = contextScore(result.string) + result.score + refsScore(result.refs) >= minimumScore;
+      const metPairsConstraints = hasPairs(result.string);
+      const hasNSFWRef = result.refs.reduce(reducer , false);
+      console.log("hasnsfw", hasNSFWRef);
+      const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true; 
+      if (hasNSFWRef) console.log(result.refs, channel.nsfw, metNSFWConstraints, hasNSFWRef);
+      return metScoreConstraints && metPairsConstraints && metNSFWConstraints;
+      // return (contextScore(result.string) + result.score + refsScore(result.refs)) >= minimumScore && hasPairs(result.string) && (channel.nsfw === result.refs.reduce((a,b) => a || b.nsfw).nsfw  );
     }
   };
   // await markov.buildCorpusAsync()
