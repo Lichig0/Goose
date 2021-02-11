@@ -22,6 +22,7 @@ let audit = {
 
 const sendChatter = (channel, text, options) => {
   const a = audit;
+  
   channel.send(text, options).then((sentMessage) => {
     a.timestamp = Date.now()
     auditHistory[sentMessage.id] = a;
@@ -38,8 +39,10 @@ module.exports.audit = (params) => {
 module.exports.init = (client) => {
   const config = settings.settings.chatter;
   const disabled = config.disabledChannels || [];
+
   client.guilds.cache.each(guild => {
     const channelsToScrape = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
+
     scrapeHistory(guild, channelsToScrape);
   });
 };
@@ -51,14 +54,11 @@ module.exports.run = (message = mostRecent, client) => {
   const config = settings.settings.chatter;
   const triggerWords = config.triggerWords || [];
   const ignored = config.ignoredChannels || [];
-  const noiseFrequency = (config.frequency * 60000) || 60 * 60000;
-  
+  const noiseFrequency = (config.frequency * 60000) || 60 * 60000; 
   const isMentioned = mentions.has(client.user.id);
   const honkChannel = (isMentioned && config.useHonk) ? theHonk : channel;
-
   const isHonk = channel.name === 'honk';
   const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
-  // const randRoll = Math.random(); console.log(randRoll);
   const nuRandRoll = chance.bool({ likelihood: (config.randomChat)}); console.log(nuRandRoll, `${messagesSince/(config.randomChat*100)}`, channel.name, author.tag);
   nuRandRoll ? messagesSince = 0 : messagesSince++;
   
@@ -73,7 +73,9 @@ module.exports.run = (message = mostRecent, client) => {
   } else {
     noiseTimeout = noiseFrequency;
     makeNoise = client.setTimeout(() => {
+
       console.log('[Make Noise]', mostRecent.channel.name);
+
       exports.run(mostRecent, client);
     }, noiseTimeout);
   }
@@ -108,7 +110,9 @@ module.exports.run = (message = mostRecent, client) => {
         }
         // Roll for critical
         const critRoll = chance.bool({likelihood: 1.2});
+
         if (critRoll) console.log('Critical roll!');
+
         // critRoll ? sendSourString(honkChannel, message, client) : sendMarkovString(honkChannel, data, content);
         critRoll ? sendSourString(honkChannel, message, client) : sendMarkovString(honkChannel, data, content);
       }
@@ -175,7 +179,7 @@ const loadData = async (client) => {
   });
 };
 
-const generateAsync = async (options = {}) => {
+const generateSentence = async (options = {}) => {
   return new Promise((resolve, reject) => {
     try {
       const result = markov.generate(options);
@@ -187,14 +191,15 @@ const generateAsync = async (options = {}) => {
 };
 
 const sendMarkovString = async (channel, data, content) => {
+
   console.log('okay', Object.values(data).length);
+
   let chatter = '🤫';
   let files = [];
   const config = settings.settings.chatter;
   channel.startTyping().then(() => {
     if (!config.mentions) chatter = Discord.Util.cleanContent(chatter, channel.lastMessage);
     sendChatter(channel, chatter, { files });
-    // channel.send(chatter, { files }).catch(console.warn);
     audit.timestamp = Date.now();
   });
   
@@ -211,11 +216,10 @@ const sendMarkovString = async (channel, data, content) => {
     score = score + (-0.03*(words.length-12)^(2)+3);
     return score;
   };
-  const nsfwCheck = (refs) => {
-    const safe = false;
-    refs.forEach(ref => {
+  const nsfwCheck = (accumulator, value) => {
+    if(value.nsfw) console.log('Saw NSFW reference!');
 
-    })
+    return (accumulator || value.nsfw);
   }
   const refsScore = (refs) => {
     let score = 0;
@@ -244,34 +248,38 @@ const sendMarkovString = async (channel, data, content) => {
     maxTries, // Give up if I don't have a sentence after 20 tries (default is 10)
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
-      const reducer = (accumulator, value) => {
-        if(value.nsfw) console.log('saw nsfw!!!!!');
-        return (accumulator || value.nsfw);
-      }
       const metScoreConstraints = contextScore(result.string) + result.score + refsScore(result.refs) >= minimumScore;
       const metPairsConstraints = hasPairs(result.string);
-      const hasNSFWRef = result.refs.reduce(reducer , false);
-      console.log("hasnsfw", hasNSFWRef);
+      const hasNSFWRef = result.refs.reduce(nsfwCheck , false);
+
+      console.log("Has NSFW", hasNSFWRef);
+
       const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true; 
       if (hasNSFWRef) console.log(result.refs, channel.nsfw, metNSFWConstraints, hasNSFWRef);
+
       return metScoreConstraints && metPairsConstraints && metNSFWConstraints;
-      // return (contextScore(result.string) + result.score + refsScore(result.refs)) >= minimumScore && hasPairs(result.string) && (channel.nsfw === result.refs.reduce((a,b) => a || b.nsfw).nsfw  );
     }
   };
-  // await markov.buildCorpusAsync()
+
+
   // Generate a sentence
-  generateAsync(options).then((result) => {
+  generateSentence(options).then((result) => {
     const config = settings.settings.chatter;
-    chatter = result.string;
     let attachments = [];
+    chatter = result.string;
+
     if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments.array()));
     audit.refs = result.refs.flatMap(r => r.string);
     files = attachments.length > 0 ? [mathjs.pickRandom(attachments)] : [];
+
     channel.stopTyping(true);
   }).catch(() => {
+
     console.log('[Couldn\'t generate context sentence]');
+
     chatter = channel.client.emojis.cache.random().toString();
     audit.refs = 'Skipped';
+
     channel.stopTyping(true);
   });
 };
@@ -281,11 +289,12 @@ const addMessage = (message, splitRegex = undefined) => {
   const config = settings.settings.chatter;
   const preFormat = config.preFormat || false;
   const splitter = splitRegex instanceof RegExp ? splitRegex : new RegExp(config.messageSplitter);
-  
   const subMessage = content.match(urlRegex) ? [content] : content.split(splitter);
   const cache = { string: content, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw };
+
   subMessage.forEach((str, i) => {
     const trimmedString = str.trim();
+
     if (trimmedString !== '') { //skip empty strings
       cache.string = preFormat ? `${trimmedString.replace(trimmedString[0], trimmedString[0].toUpperCase())}.` : trimmedString; // Experimental
       if (data[`${id}.${i}`] !== undefined) {
@@ -338,6 +347,7 @@ const scrapeHistory = async (guild, textChannels, readRetry = 0) => {
 
   await client.user.setStatus('dnd');
   await client.user.setActivity('📖🔍🤔', { type: 'WATCHING' });
+
   console.log(`[Scraping History]: ${guild.name}`);
 
   const last = {};
@@ -345,17 +355,26 @@ const scrapeHistory = async (guild, textChannels, readRetry = 0) => {
   // last[message.channel.id] = message;
   buildData(last, textChannels, data, r).then(() => {
     client.user.setStatus('online');
+
     console.log('[Ready!]');
+
   }).catch((err) => {
+
     console.error(err);
+
     if (readRetry < 3) {
       readRetry++;
+
+      console.warn('Retry: ', readRetry);
+
       scrapeHistory(guild, textChannels, readRetry);
     }
   }).finally(() => {
     client.user.setStatus('online');
     client.user.setActivity('👀', { type: 'WATCHING' });
+
     console.log('[Done.]:', guild.name , Object.values(data).length);
+    
   });
 };
 
