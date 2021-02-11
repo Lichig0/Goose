@@ -8,7 +8,8 @@ const insult = require('../commands/insult');
 const Chance = require('chance');
 
 const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
-const userIDRegex = new RegExp(/\<\@([0-9]{18})\>/);
+const userIDRegex = new RegExp(/^\s?(\<\@){1}([0-9]{18})\>/i);
+const brokenUserIDRegex = new RegExp(/^\s?(\<\@){0}([0-9]{18})\>/i);
 const data = coreThoughts.coreThoughts(ct => markov.addData(Object.values(ct)));
 
 const chance = new Chance();
@@ -22,7 +23,7 @@ let audit = {
 
 const sendChatter = (channel, text, options) => {
   const a = audit;
-  
+
   channel.send(text, options).then((sentMessage) => {
     a.timestamp = Date.now()
     auditHistory[sentMessage.id] = a;
@@ -275,10 +276,10 @@ const sendMarkovString = async (channel, data, content) => {
     channel.stopTyping(true);
   }).catch(() => {
 
-    console.log('[Couldn\'t generate context sentence]');
+    console.log('[Couldn\'t generate sentence with constraints]');
 
     chatter = channel.client.emojis.cache.random().toString();
-    audit.refs = 'Skipped';
+    audit.refs = 'Skipped. Did not meet constraints.';
 
     channel.stopTyping(true);
   });
@@ -289,6 +290,17 @@ const addMessage = (message, splitRegex = undefined) => {
   const config = settings.settings.chatter;
   const preFormat = config.preFormat || false;
   const splitter = splitRegex instanceof RegExp ? splitRegex : new RegExp(config.messageSplitter);
+
+  let resolvedUserNameContent = content.replace(brokenUserIDRegex, `<@${content}`);
+  if(userIDRegex.test(resolvedUserNameContent)) {
+    const guildUser = guild.member(userIDRegex.exec(resolvedUserNameContent)[2])
+    if( guildUser ) {
+      const username = guildUser.nickname || guildUser.user.username;
+      resolvedUserNameContent = resolvedUserNameContent.replace(userIDRegex, username);
+    }
+  };
+  
+
   const subMessage = content.match(urlRegex) ? [content] : content.split(splitter);
   const cache = { string: content, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw };
 
