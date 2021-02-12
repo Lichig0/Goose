@@ -301,8 +301,8 @@ const addMessage = (message, splitRegex = undefined) => {
   };
   
 
-  const subMessage = content.match(urlRegex) ? [content] : content.split(splitter);
-  const cache = { string: content, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw };
+  const subMessage = resolvedUserNameContent.match(urlRegex) ? [resolvedUserNameContent] : resolvedUserNameContent.split(splitter);
+  const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw };
 
   subMessage.forEach((str, i) => {
     const trimmedString = str.trim();
@@ -316,11 +316,13 @@ const addMessage = (message, splitRegex = undefined) => {
         markov.addData([cache]);
       }
     } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined) {
+
+      const substituteString = channel.messages.cache.array()[1].content;
       data[`${id}.${i}`] = { 
         ...cache,
-        trimmedString: `la li lu le lo`
+        trimmedString: substituteString
       };
-      markov.addData([{ ...cache, string: `la li lu le lo` }]);
+      markov.addData([{ ...cache, string: substituteString }]);
     }
   });
   return cache;
