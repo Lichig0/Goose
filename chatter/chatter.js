@@ -106,7 +106,6 @@ module.exports.run = (message = mostRecent, client) => {
         if(easterEgg) {
           // Roll for rotten egg
           const rottenRoll = chance.bool({likelihood: easterEgg().likelihood});
-          // if (rottenRoll) return honkChannel.send(easterEgg().string).then(() => audit.timestamp = Date.now()).catch(console.error);
           if (rottenRoll) return sendChatter(honkChannel, easterEgg().string);
         }
         // Roll for critical
@@ -225,8 +224,13 @@ const sendMarkovString = async (channel, data, content) => {
   const refsScore = (refs) => {
     let score = 0;
     const channelInfluence = config.channelInfluence || 2;
+    const theHonk = channel.guild.channels.cache.find(ch => ch.name === 'honk');
     refs.forEach(ref => {
       score += ref.channel === channel.id ? channelInfluence : -channelInfluence;
+      if(theHonk) {
+        score += ref.channel === theHonk.id ? channelInfluence*2 : 0;
+      }
+      // score += ref.channel === theHonk.id ? channelInfluence*2 : 0;
     });
     return score;
   };
