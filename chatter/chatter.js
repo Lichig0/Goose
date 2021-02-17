@@ -62,6 +62,14 @@ module.exports.run = (message = mostRecent, client) => {
   const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
   const nuRandRoll = chance.bool({ likelihood: (config.randomChat)}); console.log(nuRandRoll, `${messagesSince/(config.randomChat*100)}`, channel.name, author.tag);
   nuRandRoll ? messagesSince = 0 : messagesSince++;
+
+  // const cacheMessages = channel.messages.cache.array();
+  // const frequency = cacheMessages.reduce((accumulator, currentValue) => {
+  //   console.log(currentValue)
+  //   accumulator += currentValue.createdTimestamp;
+  // }, 0);
+
+  // console.log('Average message frequency:', frequency);
   
 
   if(makeNoise) {
@@ -113,7 +121,6 @@ module.exports.run = (message = mostRecent, client) => {
 
         if (critRoll) console.log('Critical roll!');
 
-        // critRoll ? sendSourString(honkChannel, message, client) : sendMarkovString(honkChannel, data, content);
         critRoll ? sendSourString(honkChannel, message, client) : sendMarkovString(honkChannel, data, content);
       }
     });
@@ -200,7 +207,6 @@ const sendMarkovString = async (channel, data, content) => {
   channel.startTyping().then(() => {
     if (!config.mentions) chatter = Discord.Util.cleanContent(chatter, channel.lastMessage);
     sendChatter(channel, chatter, { files });
-    audit.timestamp = Date.now();
   });
   
   const contextScore = (markovString) => {
@@ -236,15 +242,13 @@ const sendMarkovString = async (channel, data, content) => {
   };
 
   const hasPairs = (str) => {
-    const needsPairs = ['"', '\'', '`'];
-    let pass = true;
+    const needsPairs = ['"', '||' , '`'];
     needsPairs.forEach(char => {
-      if (str.split(char).length % 2 !== 1) {
-        pass = false;
-        return pass;
+      if (str.split(char).length % 2 === 0) {
+        return false;
       }
     });
-    return pass;
+    return true;
   };
 
   const minimumScore = config.minimumScore || 2;
