@@ -254,10 +254,11 @@ const sendMarkovString = async (channel, data, content) => {
   const minimumScore = config.minimumScore || 2;
   const maxTries = config.maxTries || 30;
   const options = {
-    maxTries, // Give up if I don't have a sentence after 20 tries (default is 10)
+    maxTries, // Give up if I don't have a sentence after N tries (default is 10)
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
-      const metScoreConstraints = contextScore(result.string) + result.score + refsScore(result.refs) >= minimumScore;
+      const metScoreConstraints = contextScore(result.string) + refsScore(result.refs) >= minimumScore;
+      const metUniqueConstraint = 2 >= minimumScore;
       const metPairsConstraints = hasPairs(result.string);
       const hasNSFWRef = result.refs.reduce(nsfwCheck , false);
 
@@ -266,7 +267,7 @@ const sendMarkovString = async (channel, data, content) => {
       const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true; 
       if (hasNSFWRef) console.log(result.refs, channel.nsfw, metNSFWConstraints, hasNSFWRef);
 
-      return metScoreConstraints && metPairsConstraints && metNSFWConstraints;
+      return metScoreConstraints && metPairsConstraints && metNSFWConstraints && metUniqueConstraint;
     }
   };
 
