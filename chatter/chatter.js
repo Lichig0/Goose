@@ -118,7 +118,7 @@ module.exports.run = (message = mostRecent, client) => {
           if (rottenRoll) return sendChatter(honkChannel, easterEgg().string);
         }
         // Roll for critical
-        const critRoll = chance.bool({likelihood: 1.2});
+        const critRoll = chance.bool({likelihood: 2});
 
         if (critRoll) console.log('Critical roll!');
 
@@ -259,7 +259,7 @@ const sendMarkovString = async (channel, data, content) => {
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
       const metScoreConstraints = contextScore(result.string) + refsScore(result.refs) >= minimumScore;
-      const metUniqueConstraint = 2 >= result.refs.length;
+      const metUniqueConstraint = result.refs.length >= 2;
       const metPairsConstraints = hasPairs(result.string);
       const hasNSFWRef = result.refs.reduce(nsfwCheck , false);
 
@@ -280,7 +280,7 @@ const sendMarkovString = async (channel, data, content) => {
     chatter = result.string.replace(brokenUserIDRegex, '<@$2>');
 
     if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments.array()));
-    audit.refs = result.refs;
+    audit.refs = result.refs.flatMap(r => r.string);
     files = attachments.length > 0 ? [mathjs.pickRandom(attachments)] : [];
 
     channel.stopTyping(true);
