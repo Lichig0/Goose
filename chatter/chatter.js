@@ -9,15 +9,15 @@ const Chance = require('chance');
 // const chatterUtil = require('./util');
 
 const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
-const userIDRegex = new RegExp(/^\s?(\<\@){1}([0-9]{18})\>/i);
-const brokenUserIDRegex = new RegExp(/^\s?(\<\@){0}([0-9]{18})\>/i);
+const userIDRegex = new RegExp(/^\s?(<@){1}([0-9]{18})>/i);
+const brokenUserIDRegex = new RegExp(/^\s?(<@){0}([0-9]{18})>/i);
 const data = coreThoughts.coreThoughts(ct => markov.addData(Object.values(ct)));
 
 const chance = new Chance();
 let messagesSince = 0;
 let mostRecent, makeNoise, noiseTimeout;
 let markov = new Markov({ stateSize: 2 });
-const auditHistory = {}
+const auditHistory = {};
 let audit = {
   timestamp: Date.now()
 };
@@ -26,17 +26,17 @@ const sendChatter = (channel, text, options) => {
   const a = audit;
 
   channel.send(text, options).then((sentMessage) => {
-    a.timestamp = Date.now()
+    a.timestamp = Date.now();
     auditHistory[sentMessage.id] = a;
   }).catch(console.error);
-}
+};
 
 module.exports.audit = (params) => {
   if (auditHistory[params] !== undefined) {
-    return auditHistory[params]
+    return auditHistory[params];
   }
   return audit;
-}
+};
 
 module.exports.init = (client) => {
   const config = settings.settings.chatter;
@@ -100,10 +100,10 @@ module.exports.run = (message = mostRecent, client) => {
     const { content } = message;
     if(content.toLowerCase().includes('this discord sucks')) {
       return () => {
-        return {likelihood: 100, string: 'Fucking leave then.'}
-      }
+        return {likelihood: 100, string: 'Fucking leave then.'};
+      };
     }
-  }
+  };
 
   
   if ((isHonk || isMentioned || nuRandRoll || hasTriggerWord(content)) && !author.bot && !ignored.includes(channel.name)) {
@@ -154,13 +154,13 @@ const sendSourString = (channel, message, client) => {
         message.react(client.emojis.cache.random().id).catch(console.error);
       }
     }
-  ]
+  ];
   const ws = [];
   const tsks = [];
   sourString.forEach((v) => {
     ws.push(v.weight);
     tsks.push(v.task);
-  })
+  });
   chance.weighted(tsks, ws)();
 };
 
@@ -227,7 +227,7 @@ const sendMarkovString = async (channel, data, content) => {
     if(value.nsfw) console.log('Saw NSFW reference!');
 
     return (accumulator || value.nsfw);
-  }
+  };
   const refsScore = (refs) => {
     let score = 0;
     const channelInfluence = config.channelInfluence || 2;
@@ -263,7 +263,7 @@ const sendMarkovString = async (channel, data, content) => {
       const metPairsConstraints = hasPairs(result.string);
       const hasNSFWRef = result.refs.reduce(nsfwCheck , false);
 
-      console.log("Has NSFW", hasNSFWRef);
+      console.log('Has NSFW', hasNSFWRef);
 
       const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true; 
       if (hasNSFWRef) console.log(result.refs, channel.nsfw, metNSFWConstraints, hasNSFWRef);
@@ -277,7 +277,7 @@ const sendMarkovString = async (channel, data, content) => {
   generateSentence(options).then((result) => {
     const config = settings.settings.chatter;
     let attachments = [];
-    chatter = result.string.replace(brokenUserIDRegex, `<@$2>`);
+    chatter = result.string.replace(brokenUserIDRegex, '<@$2>');
 
     if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments.array()));
     audit.refs = result.refs;
@@ -301,14 +301,14 @@ const addMessage = (message, splitRegex = undefined) => {
   const preFormat = config.preFormat || false;
   const splitter = splitRegex instanceof RegExp ? splitRegex : new RegExp(config.messageSplitter);
 
-  let resolvedUserNameContent = content.replace(brokenUserIDRegex, `<@$2>`);
+  let resolvedUserNameContent = content.replace(brokenUserIDRegex, '<@$2>');
   if(userIDRegex.test(resolvedUserNameContent)) {
-    const guildUser = guild.member(userIDRegex.exec(resolvedUserNameContent)[2])
+    const guildUser = guild.member(userIDRegex.exec(resolvedUserNameContent)[2]);
     if( guildUser ) {
       const username = guildUser.nickname || guildUser.user.username;
       resolvedUserNameContent = resolvedUserNameContent.replace(userIDRegex, username);
     }
-  };
+  }
   
 
   const subMessage = resolvedUserNameContent.match(urlRegex) ? [resolvedUserNameContent] : resolvedUserNameContent.split(splitter);
