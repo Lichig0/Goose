@@ -6,6 +6,7 @@ const settings = require('../settings');
 const coreThoughts = require('./coreThoughts');
 const insult = require('../commands/insult');
 const Chance = require('chance');
+// const chatterUtil = require('./util');
 
 const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
 const userIDRegex = new RegExp(/^\s?(\<\@){1}([0-9]{18})\>/i);
@@ -258,7 +259,7 @@ const sendMarkovString = async (channel, data, content) => {
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
       const metScoreConstraints = contextScore(result.string) + refsScore(result.refs) >= minimumScore;
-      const metUniqueConstraint = 2 >= minimumScore;
+      const metUniqueConstraint = 2 >= result.refs.length;
       const metPairsConstraints = hasPairs(result.string);
       const hasNSFWRef = result.refs.reduce(nsfwCheck , false);
 
@@ -276,10 +277,10 @@ const sendMarkovString = async (channel, data, content) => {
   generateSentence(options).then((result) => {
     const config = settings.settings.chatter;
     let attachments = [];
-    chatter = result.string;
+    chatter = result.string.replace(brokenUserIDRegex, `<@$2>`);
 
     if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments.array()));
-    audit.refs = result.refs.flatMap(r => r.string);
+    audit.refs = result.refs;
     files = attachments.length > 0 ? [mathjs.pickRandom(attachments)] : [];
 
     channel.stopTyping(true);
@@ -327,11 +328,11 @@ const addMessage = (message, splitRegex = undefined) => {
     } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined) {
 
       const substituteString = channel.messages.cache.array()[1].content;
-      data[`${id}.${i}`] = { 
+      let tCache = data[`${id}.${i}`] = { 
         ...cache,
         trimmedString: substituteString
       };
-      markov.addData([{ ...cache, string: substituteString }]);
+      markov.addData([tCache]);
     }
   });
   return cache;
