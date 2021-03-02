@@ -62,6 +62,7 @@ module.exports.run = (message = mostRecent, client) => {
   const isHonk = channel.name === 'honk';
   const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
   const nuRandRoll = chance.bool({ likelihood: (config.randomChat)}); console.log(nuRandRoll, `${messagesSince/(config.randomChat*100)}`, channel.name, author.tag);
+  audit.likelihood = messagesSince/(config.randomChat*100);
   nuRandRoll ? messagesSince = 0 : messagesSince++;
 
   // const cacheMessages = channel.messages.cache.array();
@@ -237,7 +238,6 @@ const sendMarkovString = async (channel, data, content) => {
       if(theHonk) {
         score += ref.channel === theHonk.id ? channelInfluence*2 : 0;
       }
-      // score += ref.channel === theHonk.id ? channelInfluence*2 : 0;
     });
     return score;
   };
