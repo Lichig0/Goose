@@ -54,7 +54,7 @@ module.exports.run = async message => {
 
 
 const getInsult = function (message, mentioned) {
-  const config = settings.settings.insult;
+  const config = settings.settings;
   const mentions = config.mentions || false;
 
   const replaceMember = (match, offset, string) => {
