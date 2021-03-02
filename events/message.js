@@ -3,8 +3,6 @@ const fs = require('fs');
 const chatter = require('../chatter/chatter');
 const settings = require('../settings');
 
-const G = 'G';
-
 
 const commands = {};
 fs.readdir('./commands/', (err, files) => {
@@ -21,7 +19,7 @@ const reloadConfig = () => {
 
 module.exports = (client, message) => {
   const {content, author, guild, channel} = message;
-  const config = settings.settings;
+  const config = settings.settings; 
   const disabledCommand = config.disabledCommands || [];
   const prefix = config.prefix || '.';
   if(!guild) return;
@@ -73,7 +71,7 @@ module.exports = (client, message) => {
     return helpText;
   };
 
-  const genAudit = (message) => {
+  const genAudit = () => {
     const auditCommand = content.split('audit')[1].trim();
     const [commandName, auditParams] = auditCommand.split(' ');
     let auditJSON;
@@ -83,7 +81,7 @@ module.exports = (client, message) => {
       auditJSON = chatter.audit(auditParams);
     }
     return `Audit:\n ${'```'}${JSON.stringify(auditJSON, null, 2)}${'```'}`;
-  }
+  };
 
   // Aliases
   switch(command) {
@@ -94,10 +92,7 @@ module.exports = (client, message) => {
   case 'help':
     return channel.send(helpGen()).catch(console.error);
   case 'audit':
-    if( epeen.has(Permissions.FLAGS.ADMINISTRATOR) || true) {
-      return channel.send(genAudit(message)).catch(console.error);
-    }
-    break;
+    return channel.send(genAudit(message)).catch(console.error);
   case 'fl':
     reloadConfig();
     return;
