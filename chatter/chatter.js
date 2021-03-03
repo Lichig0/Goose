@@ -5,6 +5,7 @@ const Markov = require('markov-strings').default;
 const settings = require('../settings');
 const coreThoughts = require('./coreThoughts');
 const insult = require('../commands/insult');
+const game = require('../commands/game');
 const Chance = require('chance');
 // const chatterUtil = require('./util');
 
@@ -63,6 +64,17 @@ module.exports.run = (message = mostRecent, client) => {
   const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
   const nuRandRoll = chance.bool({ likelihood: (config.randomChat)}); console.log(nuRandRoll, `${messagesSince/(config.randomChat*100)}`, channel.name, author.tag);
   audit.likelihood = messagesSince/(config.randomChat*100);
+
+  if(Math.abs(1 - audit.likelihood) < 0.015) {
+    const playGame = chance.bool({likelihoood: 0.4});
+    if (playGame) {
+      game.getGame((game) => {
+        client.user.setActivity(`🎮 ${game.name}`);
+      });
+    } else {
+      client.user.setActivity('👀', { type: 'WATCHING' });
+    }
+  }
   nuRandRoll ? messagesSince = 0 : messagesSince++;
 
   // const cacheMessages = channel.messages.cache.array();
@@ -135,7 +147,7 @@ const sendSourString = (channel, message, client) => {
       name: 'insult',
       weight: 1,
       task: () => {
-        insult.run(message, client);
+        sendChatter(insult.getInsult(message));
       }
     },
     {
@@ -143,9 +155,7 @@ const sendSourString = (channel, message, client) => {
       weight: 1.2,
       task: () => {
         const ct = coreThoughts.raw || [];
-        // channel.send(chance.pickone(ct));
         sendChatter(chance.pickone(ct));
-        audit.timestamp = Date.now();
       }
     },
     {

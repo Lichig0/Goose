@@ -105,3 +105,24 @@ exports.run = (message) => {
     }).catch(console.error);
   }
 };
+
+const getGame = (callback, id) => {
+  const guid = id || Math.floor(Math.random() * 90000);
+  const options = {
+    id: guid,
+    format: 'json',
+    fields: [
+      'name', 'guid', 'image', 'aliases', 'deck', 'platforms', 'similar_games', 'themes', 'site_detail_url',
+      'genres', 'franchises', 'characters', 'concepts', 'developers', 'original_release_date',
+      'expected_release_year', 'expected_release_month', 'expected_release_day', 'expected_release_quarter'
+    ]
+  };
+
+  gb.getGame(options).then( response => {
+    if(response === null) { return console.warn(response); }
+    const json = JSON.parse(response);
+    if (json.status_code !== 1) { return console.warn(json.error); }
+    callback(json.results);
+  });
+};
+module.exports.getGame = getGame;

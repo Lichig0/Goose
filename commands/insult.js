@@ -19,6 +19,9 @@ const insults = [
   '{member} won’t truly appreciate the awkwardness of this moment until they’re fondly reminiscing as a 35-year-old homosexual.',
   'Monetize this corkscrewed cock.',
 ];
+const auditHisotry = {};
+let audit = {};
+
 exports.help = () => {
   insultTable.get('*', (e, rows) => {
     const numInsults = insults.length + rows.length;
@@ -27,7 +30,7 @@ exports.help = () => {
   return 'Say an insult; Tag users to target them.';
 };
 
-module.exports.run = async message => {
+exports.run = async message => {
   const { author, content, guild } = message;
   if (content.startsWith('insult add ', 1)) {
     let insult = content.split('insult add ')[1];
@@ -43,15 +46,13 @@ module.exports.run = async message => {
   else {
     if (message.mentions.members.array().length > 0) {
       message.mentions.members.array().forEach(member => {
-        getInsult(message, member);
+        sendInsult(getInsult(message, member));
       });
     } else {
-      getInsult(message);
+      sendInsult(getInsult(message));
     }
   }
 };
-
-
 
 const getInsult = function (message, mentioned) {
   const config = settings.settings;
@@ -70,11 +71,22 @@ const getInsult = function (message, mentioned) {
     let chat = chance.pickone(fullInsults).replace(/\{member\}/gi, replaceMember);
     // let chat = fullInsults[Math.floor(Math.random() * fullInsults.length)].replace(/\{member\}/gi, replaceMember);
     if (!mentions) chat = Discord.Util.cleanContent(chat, message);
-    message.channel.send(chat);
+    return chat;
   });
 };
 
-const getRandomUsers = function (message) {
+const getRandomUsers = (message) => {
   const members = message.channel.members.array();
   return members[Math.floor(Math.random() * members.length)];
 };
+
+const sendInsult = (channel, text, options) => {
+  const a = audit;
+  
+  channel.send(text, options).then((sentMessage) => {
+    a.timestamp = Date.now();
+    auditHisotry[sentMessage.id] = a;
+  }).catch(console.error);
+};
+
+exports.getInsult = getInsult;
