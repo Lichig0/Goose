@@ -8,6 +8,10 @@ const commands = {};
 fs.readdir('./commands/', (err, files) => {
   files.forEach(file => {
     const commandName = file.split('.')[0];
+    if(commandName === 'base') {
+      const baseCommand = require(`../commands/${file}`);
+      commands[commandName] =  new baseCommand;
+    }
     commands[commandName] = require(`../commands/${file}`);
   });
   console.log(commands);
@@ -48,7 +52,7 @@ module.exports = (client, message) => {
 
 
   if (commands[command] && !disabledCommand.includes(command)) {
-    if (!guild) {
+    if (!guild || command == 'base') {
       return;
     }
     const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
