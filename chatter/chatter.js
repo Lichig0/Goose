@@ -7,6 +7,7 @@ const coreThoughts = require('./coreThoughts');
 const insult = require('../commands/insult');
 const game = require('../commands/game');
 const Chance = require('chance');
+const eyes = require('./birdEyes');
 // const chatterUtil = require('./util');
 
 const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
@@ -22,6 +23,8 @@ const auditHistory = {};
 let audit = {
   timestamp: Date.now()
 };
+
+eyes.fetch();
 
 const sendChatter = (channel, text, options) => {
   const a = audit;
@@ -234,11 +237,11 @@ const sendMarkovString = async (channel, data, content) => {
     score = score + (-0.03*(words.length-12)^(2)+3);
     return score;
   };
+  
   const nsfwCheck = (accumulator, value) => {
-    if(value.nsfw) console.log('Saw NSFW reference!');
-
     return (accumulator || value.nsfw);
   };
+
   const refsScore = (refs) => {
     let score = 0;
     const channelInfluence = config.channelInfluence || 2;
@@ -263,7 +266,8 @@ const sendMarkovString = async (channel, data, content) => {
   };
 
   const minimumScore = config.minimumScore || 2;
-  const maxTries = config.maxTries || 30;
+  const maxTries = 10;
+  // const maxTries = config.maxTries || 30;
   const options = {
     maxTries, // Give up if I don't have a sentence after N tries (default is 10)
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
@@ -272,16 +276,11 @@ const sendMarkovString = async (channel, data, content) => {
       const metUniqueConstraint = result.refs.length >= 2;
       const metPairsConstraints = hasPairs(result.string);
       const hasNSFWRef = result.refs.reduce(nsfwCheck , false);
-
-      console.log('Has NSFW', hasNSFWRef);
-
-      const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true; 
-      if (hasNSFWRef) console.log(result.refs, channel.nsfw, metNSFWConstraints, hasNSFWRef);
+      const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true;
 
       return metScoreConstraints && metPairsConstraints && metNSFWConstraints && metUniqueConstraint;
     }
   };
-
 
   // Generate a sentence
   generateSentence(options).then((result) => {
@@ -298,10 +297,22 @@ const sendMarkovString = async (channel, data, content) => {
 
     console.log('[Couldn\'t generate sentence with constraints]');
 
-    chatter = channel.client.emojis.cache.random().toString();
-    audit.refs = 'Skipped. Did not meet constraints.';
-
-    channel.stopTyping(true);
+    const tOpt = {
+      maxTries: 50,
+      filter: (r) => {
+        return r.refs.length >= 2;
+      }
+    };
+    eyes.generateTweet(tOpt).then(result => {
+      chatter = result.string;
+      audit.refs = result.refs.flatMap(r => r.string);
+    }).catch(() => {
+      chatter = channel.client.emojis.cache.random().toString();
+      audit.refs = 'Skipped. Did not meet constraints.';
+    }).finally(() => {
+      eyes.fetch();
+      channel.stopTyping(true);
+    });
   });
 };
 
@@ -389,9 +400,6 @@ const scrapeHistory = async (guild, textChannels, readRetry = 0) => {
   // last[message.channel.id] = message;
   buildData(last, textChannels, data, r).then(() => {
     client.user.setStatus('online');
-
-    console.log('[Ready!]');
-
   }).catch((err) => {
 
     console.error(err);
