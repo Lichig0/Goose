@@ -1,4 +1,4 @@
-const chatter = require('../chatter/chatter');
+const chatter = require('../../chatter/chatter');
 const { Permissions } = require('discord.js');
 exports.help = () => 'Loads a cache.json; probably will fail.\n';
 module.exports.run = (message, epeen) => {

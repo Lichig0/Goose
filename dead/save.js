@@ -1,4 +1,4 @@
-const chatter = require('../chatter/chatter');
+const chatter = require('../../chatter/chatter');
 const { Permissions } = require('discord.js');
 exports.help = () => 'Makes a probably failed attempt to save the chached conversations to JSON. \n';
 module.exports.run = (message, epeen) => {
