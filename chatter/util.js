@@ -49,5 +49,22 @@ const addMessageToModel = (message, markovModel, splitRegex = undefined) => {
   return cache;
 };
 
+module.exports.wordScore = (markovString, content = '') => {
+  let score = 0;
+  
+  // Word Count
+  const words = markovString.split(/[ ,.!?;()"/]/);
+  words.forEach(word => {
+    if(!word == '' && !word == ' ') {
+      if(content.includes(word)) score++;
+    }
+  });
+  score = score + (-0.03*(words.length-12)^(2)+3);
+  return score;
+};
+
+module.exports.nsfwCheck = (accumulator, value) => {
+  return (accumulator || value.nsfw);
+};
 
 module.exports.addMessageToModel = addMessageToModel;

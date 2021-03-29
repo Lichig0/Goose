@@ -8,7 +8,7 @@ const insult = require('../commands/insult');
 const game = require('../commands/game');
 const Chance = require('chance');
 const eyes = require('./birdEyes');
-// const chatterUtil = require('./util');
+const chatterUtil = require('./util');
 
 const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
 const userIDRegex = new RegExp(/^\s?(<@){1}([0-9]{18})>/i);
@@ -224,23 +224,7 @@ const sendMarkovString = async (channel, data, content) => {
     sendChatter(channel, chatter, { files });
   });
   
-  const contextScore = (markovString) => {
-    let score = 0;
-    
-    // Word Count
-    const words = markovString.split(/[ ,.!?;()"/]/);
-    words.forEach(word => {
-      if(!word == '' && !word == ' ') {
-        if(content.includes(word)) score++;
-      }
-    });
-    score = score + (-0.03*(words.length-12)^(2)+3);
-    return score;
-  };
   
-  const nsfwCheck = (accumulator, value) => {
-    return (accumulator || value.nsfw);
-  };
 
   const refsScore = (refs) => {
     let score = 0;
@@ -272,10 +256,10 @@ const sendMarkovString = async (channel, data, content) => {
     maxTries, // Give up if I don't have a sentence after N tries (default is 10)
     prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     filter: (result) => {
-      const metScoreConstraints = contextScore(result.string) + refsScore(result.refs) >= minimumScore;
+      const metScoreConstraints = chatterUtil.wordScore(result.string, content) + refsScore(result.refs) >= minimumScore;
       const metUniqueConstraint = result.refs.length >= 2;
       const metPairsConstraints = hasPairs(result.string);
-      const hasNSFWRef = result.refs.reduce(nsfwCheck , false);
+      const hasNSFWRef = result.refs.reduce(chatterUtil.nsfwCheck , false);
       const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true;
 
       return metScoreConstraints && metPairsConstraints && metNSFWConstraints && metUniqueConstraint;
@@ -300,12 +284,15 @@ const sendMarkovString = async (channel, data, content) => {
     const tOpt = {
       maxTries: 50,
       filter: (r) => {
-        return r.refs.length >= 2;
+        const multiRef = r.refs.length >= 2;
+        const goodLength = chatterUtil.wordScore(r.string);
+        return multiRef && goodLength;
       }
     };
     eyes.generateTweet(tOpt).then(result => {
       chatter = result.string;
       audit.refs = result.refs.flatMap(r => r.string);
+      audit.source = 'Twitter';
     }).catch(() => {
       chatter = channel.client.emojis.cache.random().toString();
       audit.refs = 'Skipped. Did not meet constraints.';
