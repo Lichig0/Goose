@@ -38,7 +38,7 @@ module.exports.fetch = async () => {
   };
   client.get('tweets/search/recent', params).then(response => {
     if(response.data) {
-      const tweets = response.data.map(tweet => tweet.text.replace('&amp', '&'));
+      const tweets = response.data.map(tweet => tweet.text.replace('&amp;', '&'));
       recordedTweets.push(...tweets);
       markov.addData(tweets);
     }
