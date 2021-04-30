@@ -14,6 +14,8 @@ const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(
 const userIDRegex = new RegExp(/^\s?(<@){1}([0-9]{18})>/i);
 const brokenUserIDRegex = new RegExp(/^\s?(<@){0}([0-9]{18})>/i);
 const data = coreThoughts.coreThoughts(ct => markov.addData(Object.values(ct)));
+const mimickData = {};
+let userToMimick = false;
 
 const chance = new Chance();
 let messagesSince = 0;
@@ -78,16 +80,7 @@ module.exports.run = (message = mostRecent, client) => {
       client.user.setActivity('👀', { type: 'WATCHING' });
     }
   }
-  nuRandRoll ? messagesSince = 0 : messagesSince++;
-
-  // const cacheMessages = channel.messages.cache.array();
-  // const frequency = cacheMessages.reduce((accumulator, currentValue) => {
-  //   console.log(currentValue)
-  //   accumulator += currentValue.createdTimestamp;
-  // }, 0);
-
-  // console.log('Average message frequency:', frequency);
-  
+  nuRandRoll ? messagesSince = 0 : messagesSince++;  
 
   if(makeNoise) {
     if (noiseTimeout !== noiseFrequency) {
@@ -118,6 +111,8 @@ module.exports.run = (message = mostRecent, client) => {
       return () => {
         return {likelihood: 100, string: 'Fucking leave then.'};
       };
+    } else if(content.startsWith(`${client.user}, mimick `)) {
+      userToMimick = content.split('mimick ')[0];
     }
   };
 
@@ -212,6 +207,19 @@ const generateSentence = async (options = {}) => {
   });
 };
 
+const generateMimickSentence = async (options = {}) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const userMimick = mimickData[userToMimick] ? userToMimick : chance.pickone(Object.keys(mimickData));
+      console.log('MIMICK', userMimick);
+      const result = mimickData[userMimick].generate(options);
+      resolve(result);
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
 const sendMarkovString = async (channel, data, content) => {
 
   console.log('okay', Object.values(data).length);
@@ -267,7 +275,7 @@ const sendMarkovString = async (channel, data, content) => {
   };
 
   // Generate a sentence
-  generateSentence(options).then((result) => {
+  const sentenceResultHandler = (result) => {
     const config = settings.settings.chatter;
     let attachments = [];
     chatter = result.string.replace(brokenUserIDRegex, '<@$2>');
@@ -277,7 +285,9 @@ const sendMarkovString = async (channel, data, content) => {
     files = attachments.length > 0 ? [mathjs.pickRandom(attachments)] : [];
 
     channel.stopTyping(true);
-  }).catch(() => {
+  };
+
+  const sentenceFallbackHandler = () => {
 
     console.log('[Couldn\'t generate sentence with constraints]');
 
@@ -300,11 +310,19 @@ const sendMarkovString = async (channel, data, content) => {
       eyes.fetch();
       channel.stopTyping(true);
     });
-  });
+  };
+  if(chance.bool({likelihood:75}) || !userToMimick){
+    generateSentence(options).then(sentenceResultHandler).catch(sentenceFallbackHandler);
+  } else {
+    generateMimickSentence({...options, maxTries: options.maxTries*2}).then((result) => {
+      audit.mimicking = true;
+      sentenceResultHandler(result);
+    }).catch(sentenceFallbackHandler);
+  }
 };
 
 const addMessage = (message, splitRegex = undefined) => {
-  const { id, guild, content, channel, attachments } = message;
+  const { id, guild, content, channel, attachments, author } = message;
   const config = settings.settings.chatter;
   const preFormat = config.preFormat || false;
   const splitter = splitRegex instanceof RegExp ? splitRegex : new RegExp(config.messageSplitter);
@@ -321,7 +339,7 @@ const addMessage = (message, splitRegex = undefined) => {
 
   const subMessage = resolvedUserNameContent.match(urlRegex) ? [resolvedUserNameContent] : resolvedUserNameContent.split(splitter);
   const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw };
-
+  if(mimickData[author.id] === undefined) mimickData[author.id] = new Markov({ stateSize: 2 });
   subMessage.forEach((str, i) => {
     const trimmedString = str.trim();
 
@@ -332,6 +350,7 @@ const addMessage = (message, splitRegex = undefined) => {
       } else {
         data[`${id}.${i}`] = cache;
         markov.addData([cache]);
+        mimickData[author.id].addData([cache]);
       }
     } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined) {
 
@@ -341,6 +360,7 @@ const addMessage = (message, splitRegex = undefined) => {
         trimmedString: substituteString
       };
       markov.addData([tCache]);
+      mimickData[author.id].addData([tCache]);
     }
   });
   return cache;
