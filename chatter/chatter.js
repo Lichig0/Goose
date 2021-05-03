@@ -314,7 +314,18 @@ const sendMarkovString = async (channel, data, content) => {
   if(chance.bool({likelihood:75}) || !userToMimick){
     generateSentence(options).then(sentenceResultHandler).catch(sentenceFallbackHandler);
   } else {
-    generateMimickSentence({...options, maxTries: options.maxTries*2}).then((result) => {
+    const mOptions = {
+      maxTries: options.maxTries * 2,
+      filter: (result) => {
+        const metScoreConstraints = chatterUtil.wordScore(result.string, content);
+        const metPairsConstraints = hasPairs(result.string);
+        const hasNSFWRef = result.refs.reduce(chatterUtil.nsfwCheck , false);
+        const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true;
+  
+        return metScoreConstraints && metPairsConstraints && metNSFWConstraints;
+      }
+    };
+    generateMimickSentence(mOptions).then((result) => {
       audit.mimicking = true;
       sentenceResultHandler(result);
     }).catch(sentenceFallbackHandler);
