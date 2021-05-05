@@ -13,7 +13,6 @@ const queriesCatalog = [
   'gay',
   '(tits OR titties)',
   'pussy',
-  'dick',
   'cuck',
   'shit',
   'fuck',
