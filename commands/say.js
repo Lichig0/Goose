@@ -32,7 +32,7 @@ module.exports.run = (message, epeen) => {
   says = says.replace(emojiRegex, (match) => {
     const emoji = client.emojis.cache.find((emote) => `:${emote.name}:` == match);
     console.log(emoji.identifier);
-    return emoji.toString();
+    return says.includes(emoji.toString()) ? match : emoji.toString();
   });
 
   if (commands[says.split(' ')[0].toLowerCase().slice(1)] && !admin_perm){
