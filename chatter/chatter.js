@@ -139,7 +139,6 @@ module.exports.run = (message = mostRecent, client) => {
   }
 
   const chanCache = message.channel.messages.cache.array().reverse().slice(0,10);
-  console.log(chanCache.map(cv => cv.content), message.content);
   const microTrend = chanCache.reduce((accumulate, currentVal) => {
     if(currentVal.content === message.content && currentVal.author !== message.author) {
       return accumulate += 1;
@@ -149,7 +148,6 @@ module.exports.run = (message = mostRecent, client) => {
       return accumulate = 0;
     }
   }, false);
-  console.log(microTrend, '\n-----');
   if(microTrend == 3) channel.send(message.content).catch(console.warn);
 };
 
