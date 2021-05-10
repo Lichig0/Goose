@@ -50,3 +50,29 @@ module.exports.run = (message, epeen) => {
   });
 
 };
+
+exports.getCommandData = () => {
+  return {
+    name: 'say',
+    type: 3,
+    description: 'Make me say a thing',
+    options: [{
+      name: 'input',
+      type: 3,
+      description: 'What should be said',
+      required: true,
+    }]
+  };
+};
+
+exports.interact = (interaction) => {
+  const input = interaction.data.options[0].value;
+  return {
+    data: {
+      type: 4,
+      data: {
+        content: input
+      }
+    }
+  };
+};
