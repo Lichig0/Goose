@@ -33,7 +33,7 @@ client.once('ready', () => {
   // client.api.application.commands.create(commandData);
   // client.api.applications(client.user.id).commands.post({data:commandData});
   client.api.applications(client.user.id).commands.get().then(r => {
-    console.log(r);
+    // console.log(r);
     r.map(depCommand => {
       if(depCommand.name == 'echo') {
         client.api.applications(client.user.id).commands(depCommand.id).delete();
