@@ -18,3 +18,49 @@ module.exports.run = message => {
   });
 };
 exports.help = () => 'Google something\n';
+
+/*exports.getCommandData = () => {
+  return {
+    name: 'google',
+    description: 'Google Google',
+    options: [{
+      name: 'input',
+      type: 3,
+      description: 'What to google',
+      required: true,
+    }],
+  };
+};*/
+
+exports.interact = (interaction) => {
+  const input = interaction.data.options[0].value;
+  const terms = input.split(' ').join('+');
+  console.log(terms);
+  const search = `https://www.google.com/search?q=${terms}`;
+  let ifl = undefined;
+  https.get(`${search}&btnI`, response => {
+    const location = response.headers.location;
+    if (location !== undefined) {
+      ifl = response.headers.location.split('url?q=')[1];
+    }
+    const ret = ifl ? `${search} | ${ifl}` : search;
+    console.log(ret);
+    const data = {
+      data : {
+        type: 4,
+        data: {
+          content: 'asdf',
+        }
+      }
+    };
+    console.log(data);
+  });
+  return {
+    data: {
+      type: 4,
+      data: {
+        content: search
+      }
+    }
+  };
+};
