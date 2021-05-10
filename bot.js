@@ -17,24 +17,33 @@ fs.readdir('./events/', (err, files) => {
 initTables();
 
 
-const commandData = {
-  name: 'echo',
-  description: 'Replies with your input!',
-  options: [{
-    name: 'input',
-    type: 3,
-    description: 'The input which should be echoed back',
-    required: true,
-  }],
-};
+// const commandData = {
+//   name: 'echo',
+//   description: 'Replies with your input!',
+//   options: [{
+//     name: 'input',
+//     type: 3,
+//     description: 'The input which should be echoed back',
+//     required: true,
+//   }],
+// };
 
 client.once('ready', () => {
   // Creating a global command
   // client.api.application.commands.create(commandData);
-  client.api.applications(client.user.id).commands.post({data:commandData});
+  // client.api.applications(client.user.id).commands.post({data:commandData});
+  client.api.applications(client.user.id).commands.get().then(r => {
+    console.log(r);
+    r.map(depCommand => {
+      if(depCommand.name == 'echo') {
+        client.api.applications(client.user.id).commands(depCommand.id).delete();
+      }
+    });
+  });
+  // console.log(deployedCommands);
 
   // Creating a guild-specific command
-  client.api.applications(client.user.id).guilds('637314469894160405').commands.post({data:commandData});
+  // client.api.applications(client.user.id).guilds('637314469894160405').commands.post({data:commandData});
 
   fs.readdir('./commands/', (err, files) => {
     files.forEach(file => {
@@ -48,7 +57,7 @@ client.once('ready', () => {
     Object.keys(commands).map(command => {
       if(commands[command].getCommandData) {
         const cd = commands[command].getCommandData();
-        console.log(cd);
+        // console.log(cd);
         client.api.applications(client.user.id).commands.post({data:cd});
         client.api.applications(client.user.id).guilds('637314469894160405').commands.post({data:cd});
       }
