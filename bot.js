@@ -77,7 +77,7 @@ client.ws.on('INTERACTION_CREATE', async interaction => {
     // Get the input of the user
     const input = interaction.data.options[0].value;
     console.log(input);
-    // Reply to the ]command
+    // Reply to the command
     client.api.interactions(interaction.id, interaction.token).callback.post({data: {
       type: 4,
       data: {
@@ -86,7 +86,11 @@ client.ws.on('INTERACTION_CREATE', async interaction => {
     }}).catch(console.error);
     // interaction.reply(input);
   } else if (commands[iName] && commands[iName].interact) {
-    const  data = await commands[iName].interact(interaction);
+    const data = await commands[iName].interact(interaction, (send) => {
+      console.log('to send', send);
+      client.api.webhooks(client.user.id, interaction.token).messages('@original').patch(send).catch(console.error);
+      // client.api.interactions(interaction.id, interaction.token).callback.post(data).catch(console.error);
+    });
     client.api.interactions(interaction.id, interaction.token).callback.post(data).catch(console.error);
   }
 });

@@ -3,8 +3,19 @@ const request = require('request').defaults({ encoding: null });
 const { Permissions, MessageEmbed, MessageAttachment, Util } = require('discord.js');
 const settings = require('../settings');
 const qdb = require('../dbactions/qdbTable');
-
 const COMMAND_NAME = path.basename(__filename, '.js');
+const SUBCOMMANDS = {
+  FIND: 'find',
+  GET: 'get'
+};
+const PARAMETERS = {
+  ADD: 'add',
+  LOAD: 'load',
+  DELETE: 'delete',
+  GET: 'get',
+  LIKE: 'like',
+  NUMBER: 'number'
+};
 
 exports.help = () => 'WIP: QDB feature. Get random quote from QDB archive.\n';
 
@@ -42,6 +53,7 @@ exports.run = (message, epeen) => {
       if (created) embed.setTimestamp(new Date(created));
       Util.splitMessage(body).forEach(splitBody => {
         embed.setDescription(splitBody);
+        console.log(embed);
         message.channel.send(embed).then((sendMessage => {
           const qid = id;
           const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
@@ -109,4 +121,112 @@ exports.run = (message, epeen) => {
     qdb.get(undefined, sendCallback);
   }
   return;
+};
+
+exports.getCommandData = () => {
+  return {
+    name: COMMAND_NAME,
+    description: '(DEV)Acces the Quote Database',
+    default_permission: true,
+    options: [
+      {
+        name: 'find',
+        description: 'Find a quote in the QDB',
+        type: 1,
+        options: [
+          {
+            name: PARAMETERS.LIKE,
+            description: 'A word or phrase to look for in a quote text',
+            type: 3,
+            required:true
+          }
+        ]
+      },
+      {
+        name: PARAMETERS.GET,
+        description: 'Get a specific quote number',
+        type: 1,
+        options: [
+          {
+            name: 'number',
+            description: 'Quote number',
+            type: 4,
+            required: true
+          }
+        ]
+      }
+      // {
+      //   name: 'get',
+      //   description: 'Get a quote from QDB',
+      //   type: 2,
+      //   options: [  
+      //   ]
+      // }
+    ]
+  };
+};
+
+
+exports.interact = (interaction, callback) => {
+  const sendCallback = (e, body) => {
+    if (e) {
+      return console.error(e);
+    }
+    const quote = body[Math.floor(Math.random() * body.length)];
+    if (quote) {
+      const embed = new MessageEmbed();
+      const { id, body, author_id, notes, tags, created, score, votes, attachment, attachmentUrl } = quote;
+      if (attachmentUrl) {
+        embed.setImage(attachmentUrl);
+      } else if(attachment) {
+        const buf = Buffer.from(attachment, 'base64');
+        embed.attachFiles(new MessageAttachment(buf));
+      }
+      embed.setTitle(`Quote #${id}`);
+      embed.setDescription(body);
+      if (notes) embed.addField('Notes:', notes);
+      console.log(score, votes);
+      if (score) embed.addField('Score', score, true);
+      if (votes) embed.addField('Votes', votes, true);
+      embed.addField('Added by', (author_id || 'Anonymous'), true);
+      if (tags) embed.setFooter(tags);
+      if (created) embed.setTimestamp(new Date(created));
+      const embeds = [];
+      Util.splitMessage(body).forEach(splitBody => {
+        embed.setDescription(splitBody);
+        // console.log(embed);
+        embeds.length < 10 ? embeds.push(embed) : console.warn(`Embeds is large: ${embeds.length}`);
+      });
+      callback({data:{embeds:embeds}});
+    }
+  };
+  
+  // const quoteNumber = interaction.data.options.find(option => option.name === PARAMETERS.QUOTE_NUMBER);
+  const subCommand = interaction.data.options[0].name;
+  const commandOptions = interaction.data.options[0].options;
+  let option = undefined;
+  console.log(subCommand, interaction.data.options);
+  switch (subCommand) {
+  case SUBCOMMANDS.GET:
+    option = commandOptions.find(option => option.name === PARAMETERS.NUMBER);
+    qdb.get(option.value, sendCallback);
+    break;
+  case SUBCOMMANDS.FIND:
+    option = commandOptions.find(option => option.name === PARAMETERS.LIKE);
+    qdb.like(option.value,sendCallback);
+    break;
+  default:
+    qdb.get(undefined, sendCallback);
+    console.log(subCommand, commandOptions);
+    break;
+  }
+
+  return { data: {type: 5}};
+  // return { data: {
+  //   type: 4,
+  //   data: {
+  //     content: 'Pong~',
+  //     flags: 1 << 6
+  //   }}
+  // };
 };

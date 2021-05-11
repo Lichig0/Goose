@@ -65,7 +65,7 @@ exports.getCommandData = () => {
   };
 };
 
-exports.interact = (interaction) => {
+exports.interact = (interaction, callback) => {
   const input = interaction.data.options[0].value;
   return {
     data: {

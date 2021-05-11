@@ -1,4 +1,6 @@
 const https = require('https');
+const path = require('path');
+const COMMAND_NAME = path.basename(__filename, '.js');
 
 module.exports.run = message => {
   const { channel, content } = message;
@@ -19,9 +21,9 @@ module.exports.run = message => {
 };
 exports.help = () => 'Google something\n';
 
-/*exports.getCommandData = () => {
+exports.getCommandData = () => {
   return {
-    name: 'google',
+    name: COMMAND_NAME,
     description: 'Google Google',
     options: [{
       name: 'input',
@@ -30,9 +32,9 @@ exports.help = () => 'Google something\n';
       required: true,
     }],
   };
-};*/
+};
 
-exports.interact = (interaction) => {
+exports.interact = (interaction, callback) => {
   const input = interaction.data.options[0].value;
   const terms = input.split(' ').join('+');
   console.log(terms);
@@ -46,21 +48,16 @@ exports.interact = (interaction) => {
     const ret = ifl ? `${search} | ${ifl}` : search;
     console.log(ret);
     const data = {
-      data : {
-        type: 4,
-        data: {
-          content: 'asdf',
-        }
+      data: {
+        content: ret,
       }
     };
-    console.log(data);
+    //console.log(data);
+    callback(data);
   });
   return {
     data: {
-      type: 4,
-      data: {
-        content: search
-      }
+      type: 5,
     }
   };
 };
