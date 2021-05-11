@@ -11,7 +11,7 @@ module.exports.getCommandData = () => {
     description: 'Pong.'
   };
 };
-module.exports.interact = () => {
+module.exports.interact = (interaction, callback) => {
   return { data: {
     type: 4,
     data: {
