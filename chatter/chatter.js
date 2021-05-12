@@ -306,7 +306,7 @@ const sendMarkovString = async (channel, data, content) => {
     const tOpt = {
       maxTries: 50,
       filter: (r) => {
-        const multiRef = r.refs.length >= 2;
+        const multiRef = r.refs.length;
         const goodLength = chatterUtil.wordScore(r.string);
         return (multiRef + goodLength) >= minimumScore;
       }
