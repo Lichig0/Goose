@@ -302,13 +302,13 @@ const sendMarkovString = async (channel, data, content) => {
   const sentenceFallbackHandler = () => {
 
     console.log('[Couldn\'t generate sentence with constraints]');
-
+    const minimumScore = config.minimumScore || 2;
     const tOpt = {
       maxTries: 50,
       filter: (r) => {
         const multiRef = r.refs.length >= 2;
         const goodLength = chatterUtil.wordScore(r.string);
-        return multiRef && goodLength;
+        return (multiRef + goodLength) >= minimumScore;
       }
     };
     eyes.generateTweet(tOpt).then(result => {
