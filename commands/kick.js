@@ -109,21 +109,41 @@ exports.interact = (client, interaction, callback) => {
   channel.createInvite({maxUses: 1}).then(invite => {
     member.createDM().then(dm => {
       dm.send(`Get kicked nerd. \n ${content ? `"${content}"`: ''}\n${invite.url}`).catch(console.error);
-      callback({data:{
-        content: `This is a simulated kick:\n Kicked ${member}. ${content ? `(${content})`: ''}`,
-        flags: 1 << 6
-      }});
+      member.kick(()=> {
+        callback({data:{
+          content: `Kicked ${member}. ${content ? `(${content})`: ''}`,
+        }});
+      }).catch((error) => {
+        console.error(error);
+        callback({data:{
+          content: `Failed to kick ${member}`
+        }});
+      });
     }).catch(error => {
       console.error(`Could not create/send DM: ${error}`) ;
-      callback({data:{
-        content: `This is a simulated kick:\n Kicked ${member}. ${content ? `(${content})`: ''}\nNo invite was sent.`
-      }});
+      member.kick(()=> {
+        callback({data:{
+          content: `Kicked ${member}. ${content ? `(${content})`: ''}\nNo invite was sent.`
+        }});
+      }).catch((error) => {
+        console.error(error);
+        callback({data:{
+          content: `Failed to kick ${member}`
+        }});
+      });
     });
   }).catch(error => {
     console.error(`Could not create invite. ${error}`);
-    callback({data:{
-      content: `This is a simulated kick:\n Kicked ${member}. ${content ? `(${content})`: ''}\nNo invite was sent.`
-    }});
+    member.kick(()=> {
+      callback({data:{
+        content: `Kicked ${member}. ${content ? `(${content})`: ''}\nNo invite was sent.`
+      }});
+    }).catch((error) => {
+      console.error(error);
+      callback({data:{
+        content: `Failed to kick ${member}`
+      }});
+    });
   });
   return {data: {type: 5}};
   // return {
