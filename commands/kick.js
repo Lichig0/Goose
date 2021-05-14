@@ -1,5 +1,7 @@
 const { Permissions } = require('discord.js');
 const settings = require('../settings');
+const path = require('path');
+const COMMAND_NAME = path.basename(__filename, '.js');
 
 const DEFAULTS = {
   requiredVotes: 5,
@@ -14,7 +16,7 @@ exports.help = () => {
 };
 
 module.exports.run = (message, epeen) => {
-  const { mentions} = message;
+  const { mentions, channel, content} = message;
   const member = mentions.members.first();
   const config = settings.settings.kick || DEFAULTS;
   const enabled = config.enabled;
@@ -26,7 +28,7 @@ module.exports.run = (message, epeen) => {
     return message.reply('I\'m sorry, I cannot do that.').catch(console.error);
   }
   if (kick_perm) {
-    return kick(member, message);
+    return kick(member, channel, content);
   } else if(enabled) {
     const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
     const time = (config.voteTime || DEFAULTS.voteTime) * 1000;
@@ -46,7 +48,7 @@ module.exports.run = (message, epeen) => {
         message.react('✅');
       });
       if (results) {
-        return kick(member, message);
+        return kick(member, channel, content);
       } else {
         return message.reply('Your authority is not recognized in Fort Kickass.').catch(console.error);
       }
@@ -56,12 +58,93 @@ module.exports.run = (message, epeen) => {
   }
 };
 
-const kick = (member, message) => {
-  const { channel, content } = message;
+exports.getCommandData = () => {
+  return {
+    name: COMMAND_NAME,
+    description: '(WIP) Kick a member.',
+    type: 3, // ???
+    default_permission: true,
+    options: [
+      {
+        name: 'member',
+        type: 6,
+        description: 'Member to kick',
+        required: true,
+      },
+      {
+        name: 'reason',
+        type: 3,
+        description: 'Reson for kick',
+        required: false
+      }
+    ]
+  };
+};
+
+
+exports.interact = (client, interaction, callback) => {
+  const options = interaction.data.options;
+  const memberOption = options.find(option=>option.name=='member');
+  const contentOption = options.find(option=>option.name=='reason');
+  const content = contentOption && contentOption.value;
+  const member_id = memberOption.value;
+  const {guild_id, channel_id} = interaction;
+  const guild = client.guilds.cache.get(guild_id);
+  const member = guild.members.cache.get(member_id);
+  const userPermission = new Permissions(Number.parseInt(interaction.member.permissions));
+  const channel = guild.channels.cache.get(channel_id);
+  const canKick = userPermission.has(Permissions.FLAGS.KICK_MEMBERS);
+  // console.log(member_id, interaction);
+  // console.log(member, channel);
+  console.log('can kick', userPermission.toArray());
+  if(!canKick) {
+    return {
+      data: {
+        type: 4,
+        data: {
+          content: 'Your authority is not recognized in Fort Kickass.',
+          flags: 64
+        }
+      }
+    };
+  }
+  channel.createInvite({maxUses: 1}).then(invite => {
+    member.createDM().then(dm => {
+      dm.send(`Get kicked nerd. \n ${content ? `"${content}"`: ''}\n${invite.url}`).catch(console.error);
+      callback({data:{
+        content: `This is a simulated kick:\n Kicked ${member}. ${content ? `(${content})`: ''}`,
+        flags: 1 << 6
+      }});
+    }).catch(error => {
+      console.error(`Could not create/send DM: ${error}`) ;
+      callback({data:{
+        content: `This is a simulated kick:\n Kicked ${member}. ${content ? `(${content})`: ''}\nNo invite was sent.`
+      }});
+    });
+  }).catch(error => {
+    console.error(`Could not create invite. ${error}`);
+    callback({data:{
+      content: `This is a simulated kick:\n Kicked ${member}. ${content ? `(${content})`: ''}\nNo invite was sent.`
+    }});
+  });
+  return {data: {type: 5}};
+  // return {
+  //   data: {
+  //     type: 4,
+  //     data: {
+  //       content: 'Still in development',
+  //       flags: 1 << 6,
+  //     }
+  //   }
+  // };
+};
+
+const kick = (member, channel, content) => {
+  // const { channel, content } = message;
   return member
     .kick()
     .then(() => {
-      console.log(message, member);
+      // console.log(message, member);
       channel.createInvite({ maxUses: 1 }).then(invite => {
         member.createDM().then(dm => {
           dm.send(`Get kicked nerd.
@@ -71,5 +154,5 @@ const kick = (member, message) => {
       }).catch(error => console.error(error));
       channel.send(`Get kicked nerd. ${member.user.tag}`);
     })
-    .catch(() => message.reply('Error.'));
+    .catch(() => channel.send('Error.').catch(console.error));
 };

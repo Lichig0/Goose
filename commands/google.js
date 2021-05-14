@@ -34,7 +34,7 @@ exports.getCommandData = () => {
   };
 };
 
-exports.interact = (interaction, callback) => {
+exports.interact = (client, interaction, callback) => {
   const input = interaction.data.options[0].value;
   const terms = input.split(' ').join('+');
   console.log(terms);

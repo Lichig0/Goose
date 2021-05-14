@@ -1,4 +1,6 @@
 const {Permissions} = require('discord.js');
+const path = require('path');
+const COMMAND_NAME = path.basename(__filename, '.js');
 const commands = {};
 const fs = require('fs');
 
@@ -53,7 +55,7 @@ module.exports.run = (message, epeen) => {
 
 exports.getCommandData = () => {
   return {
-    name: 'say',
+    name: COMMAND_NAME,
     type: 3,
     description: 'Make me say a thing',
     options: [{
@@ -65,7 +67,7 @@ exports.getCommandData = () => {
   };
 };
 
-exports.interact = (interaction, callback) => {
+exports.interact = (client, interaction) => {
   const input = interaction.data.options[0].value;
   return {
     data: {

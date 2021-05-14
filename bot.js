@@ -17,33 +17,15 @@ fs.readdir('./events/', (err, files) => {
 initTables();
 
 
-// const commandData = {
-//   name: 'echo',
-//   description: 'Replies with your input!',
-//   options: [{
-//     name: 'input',
-//     type: 3,
-//     description: 'The input which should be echoed back',
-//     required: true,
-//   }],
-// };
 
 client.once('ready', () => {
-  // Creating a global command
-  // client.api.application.commands.create(commandData);
-  // client.api.applications(client.user.id).commands.post({data:commandData});
-  client.api.applications(client.user.id).commands.get().then(r => {
-    // console.log(r);
-    r.map(depCommand => {
-      if(depCommand.name == 'echo') {
-        client.api.applications(client.user.id).commands(depCommand.id).delete();
+  client.api.applications(client.user.id).commands.get().then(registeredCommands => {
+    registeredCommands.map(depricateCommand => {
+      if(depricateCommand.name == 'echo') {
+        client.api.applications(client.user.id).commands(depricateCommand.id).delete();
       }
     });
   });
-  // console.log(deployedCommands);
-
-  // Creating a guild-specific command
-  // client.api.applications(client.user.id).guilds('637314469894160405').commands.post({data:commandData});
 
   fs.readdir('./commands/', (err, files) => {
     files.forEach(file => {
@@ -57,13 +39,13 @@ client.once('ready', () => {
     Object.keys(commands).map(command => {
       if(commands[command].getCommandData) {
         const cd = commands[command].getCommandData();
-        // console.log(cd);
+        // Creating a global command
         client.api.applications(client.user.id).commands.post({data:cd});
+        // Creating a server specific command
         client.api.applications(client.user.id).guilds('637314469894160405').commands.post({data:cd});
       }
     });
   });
-  // client.guilds.cache.get('637314469894160405').api.commands.create(commandData);
 });
 
 // client.on('interaction', interaction => {
@@ -86,7 +68,7 @@ client.ws.on('INTERACTION_CREATE', async interaction => {
     }}).catch(console.error);
     // interaction.reply(input);
   } else if (commands[iName] && commands[iName].interact) {
-    const data = await commands[iName].interact(interaction, (send) => {
+    const data = await commands[iName].interact(client, interaction, (send) => {
       console.log('to send', send);
       client.api.webhooks(client.user.id, interaction.token).messages('@original').patch(send).catch(console.error);
       // client.api.interactions(interaction.id, interaction.token).callback.post(data).catch(console.error);
