@@ -167,7 +167,7 @@ exports.getCommandData = () => {
 };
 
 
-exports.interact = (interaction, callback) => {
+exports.interact = (client, interaction, callback) => {
   const sendCallback = (e, body) => {
     if (e) {
       return console.error(e);
