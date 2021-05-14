@@ -94,9 +94,7 @@ exports.interact = (client, interaction, callback) => {
   const userPermission = new Permissions(Number.parseInt(interaction.member.permissions));
   const channel = guild.channels.cache.get(channel_id);
   const canKick = userPermission.has(Permissions.FLAGS.KICK_MEMBERS);
-  // console.log(member_id, interaction);
-  // console.log(member, channel);
-  console.log('can kick', userPermission.toArray());
+  console.log(userPermission.toArray());
   if(!canKick) {
     return {
       data: {

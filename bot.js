@@ -36,14 +36,13 @@ client.once('ready', () => {
       }
       commands[commandName] = require(`./commands/${file}`);
     });
-    Object.keys(commands).map(command => {
-      if(commands[command].getCommandData) {
-        const cd = commands[command].getCommandData();
-        // Creating a global command
-        client.api.applications(client.user.id).commands.post({data:cd});
-        // Creating a server specific command
-        client.api.applications(client.user.id).guilds('637314469894160405').commands.post({data:cd});
-      }
+    const slashCommands = Object.keys(commands).filter(command => commands[command].getCommandData);
+    slashCommands.map(slashCommand => {
+      const cd = commands[slashCommand].getCommandData();
+      // Creating a global command
+      client.api.applications(client.user.id).commands.post({data:cd});
+      // Creating a server specific command
+      client.api.applications(client.user.id).guilds('637314469894160405').commands.post({data:cd});
     });
   });
 });
@@ -68,8 +67,9 @@ client.ws.on('INTERACTION_CREATE', async interaction => {
     }}).catch(console.error);
     // interaction.reply(input);
   } else if (commands[iName] && commands[iName].interact) {
+    const userPermission = new Discord.Permissions(Number.parseInt(interaction.member.permissions));
+    console.log(userPermission.toArray());
     const data = await commands[iName].interact(client, interaction, (send) => {
-      console.log('to send', send);
       client.api.webhooks(client.user.id, interaction.token).messages('@original').patch(send).catch(console.error);
       // client.api.interactions(interaction.id, interaction.token).callback.post(data).catch(console.error);
     });
