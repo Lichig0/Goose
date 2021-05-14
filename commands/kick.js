@@ -61,7 +61,7 @@ module.exports.run = (message, epeen) => {
 exports.getCommandData = () => {
   return {
     name: COMMAND_NAME,
-    description: '(WIP) Kick a member.',
+    description: 'Kick a member.',
     type: 3, // ???
     default_permission: true,
     options: [
