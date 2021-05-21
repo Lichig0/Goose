@@ -101,7 +101,6 @@ exports.interact = (client, interaction, callback) => {
         type: 4,
         data: {
           content: 'Your authority is not recognized in Fort Kickass.',
-          flags: 64
         }
       }
     };
