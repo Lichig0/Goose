@@ -14,7 +14,7 @@ fs.readdir('./commands/', (err, files) => {
     }
     commands[commandName] = require(`../commands/${file}`);
   });
-  console.log(commands);
+  // console.log(commands);
 });
 
 const reloadConfig = () => {
