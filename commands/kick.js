@@ -106,17 +106,30 @@ exports.interact = (client, interaction, callback) => {
     };
   }
   channel.createInvite({maxUses: 1}).then(invite => {
-    member.createDM().then(dm => {
-      dm.send(`Get kicked nerd. \n ${content ? `"${content}"`: ''}\n${invite.url}`).catch(console.error);
-      member.kick(()=> {
-        callback({data:{
-          content: `Kicked ${member}. ${content ? `(${content})`: ''}`,
-        }});
-      }).catch((error) => {
-        console.error(error);
-        callback({data:{
-          content: `Failed to kick ${member}`
-        }});
+    member.createDM().then( dm => {
+      dm.send(`Get kicked nerd. \n ${content ? `"${content}"`: ''}\n${invite.url}`).then(()=> {
+        member.kick(()=> {
+          callback({data:{
+            content: `Kicked ${member}. ${content ? `(${content})`: ''}`,
+          }});
+        }).catch((error) => {
+          console.error(error);
+          callback({data:{
+            content: `Failed to kick ${member}`
+          }});
+        });
+      }).catch(e => {
+        console.error(`Could not create/send DM: ${e}`) ;
+        member.kick(()=> {
+          callback({data:{
+            content: `Kicked ${member}. ${content ? `(${content})`: ''}\nNo invite was sent.`
+          }});
+        }).catch((error) => {
+          console.error(error);
+          callback({data:{
+            content: `Failed to kick ${member}`
+          }});
+        });
       });
     }).catch(error => {
       console.error(`Could not create/send DM: ${error}`) ;
