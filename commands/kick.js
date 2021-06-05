@@ -28,7 +28,7 @@ module.exports.run = (message, epeen) => {
     return message.reply('I\'m sorry, I cannot do that.').catch(console.error);
   }
   if (kick_perm) {
-    return kick(member, channel, content);
+    return legacyKick(member, channel, content);
   } else if(enabled) {
     const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
     const time = (config.voteTime || DEFAULTS.voteTime) * 1000;
@@ -48,7 +48,7 @@ module.exports.run = (message, epeen) => {
         message.react('✅');
       });
       if (results) {
-        return kick(member, channel, content);
+        return legacyKick(member, channel, content);
       } else {
         return message.reply('Your authority is not recognized in Fort Kickass.').catch(console.error);
       }
@@ -86,7 +86,7 @@ exports.interact = (client, interaction, callback) => {
   const options = interaction.data.options;
   const memberOption = options.find(option=>option.name=='member');
   const contentOption = options.find(option=>option.name=='reason');
-  const content = contentOption && contentOption.value;
+  const reason = contentOption && contentOption.value;
   const member_id = memberOption.value;
   const {guild_id, channel_id} = interaction;
   const guild = client.guilds.cache.get(guild_id);
@@ -105,50 +105,21 @@ exports.interact = (client, interaction, callback) => {
       }
     };
   }
-  channel.createInvite({maxUses: 1}).then(invite => {
-    member.createDM().then( dm => {
-      dm.send(`Get kicked nerd. \n ${content ? `"${content}"`: ''}\n${invite.url}`).then(()=> {
-        member.kick(()=> {
-          callback({data:{
-            content: `Kicked ${member}. ${content ? `(${content})`: ''}`,
-          }});
-        }).catch((error) => {
-          console.error(error);
-          callback({data:{
-            content: `Failed to kick ${member}`
-          }});
-        });
-      }).catch(e => {
-        console.error(`Could not create/send DM: ${e}`) ;
-        member.kick(()=> {
-          callback({data:{
-            content: `Kicked ${member}. ${content ? `(${content})`: ''}\nNo invite was sent.`
-          }});
-        }).catch((error) => {
-          console.error(error);
-          callback({data:{
-            content: `Failed to kick ${member}`
-          }});
-        });
-      });
-    }).catch(error => {
-      console.error(`Could not create/send DM: ${error}`) ;
-      member.kick(()=> {
-        callback({data:{
-          content: `Kicked ${member}. ${content ? `(${content})`: ''}\nNo invite was sent.`
-        }});
-      }).catch((error) => {
-        console.error(error);
-        callback({data:{
-          content: `Failed to kick ${member}`
-        }});
-      });
-    });
-  }).catch(error => {
-    console.error(`Could not create invite. ${error}`);
+  if(!member.kickable) {
+    return {
+      data: {
+        type: 4,
+        data: {
+          content: 'I\'m sorry, I cannot do that.',
+        }
+      }
+    };
+  }
+
+  const kick = (member, invite = false) => {
     member.kick(()=> {
       callback({data:{
-        content: `Kicked ${member}. ${content ? `(${content})`: ''}\nNo invite was sent.`
+        content: `Kicked ${member}. ${reason ? `(${reason})`: ''}${invite ? '\nNo invite was sent.' : ''}`
       }});
     }).catch((error) => {
       console.error(error);
@@ -156,20 +127,23 @@ exports.interact = (client, interaction, callback) => {
         content: `Failed to kick ${member}`
       }});
     });
-  });
+  };
+
+  const inviteAndKick = async (channel, member, reason) => {
+    const invite = await channel.createInvite({maxUses: 1}).catch(console.error);
+    const dmChannel = await member.createDM().catch(console.error);
+    if(dmChannel) {
+      await dmChannel.send(`Get kicked nerd \n ${reason ? `"${reason}"` : ''}\n ${invite ? `${invite.url}` : ''}`);
+    }
+    kick(member, invite);
+  };
+
+
+  inviteAndKick(channel, member, reason);
   return {data: {type: 5}};
-  // return {
-  //   data: {
-  //     type: 4,
-  //     data: {
-  //       content: 'Still in development',
-  //       flags: 1 << 6,
-  //     }
-  //   }
-  // };
 };
 
-const kick = (member, channel, content) => {
+const legacyKick = (member, channel, content) => {
   // const { channel, content } = message;
   return member
     .kick()
