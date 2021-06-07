@@ -86,7 +86,7 @@ exports.interact = (client, interaction, callback) => {
   const options = interaction.data.options;
   const memberOption = options.find(option=>option.name=='member');
   const contentOption = options.find(option=>option.name=='reason');
-  const reason = contentOption && contentOption.value;
+  const reason = (contentOption && contentOption.value) || '';
   const member_id = memberOption.value;
   const {guild_id, channel_id} = interaction;
   const guild = client.guilds.cache.get(guild_id);
@@ -117,9 +117,9 @@ exports.interact = (client, interaction, callback) => {
   }
 
   const kick = (member, invite = false) => {
-    member.kick(()=> {
+    member.kick().then(()=> {
       callback({data:{
-        content: `Kicked ${member}. ${reason ? `(${reason})`: ''}${invite ? '\nNo invite was sent.' : ''}`
+        content: `Kicked ${member}. (${reason}) ${invite ? '' : 'No invite was sent'}`,
       }});
     }).catch((error) => {
       console.error(error);
