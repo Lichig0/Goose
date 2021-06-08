@@ -262,11 +262,10 @@ const sendMarkovString = async (channel, data, content) => {
     const word = markov.startWords.findIndex(startWord => {
       // we should have a common string normalizer?
       const words = startWord.words.toLowerCase();
-      console.debug(`${words}\n${content}`);
       const contentWord = chance.pickone(content.split(' ')).toLowerCase();
       return words !== '' && words.includes(contentWord);
     });
-    console.debug(word);
+    console.debug(word, markov.startWords[word]);
 
     if(word > 0){
       const notSoRandom = (word/markov.startWords.length);
