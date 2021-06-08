@@ -17,7 +17,6 @@ const queriesCatalog = [
   'shit',
   'fuck',
   'brainlet',
-  'tw',
   'nintendo',
   'sony',
   'playstation',
@@ -26,7 +25,7 @@ const queriesCatalog = [
   'Trump',
   'Biden'
 ];
-const queryFilter = '(-has:links -has:mentions -is:retweet)';
+const queryFilter = '(-has:links -has:mentions -is:retweet lang:en)';
 
 module.exports.fetch = async () => {
   const q = `${queryFilter} ${chance.pickone(queriesCatalog)}`;
