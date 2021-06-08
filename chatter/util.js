@@ -20,7 +20,7 @@ const addMessageToModel = (message, markovModel, splitRegex = undefined) => {
       resolvedUserNameContent = resolvedUserNameContent.replace(userIDRegex, username);
     }
   }
-  
+
 
   const subMessage = resolvedUserNameContent.match(urlRegex) ? [resolvedUserNameContent] : resolvedUserNameContent.split(splitter);
   const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw };
@@ -39,7 +39,7 @@ const addMessageToModel = (message, markovModel, splitRegex = undefined) => {
     } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined) {
 
       const substituteString = channel.messages.cache.array()[1].content;
-      let tCache = data[`${id}.${i}`] = { 
+      let tCache = data[`${id}.${i}`] = {
         ...cache,
         trimmedString: substituteString
       };
@@ -51,7 +51,7 @@ const addMessageToModel = (message, markovModel, splitRegex = undefined) => {
 
 module.exports.wordScore = (markovString, content = '') => {
   let score = 0;
-  
+
   // Word Count
   const words = markovString.split(/[ ,.!?;()"/]/);
   words.forEach(word => {
@@ -67,4 +67,22 @@ module.exports.nsfwCheck = (accumulator, value) => {
   return (accumulator || value.nsfw);
 };
 
+module.exports.hasPairs = (str) => {
+  const needsPairs = ['"', '||' , '`'];
+  needsPairs.forEach(char => {
+    if (str.split(char).length % 2 === 1) {
+      return false;
+    }
+  });
+  return true;
+};
+
+module.exports.normalizeSentence = (sentence = '') => {
+  let resolvedUserNameContent = sentence.replace(brokenUserIDRegex, '<@$2>');
+  const capAndEnd = `${resolvedUserNameContent.replace(resolvedUserNameContent[0], resolvedUserNameContent[0].toUpperCase())}.`;
+
+  return capAndEnd;
+};
+
+// Not likely to be used.
 module.exports.addMessageToModel = addMessageToModel;
