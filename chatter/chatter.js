@@ -265,7 +265,7 @@ const sendMarkovString = async (channel, data, content) => {
       const contentWord = chance.pickone(content.split(' ')).toLowerCase();
       return words !== '' && words.includes(contentWord);
     });
-    console.debug(word, markov.startWords[word]);
+    console.debug(word, markov.startWords[word].words);
 
     if(word > 0){
       const notSoRandom = (word/markov.startWords.length);
@@ -354,7 +354,6 @@ const sendMarkovString = async (channel, data, content) => {
 const addMessage = (message, splitRegex = undefined) => {
   const { id, guild, content, channel, attachments, author } = message;
   const config = settings.settings.chatter;
-  const preFormat = config.preFormat || false;
   const splitter = splitRegex instanceof RegExp ? splitRegex : new RegExp(config.messageSplitter);
 
   let resolvedUserNameContent = content.replace(brokenUserIDRegex, '<@$2>');
@@ -373,7 +372,7 @@ const addMessage = (message, splitRegex = undefined) => {
     const trimmedString = str.trim();
 
     if (trimmedString !== '') { //skip empty strings
-      cache.string = preFormat ? `${trimmedString.replace(trimmedString[0], trimmedString[0].toUpperCase())}.` : trimmedString; // Experimental
+      cache.string = chatterUtil.normalizeSentence(trimmedString);
       if (data[`${id}.${i}`] !== undefined) {
         return;
       } else {
@@ -381,7 +380,7 @@ const addMessage = (message, splitRegex = undefined) => {
         markov.addData([cache]);
         mimickData[author.id].addData([cache]);
       }
-    } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined) {
+    } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined && channel.messages.cache.array()[1]) {
 
       const substituteString = channel.messages.cache.array()[1].content;
       let tCache = data[`${id}.${i}`] = {
@@ -433,9 +432,7 @@ const scrapeHistory = async (guild, textChannels, readRetry = 0) => {
 
   const last = {};
   textChannels.forEach(tc=> last[tc.id] = {});
-  // last[message.channel.id] = message;
   buildData(last, textChannels, data, r).then(() => {
-    // client.user.setStatus('online');
   }).catch((err) => {
 
     console.error(err);
