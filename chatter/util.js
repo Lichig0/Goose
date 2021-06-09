@@ -79,9 +79,8 @@ module.exports.hasPairs = (str) => {
 
 module.exports.normalizeSentence = (sentence = '') => {
   let resolvedUserNameContent = sentence.replace(brokenUserIDRegex, '<@$2>');
-  const capAndEnd = `${resolvedUserNameContent.replace(resolvedUserNameContent[0], resolvedUserNameContent[0].toUpperCase())}.`;
-
-  return capAndEnd;
+  const capitalized = `${resolvedUserNameContent.replace(resolvedUserNameContent[0], resolvedUserNameContent[0].toUpperCase())}`;
+  return (capitalized.endsWith('.') || capitalized.endsWith('?') || capitalized.endsWith('!')) ? capitalized : `${capitalized}.`;
 };
 
 // Not likely to be used.
