@@ -306,12 +306,12 @@ const sendMarkovString = async (channel, data, content) => {
     channel.stopTyping(true);
   };
 
-  const sentenceFallbackHandler = (e) => {
-    if (e) console.error(e);
+  const sentenceFallbackHandler = () => {
+    // if (e) console.error(e);
     console.log('[Couldn\'t generate sentence with constraints]');
     const minimumScore = config.minimumScore || 2;
     const tOpt = {
-      maxTries: 50,
+      maxTries: 10,
       filter: (r) => {
         const multiRef = r.refs.length;
         const goodLength = chatterUtil.wordScore(r.string);
