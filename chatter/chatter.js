@@ -54,6 +54,7 @@ module.exports.init = async (client) => {
     tasks.push(scrapeHistory(guild, channelsToScrape));
   });
   await Promise.all(tasks);
+  console.log('[Finished scraping.]');
   client.user.setStatus('online');
   client.user.setActivity('👀', { type: 'WATCHING' });
 };
