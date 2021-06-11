@@ -23,7 +23,7 @@ const reloadConfig = () => {
 
 module.exports = (client, message) => {
   const {content, author, guild, channel} = message;
-  const config = settings.settings; 
+  const config = settings.settings;
   const disabledCommand = config.disabledCommands || [];
   const prefix = config.prefix || '.';
   if(!guild) return;
@@ -38,6 +38,7 @@ module.exports = (client, message) => {
   if (command) {
     console.log(`
         >command: ${command || content}
+        bot: ${author.bot}
         guild: ${guild}
         channel: ${channel}
         author: ${author}`);
@@ -57,6 +58,7 @@ module.exports = (client, message) => {
     }
     const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
     const kp = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
+    if(author.bot) return;
     guild.members.fetch(author).then(m => {
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
       if (!hasRole || kp || role_perm) return commands[command].run(message, epeen, client);
