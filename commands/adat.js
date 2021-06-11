@@ -7,7 +7,7 @@ module.exports.run = (message) => {
     if (m.kickable === false) {
       return message.reply('ABAT!');
     }
-    channel.createInvite({ maxUses: 1 }).then(invite => {
+    channel.createInvite({ maxUses: 1, unique: true }).then(invite => {
       author.createDM().then(dm => {
         dm.send(`When you're not ADAT: ${invite.url}`).then(()=> {
           m.kick().then(() => {
@@ -77,7 +77,7 @@ const interact = async (client, interaction, callback) => {
   };
 
 
-  const invite = await channel.createInvite({maxUses:1});
+  const invite = await channel.createInvite({maxUses:1, unique: true});
   member.user.createDM().then(dm => {
     dm.send(`When you're not ADAT: ${invite.url}`).then(() => {
       kick(member, channel, messageOption);
