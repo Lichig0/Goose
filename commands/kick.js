@@ -148,8 +148,7 @@ const legacyKick = (member, channel, content) => {
   return member
     .kick()
     .then(() => {
-      // console.log(message, member);
-      channel.createInvite({ maxUses: 1 }).then(invite => {
+      channel.createInvite({ maxUses: 1, unique: true }).then(invite => {
         member.createDM().then(dm => {
           dm.send(`Get kicked nerd.
                     "${content}"`);
