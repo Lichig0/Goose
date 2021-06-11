@@ -1,6 +1,7 @@
 const Twitter = require('twitter-v2');
 const Markov = require('markov-strings').default;
 const Chance = require('chance');
+const chatterUtil = require('./util');
 const chance = new Chance();
 const client = new Twitter({
   bearer_token: process.env.TWITTER_BEARER_TOKEN
@@ -36,7 +37,11 @@ module.exports.fetch = async () => {
   };
   client.get('tweets/search/recent', params).then(response => {
     if(response.data) {
-      const tweets = response.data.map(tweet => tweet.text.replace('&amp;', '&'));
+
+      const tweets = response.data.map(tweet => {
+        const string = chatterUtil.normalizeSentence(tweet.text);
+        return `${string.replace(/&amp;/gi, '&')}`;
+      });
       recordedTweets.push(...tweets);
       markov.addData(tweets);
     }
