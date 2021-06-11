@@ -65,7 +65,7 @@ const interact = async (client, interaction, callback) => {
 
   const kick = (member, channel, message) => {
     member.kick().then(() => {
-      let sendString = 'Don\t let the door hit you on the way out.';
+      let sendString = 'Don\'t let the door hit you on the way out.';
       if(message) {
         sendString = `Reason: ${message.value}`;
       }
