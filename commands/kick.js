@@ -130,12 +130,13 @@ exports.interact = (client, interaction, callback) => {
   };
 
   const inviteAndKick = async (channel, member, reason) => {
-    const invite = await channel.createInvite({maxUses: 1}).catch(console.error);
+    const invite = await channel.createInvite({maxUses: 1, unique: true}).catch(console.error);
     const dmChannel = await member.createDM().catch(console.error);
+    let sent = false;
     if(dmChannel) {
-      await dmChannel.send(`Get kicked nerd \n ${reason ? `"${reason}"` : ''}\n ${invite ? `${invite.url}` : ''}`);
+      sent = await dmChannel.send(`Get kicked nerd \n ${reason ? `"${reason}"` : ''}\n ${invite ? `${invite.url}` : ''}`);
     }
-    kick(member, invite);
+    kick(member, sent);
   };
 
 
