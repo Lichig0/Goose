@@ -73,6 +73,7 @@ module.exports.run = (message = mostRecent, client) => {
   const nuRandRoll = chance.bool({ likelihood: (config.randomChat)}); console.log(nuRandRoll, `${messagesSince/(config.randomChat*100)}`, channel.name, author.tag);
   audit.likelihood = messagesSince/(config.randomChat*100);
 
+  // TODO: move this into it's own file; loaded in as something that happens every message.
   if(Math.abs(1 - audit.likelihood) < 0.015) {
     const playGame = chance.bool({likelihoood: 0.4});
     if (playGame) {
@@ -240,7 +241,7 @@ const sendMarkovString = async (channel, data, content) => {
   };
 
   const minimumScore = config.minimumScore || 2;
-  const maxTries = 10;
+  const maxTries = 20;
   // const maxTries = config.maxTries || 30;
   /*
   function sampleWithPRNG<T>(array: T[], prng: () => number = Math.random): T | undefined {
@@ -266,15 +267,15 @@ const sendMarkovString = async (channel, data, content) => {
       const contentWord = chance.pickone(content.split(' ')).toLowerCase();
       return words !== '' && words.includes(contentWord);
     });
-    console.debug(word, markov.startWords[word].words);
+    // console.debug(word, markov.startWords[word].words);
 
     if(word > 0){
       const notSoRandom = (word/markov.startWords.length);
-      console.debug(notSoRandom);
+      // console.debug(notSoRandom);
       return notSoRandom;
     }
     const random = Math.random();
-    console.debug('rand', random);
+    // console.debug('rand', random);
     return random;
   };
   const options = {
@@ -316,7 +317,7 @@ const sendMarkovString = async (channel, data, content) => {
       filter: (r) => {
         const multiRef = r.refs.length;
         const goodLength = chatterUtil.wordScore(r.string);
-        return (multiRef + goodLength) >= minimumScore;
+        return (multiRef + goodLength) >= minimumScore && !r.refs.includes(r.string);
       }
     };
     eyes.generateTweet(tOpt).then(result => {
