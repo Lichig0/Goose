@@ -53,9 +53,11 @@ module.exports.init = async (client) => {
 
     tasks.push(scrapeHistory(guild, channelsToScrape));
   });
-  await Promise.all(tasks);
-  client.user.setStatus('online');
-  client.user.setActivity('👀', { type: 'WATCHING' });
+  Promise.all(tasks).then((done) => {
+    console.log('[Finished scraping.]', done);
+    client.user.setStatus('online');
+    client.user.setActivity('👀', { type: 'WATCHING' });
+  });
 };
 
 module.exports.run = (message = mostRecent, client) => {
@@ -423,32 +425,36 @@ const fetchMessages = async (channel, o) => {
 };
 
 const scrapeHistory = async (guild, textChannels, readRetry = 0) => {
-  const {client} = guild;
-  let r = 0;
+  return new Promise( (resolve, reject) => {
+    const {client} = guild;
+    let r = 0;
 
-  await client.user.setStatus('dnd');
-  await client.user.setActivity('📖🔍🤔', { type: 'WATCHING' });
+    client.user.setStatus('dnd');
+    client.user.setActivity('📖🔍🤔', { type: 'WATCHING' });
 
-  console.log(`[Scraping History]: ${guild.name} | Channels: ${textChannels.array().map(channel=>channel.name)}`);
+    console.log(`[Scraping History]: ${guild.name} | Channels: ${textChannels.array().map(channel=>channel.name)}`);
 
-  const last = {};
-  textChannels.forEach(tc=> last[tc.id] = {});
-  buildData(last, textChannels, data, r).then(() => {
-  }).catch((err) => {
+    const last = {};
+    textChannels.forEach(tc=> last[tc.id] = {});
+    buildData(last, textChannels, data, r).then(() => {
+    }).catch((err) => {
 
-    console.error(err);
+      console.error(err);
 
-    if (readRetry < 3) {
-      readRetry++;
+      if (readRetry < 3) {
+        readRetry++;
 
-      console.warn('Retry: ', readRetry);
+        console.warn('Retry: ', readRetry);
 
-      scrapeHistory(guild, textChannels, readRetry);
-    }
-  }).finally(() => {
+        scrapeHistory(guild, textChannels, readRetry);
+      } else {
+        reject(err);
+      }
+    }).finally(() => {
 
-    console.log('[Done.]:', guild.name , Object.values(data).length);
-
+      console.log('[Done.]:', guild.name , Object.values(data).length);
+      resolve(Object.values(data).length);
+    });
   });
 };
 
