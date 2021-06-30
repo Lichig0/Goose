@@ -296,6 +296,7 @@ const sendMarkovString = async (channel, data, content) => {
     }
   };
 
+  // TODO: refactor further
   // Generate a sentence
   const sentenceResultHandler = (result) => {
     const config = settings.settings.chatter;
@@ -312,6 +313,10 @@ const sendMarkovString = async (channel, data, content) => {
   const sentenceFallbackHandler = () => {
     // if (e) console.error(e);
     console.log('[Couldn\'t generate sentence with constraints]');
+    const failsafe = () => {
+      chatter = channel.client.emojis.cache.random().toString();
+      audit.refs = 'Skipped. Did not meet constraints.';
+    };
     const minimumScore = config.minimumScore || 2;
     const tOpt = {
       maxTries: 10,
@@ -321,18 +326,25 @@ const sendMarkovString = async (channel, data, content) => {
         return (multiRef + goodLength) >= minimumScore && !r.refs.includes(r.string);
       }
     };
-    eyes.generateTweet(tOpt).then(result => {
-      chatter = result.string;
-      audit.refs = result.refs.flatMap(r => r.string);
-      audit.source = 'Twitter';
-    }).catch(() => {
-      chatter = channel.client.emojis.cache.random().toString();
-      audit.refs = 'Skipped. Did not meet constraints.';
-    }).finally(() => {
-      eyes.fetch();
-      channel.stopTyping(true);
-    });
+    if(chance.bool({likelihood:75})) {
+      generateSentence({...tOpt, maxTries: 500}).then(sentenceResultHandler).catch(() => {
+        failsafe();
+      });
+    } else {
+      eyes.generateTweet(tOpt).then(result => {
+        chatter = result.string;
+        audit.refs = result.refs.flatMap(r => r.string);
+        audit.source = 'Twitter';
+      }).catch(() => {
+        failsafe();
+      }).finally(() => {
+        eyes.fetch();
+        channel.stopTyping(true);
+      });
+    }
+
   };
+
   if(chance.bool({likelihood:75}) || !userToMimick){
     generateSentence(options).then(sentenceResultHandler).catch(sentenceFallbackHandler);
   } else {
