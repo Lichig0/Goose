@@ -37,7 +37,7 @@ module.exports.run = (message, epeen) => {
     message.react('👍').catch(console.error);
     message.react('👎').catch(console.error);
 
-    const collector = message.createReactionCollector(filter, { time });
+    const collector = message.createReactionCollector({filter,  time });
     collector.on('end', collected => {
       const upVote = collected.get('👍') ? collected.get('👍').count - 1 : 0;
       const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
@@ -91,7 +91,7 @@ exports.interact = (client, interaction, callback) => {
   const {guild_id, channel_id} = interaction;
   const guild = client.guilds.cache.get(guild_id);
   const member = guild.members.cache.get(member_id);
-  const userPermission = new Permissions(Number.parseInt(interaction.member.permissions));
+  const userPermission = new Permissions(BigInt(interaction.member.permissions));
   const channel = guild.channels.cache.get(channel_id);
   const canKick = userPermission.has(Permissions.FLAGS.KICK_MEMBERS);
   console.log(userPermission.toArray());

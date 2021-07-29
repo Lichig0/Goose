@@ -49,7 +49,9 @@ module.exports.init = async (client) => {
   const tasks = [];
 
   client.guilds.cache.each(guild => {
-    const channelsToScrape = guild.channels.cache.filter(ch => ch.type == 'text' && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
+    // const channelsToScrape = guild.channels.cache.filter(ch => ch.type == 'GUILD_TEXT' && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
+    const channelsToScrape = guild.channels.cache.filter(ch => ch.isText() && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
+
 
     tasks.push(scrapeHistory(guild, channelsToScrape));
   });
@@ -96,7 +98,7 @@ module.exports.run = (message = mostRecent, client) => {
     }
   } else {
     noiseTimeout = noiseFrequency;
-    makeNoise = client.setTimeout(() => {
+    makeNoise = setTimeout(() => {
 
       console.log('[Silence Breaker]', mostRecent.channel.name);
 
@@ -145,7 +147,7 @@ module.exports.run = (message = mostRecent, client) => {
 
   const chanCache = message.channel.messages.cache.array().reverse().slice(0,10);
   const microTrend = chanCache.reduce((accumulate, currentVal) => {
-    if(currentVal.content === message.content && currentVal.author !== message.author) {
+    if(currentVal.content === message.content && currentVal.author.id !== message.author.id) {
       return accumulate += 1;
     } else if (accumulate == 3) {
       return accumulate;
@@ -221,9 +223,9 @@ const sendMarkovString = async (channel, data, content) => {
   let chatter = '🤫';
   let files = [];
   const config = settings.settings.chatter;
-  channel.startTyping().then(() => {
+  channel.sendTyping().then(() => {
     if (!config.mentions) chatter = Discord.Util.cleanContent(chatter, channel.lastMessage);
-    sendChatter(channel, chatter, { files });
+    sendChatter(channel, chatter, { embeds: files });
   });
 
 
@@ -262,6 +264,7 @@ const sendMarkovString = async (channel, data, content) => {
   grab start words, return a random sorted given words location from start words, divide that by the length of start words. default to random after
   */
   const pRandomStartSelect = () => {
+    markov.startWords = chance.shuffle(markov.startWords);
     const word = markov.startWords.findIndex(startWord => {
       // we should have a common string normalizer?
       const words = startWord.words.toLowerCase();
@@ -307,7 +310,7 @@ const sendMarkovString = async (channel, data, content) => {
     audit.refs = result.refs.flatMap(r => r.string);
     files = attachments.length > 0 ? [mathjs.pickRandom(attachments)] : [];
 
-    channel.stopTyping(true);
+    // channel.stopTyping(true);
   };
 
   const sentenceFallbackHandler = () => {
@@ -326,7 +329,7 @@ const sendMarkovString = async (channel, data, content) => {
         return (multiRef + goodLength) >= minimumScore && !r.refs.includes(r.string);
       }
     };
-    if(chance.bool({likelihood:75})) {
+    if(chance.bool({likelihood:95})) {
       generateSentence({...tOpt, maxTries: 500}).then(sentenceResultHandler).catch(() => {
         failsafe();
       });
@@ -339,7 +342,7 @@ const sendMarkovString = async (channel, data, content) => {
         failsafe();
       }).finally(() => {
         eyes.fetch();
-        channel.stopTyping(true);
+        // channel.stopTyping(true);
       });
     }
 
@@ -373,7 +376,7 @@ const addMessage = (message, splitRegex = undefined) => {
 
   let resolvedUserNameContent = content.replace(brokenUserIDRegex, '<@$2>');
   if(userIDRegex.test(resolvedUserNameContent)) {
-    const guildUser = guild.member(userIDRegex.exec(resolvedUserNameContent)[2]);
+    const guildUser = guild.members.cache.get(userIDRegex.exec(resolvedUserNameContent)[2]);
     if( guildUser ) {
       const username = guildUser.nickname || guildUser.user.username;
       resolvedUserNameContent = resolvedUserNameContent.replace(userIDRegex, username);

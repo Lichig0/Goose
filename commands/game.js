@@ -59,7 +59,7 @@ exports.run = (message) => {
         { name: 'Franchise', value: frans, inline: true },
         { name: 'Genres', value: genre, inline: true },
       ]);
-      channel.send(embed).catch(console.warn);
+      channel.send({embeds: [embed]}).catch(console.warn);
     }).catch(console.error);
   } else {
     const gameName = content.split(COMMAND)[1];
@@ -96,12 +96,12 @@ exports.run = (message) => {
       embed.setTitle(name).setDescription(deck).setURL(site_detail_url);
       embed.setFooter(guid);
       embed.setThumbnail(image.original_url);
-      embed.addField('Platforms', plats, true);
+      embed.addField('Platforms', `${plats}`, true);
       if(aliases) embed.addField('Alias(es)', aliases);
       if(original_release_date) embed.addField('Released', original_release_date, true);
       if (!original_release_date) embed.addField('Expected release', `${expected_release_year || '????'} - ${expected_release_month || '??' } - ${expected_release_day || '??'} Q${expected_release_quarter || '?'}`);
       if (otherGames.toString() !== '')embed.addField('More results', otherGames.toString(), true);
-      channel.send(embed).catch(console.warn);
+      channel.send({embeds: [embed]}).catch(console.warn);
     }).catch(console.error);
   }
 };

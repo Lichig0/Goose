@@ -35,12 +35,14 @@ exports.run = (message, epeen) => {
     const quote = body[Math.floor(Math.random() * body.length)];
     if (quote) {
       const embed = new MessageEmbed();
+      const files = [];
       const { id, body, author_id, notes, tags, created, score, votes, attachment, attachmentUrl } = quote;
       if (attachmentUrl) {
         embed.setImage(attachmentUrl);
       } else if(attachment) {
         const buf = Buffer.from(attachment, 'base64');
-        embed.attachFiles(new MessageAttachment(buf));
+        // embed.attachFiles(new MessageAttachment(buf));
+        files.push(new MessageAttachment(buf));
       }
       embed.setTitle(`Quote #${id}`);
       embed.setDescription(body);
@@ -51,40 +53,42 @@ exports.run = (message, epeen) => {
       embed.addField('Added by', (author_id || 'Anonymous'), true);
       if (tags) embed.setFooter(tags);
       if (created) embed.setTimestamp(new Date(created));
+      const embeds = [];
       Util.splitMessage(body).forEach(splitBody => {
         embed.setDescription(splitBody);
         console.log(embed);
-        message.channel.send(embed).then((sendMessage => {
-          const qid = id;
-          const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
-          const config = settings.qdb || {};
-          const time = config.voteTime || 60000;
-          sendMessage.react('👍').catch(console.error);
-          sendMessage.react('👎').catch(console.error);
-          const collector = sendMessage.createReactionCollector(filter, { time });
-          collector.on('end', collected => {
-            const upVote = collected.get('👍') ? collected.get('👍').count -1 : 0;
-            const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
-            if (upVote == 0 && downVote == 0) {
-              return;
-            }
-            const results = Number(score) + (upVote - downVote);
-            const newVotes = (Number(votes || 0)) + (upVote+downVote);
-            const scoreField = embed.fields.find(field=> field.name === 'Score');
-            const votesField = embed.fields.find(field => field.name === 'Votes');
-            scoreField.value = results;
-            votesField.value = newVotes;
-            qdb.vote(qid, results, newVotes);
-            sendMessage.edit('', {embed}).catch(console.error);
-            sendMessage.reactions.removeAll().catch(e => {
-              console.error(e);
-              sendMessage.react('👍').catch(console.error);
-              sendMessage.react('👎').catch(console.error);
-            });
-            sendMessage.react('✅').catch(console.error);
-          });
-        })).catch(e => console.error('Failed to send.', e));
+        embeds.push(embed);
       });
+      message.channel.send({embeds: embeds, files: files}).then((sendMessage => {
+        const qid = id;
+        const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
+        const config = settings.qdb || {};
+        const time = config.voteTime || 60000;
+        sendMessage.react('👍').catch(console.error);
+        sendMessage.react('👎').catch(console.error);
+        const collector = sendMessage.createReactionCollector({filter,  time });
+        collector.on('end', collected => {
+          const upVote = collected.get('👍') ? collected.get('👍').count -1 : 0;
+          const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
+          if (upVote == 0 && downVote == 0) {
+            return;
+          }
+          const results = Number(score) + (upVote - downVote);
+          const newVotes = (Number(votes || 0)) + (upVote+downVote);
+          const scoreField = embed.fields.find(field=> field.name === 'Score');
+          const votesField = embed.fields.find(field => field.name === 'Votes');
+          scoreField.value = results;
+          votesField.value = newVotes;
+          qdb.vote(qid, results, newVotes);
+          sendMessage.edit('', {embed}).catch(console.error);
+          sendMessage.reactions.removeAll().catch(e => {
+            console.error(e);
+            sendMessage.react('👍').catch(console.error);
+            sendMessage.react('👎').catch(console.error);
+          });
+          sendMessage.react('✅').catch(console.error);
+        });
+      })).catch(e => console.error('Failed to send.', e));
     }
   };
 
@@ -159,7 +163,7 @@ exports.getCommandData = () => {
       //   name: 'get',
       //   description: 'Get a quote from QDB',
       //   type: 2,
-      //   options: [  
+      //   options: [
       //   ]
       // }
     ]
@@ -200,7 +204,7 @@ exports.interact = (client, interaction, callback) => {
       callback({data:{embeds:embeds}});
     }
   };
-  
+
   // const quoteNumber = interaction.data.options.find(option => option.name === PARAMETERS.QUOTE_NUMBER);
   const subCommand = interaction.data.options[0].name;
   const commandOptions = interaction.data.options[0].options;

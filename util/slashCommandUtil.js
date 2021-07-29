@@ -80,7 +80,7 @@ const _onInteract = async (interaction) => {
   const interactionName = interaction.data.name;
 
   if(commands[interactionName] && commands[interactionName].interact) {
-    const userPermission = new Discord.Permissions(Number.parseInt(interaction.member.permissions));
+    const userPermission = new Discord.Permissions(BigInt(interaction.member.permissions));
     console.log(userPermission.toArray());
     const data = await commands[interactionName].interact(state.client, interaction, (send) => {
       _updateCommandResponse(interaction.token)(send).catch(console.error);

@@ -30,9 +30,9 @@ module.exports.run = (message, epeen, who = undefined) => {
         name: 'cursed',
         color: '#2B2B2B',
         position: 10,
-        permissions: new Permissions(327744),
-      },
-      reason: 'Sometimes you need to silence the people.',
+        permissions: new Permissions(BigInt(327744)),
+        reason: 'Sometimes you need to silence the people.',
+      }
     }).then((r) => {
       role = r;
     }).catch((err) => {
@@ -75,7 +75,7 @@ module.exports.run = (message, epeen, who = undefined) => {
     message.react('👍').catch(console.error);
     message.react('👎').catch(console.error);
 
-    const collector = message.createReactionCollector(filter, { time });
+    const collector = message.createReactionCollector({filter,  time });
     collector.on('end', collected => {
       const upVote = collected.get('👍') ? collected.get('👍').count - 1 : 0;
       const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;

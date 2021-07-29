@@ -43,7 +43,7 @@ module.exports = (client, message) => {
         channel: ${channel}
         author: ${author}`);
   }
-  const epeen = guild ? guild.member(author).permissions : new Permissions(Permissions.ALL);
+  const epeen = guild ? guild.members.cache.get(author.id).permissions : new Permissions(Permissions.ALL);
   if(guild && command) {
     const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
     const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
@@ -59,7 +59,7 @@ module.exports = (client, message) => {
     const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
     const kp = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
     if(author.bot) return;
-    guild.members.fetch(author).then(m => {
+    guild.members.fetch(author.id).then(m => {
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
       if (!hasRole || kp || role_perm) return commands[command].run(message, epeen, client);
     });

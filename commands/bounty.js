@@ -75,7 +75,7 @@ exports.run = (message) => {
     if(data.length > 0) {
       const bounty = new Bounty(data[0]);
       const embed = bounty.generateEmbed();
-      message.channel.send(embed).catch(console.warn);
+      message.channel.send({embeds: [embed]}).catch(console.warn);
     }
   };
 
@@ -116,7 +116,7 @@ exports.run = (message) => {
         const b = new Bounty(row);
         embed.addField(`#${id}:${gameName}`, `${b.STATUS[b.status]}  |  ${reward}  |  ${optReward || 'None'} ${assigneeId ? '  |  '+assigneeId : ''} `);
       });
-      channel.send(embed).catch(console.warn);
+      channel.send({embeds: [embed]}).catch(console.warn);
     });
     return channel.send('Not implemented.').catch(console.warn);
   } else if (content.startsWith(CLAIM, 1)) {

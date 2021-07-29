@@ -18,8 +18,8 @@ module.exports.run = (message, epeen, who = undefined) => {
       data: {
         name: 'Bot Abuser',
         color: '#067676',
-      },
-      reason: 'Sometimes you need to ignore the people.',
+        reason: 'Sometimes you need to ignore the people.',
+      }
     }).then((r) => {
       role = r;
     }).catch((err) => {

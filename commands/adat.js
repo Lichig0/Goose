@@ -3,7 +3,7 @@ const COMMAND_NAME = path.basename(__filename, '.js');
 
 module.exports.run = (message) => {
   const {author, channel, guild} = message;
-  guild.members.fetch(author).then(m => {
+  guild.members.fetch(author.id).then(m => {
     if (m.kickable === false) {
       return message.reply('ABAT!');
     }
@@ -80,6 +80,10 @@ const interact = async (client, interaction, callback) => {
   const invite = await channel.createInvite({maxUses:1, unique: true});
   member.user.createDM().then(dm => {
     dm.send(`When you're not ADAT: ${invite.url}`).then(() => {
+      kick(member, channel, messageOption);
+    }).catch(e => {
+      console.error(e);
+      channel.send('Couldn\'t send an invite. Sucks for them.').catch(console.error);
       kick(member, channel, messageOption);
     });
   }).catch(e => { // Could not DM

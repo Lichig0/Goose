@@ -5,7 +5,7 @@ module.exports.run = (message) => {
   const { author } = message;
 
   return author.createDM().then(dm => {
-    dm.startTyping();
+    dm.sendTyping();
     // const buffer = fs.readFileSync('./cache.json');
     // const attachment = new MessageAttachment(buffer, 'memes.txt');
     // dm.send('Exported cache', attachment);
@@ -15,7 +15,7 @@ module.exports.run = (message) => {
         name: 'cache.json'
       }]
     }).then(console.log).catch(console.error).finally(() => {
-      dm.stopTyping();
+      // dm.stopTyping();
     });
   }).catch(error => console.error(error));
 };
