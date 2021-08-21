@@ -43,7 +43,8 @@ module.exports = (client, message) => {
         channel: ${channel}
         author: ${author}`);
   }
-  const epeen = guild ? guild.members.cache.get(author.id).permissions : new Permissions(Permissions.ALL);
+  const guildAuthor = guild.members.cache.get(author.id);
+  const epeen = guild && guildAuthor ? guildAuthor.permissions : new Permissions(Permissions.DEFAULT);
   if(guild && command) {
     const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
     const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
