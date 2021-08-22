@@ -145,7 +145,7 @@ module.exports.run = (message = mostRecent, client) => {
     });
   }
 
-  const chanCache = message.channel.messages.cache.array().reverse().slice(0,10);
+  const chanCache = message.channel.messages.cache.last(10).reverse().slice(0,10);
   const microTrend = chanCache.reduce((accumulate, currentVal) => {
     if(currentVal.content === message.content && currentVal.author.id !== message.author.id) {
       return accumulate += 1;
@@ -398,9 +398,9 @@ const addMessage = (message, splitRegex = undefined) => {
         markov.addData([cache]);
         mimickData[author.id].addData([cache]);
       }
-    } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined && channel.messages.cache.array()[1]) {
+    } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined && channel.messages.cache[1]) {
 
-      const substituteString = channel.messages.cache.array()[1].content;
+      const substituteString = channel.messages.cache[1].content;
       let tCache = data[`${id}.${i}`] = {
         ...cache,
         trimmedString: substituteString
@@ -415,7 +415,7 @@ const addMessage = (message, splitRegex = undefined) => {
 const buildData = async (last = {}, channels, data, times) => {
   times++;
   const config = settings.settings.chatter;
-  const tasks = channels.array().flatMap((ch) => fetchMessages(ch, last[ch.id]));
+  const tasks = channels.map(ch => fetchMessages(ch, last[ch.id]));
   const msgs = await Promise.all(tasks);
   const toCache = msgs instanceof Array ? msgs.filter(m => m.size > 0) : [];
 
@@ -427,7 +427,7 @@ const buildData = async (last = {}, channels, data, times) => {
     });
     if (mm.size < 100) {
       const i = msgs.indexOf(mm);
-      if ( i > -1 && msgs[i].array().size > 0) channels.delete(msgs[i].array()[0].channel.id);
+      if ( i > -1 && msgs[i].size > 0) channels.delete(msgs[i].channel);
     }
   });
   if (Object.values(data).length < config.arrayLimiter && times < 1000 && toCache.length > 0) {
@@ -447,7 +447,7 @@ const scrapeHistory = async (guild, textChannels, readRetry = 0) => {
     client.user.setStatus('dnd');
     client.user.setActivity('📖🔍🤔', { type: 'WATCHING' });
 
-    console.log(`[Scraping History]: ${guild.name} | Channels: ${textChannels.array().map(channel=>channel.name)}`);
+    console.log(`[Scraping History]: ${guild.name} | Channels: ${textChannels.map(channel=>channel.name)}`);
 
     const last = {};
     textChannels.forEach(tc=> last[tc.id] = {});

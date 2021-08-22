@@ -1,9 +1,13 @@
 // This is a interm untility for slash commands until DiscordJS releases their library tools.
 const Discord = require('discord.js');
+// const { REST } = require('@discordjs/rest');
+// const { Routes } = require('discord-api-types/v9');
 const fs = require('fs');
 const COMMANDS_DIR = './commands/';
 const commands = {};
 const state = {};
+// const botToken = process.env.BOT_TOKEN;
+
 
 fs.readdir(COMMANDS_DIR, (err, files) => {
   files.forEach(file => {

@@ -4,21 +4,23 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@discordjs/rest": "0.1.0-canary.0",
     "bufferutil": "^4.0.3",
     "chance": "^1.1.7",
-    "discord.js": "^13.0.0-dev.30a58dc.1627430624",
+    "discord-api-types": "^0.22.0",
+    "discord.js": "^13.1.0",
     "dotenv": "^8.6.0",
     "giant-bomb": "^2.0.1",
     "markov-strings": "^3.0.1",
     "mathjs": "^7.6.0",
-    "nodemon": "^2.0.7",
+    "nodemon": "^2.0.12",
     "sqlite3": "^5.0.2",
     "twitter-v2": "^1.1.0",
     "utf-8-validate": "^5.0.5",
     "zlib-sync": "^0.1.7"
   },
   "devDependencies": {
-    "eslint": "^7.26.0"
+    "eslint": "^7.32.0"
   },
   "scripts": {
     "start": "node index.js",
