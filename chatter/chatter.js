@@ -1,5 +1,5 @@
 const Discord = require('discord.js');
-const mathjs = require('mathjs');
+// const mathjs = require('mathjs');
 const Markov = require('markov-strings').default;
 const settings = require('../settings');
 const coreThoughts = require('./coreThoughts');
@@ -306,15 +306,15 @@ const sendMarkovString = async (channel, data, content) => {
     let attachments = [];
     chatter = result.string.replace(brokenUserIDRegex, '<@$2>');
 
-    if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments.array()));
+    if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments));
     audit.refs = result.refs.flatMap(r => r.string);
-    files = attachments.length > 0 ? [mathjs.pickRandom(attachments)] : [];
+    files = attachments.size > 0 ? [attachments.random()] : [];
 
     // channel.stopTyping(true);
   };
 
-  const sentenceFallbackHandler = () => {
-    // if (e) console.error(e);
+  const sentenceFallbackHandler = (e) => {
+    if (e) console.error(e);
     console.log('[Couldn\'t generate sentence with constraints]');
     const failsafe = () => {
       chatter = channel.client.emojis.cache.random().toString();
@@ -398,9 +398,9 @@ const addMessage = (message, splitRegex = undefined) => {
         markov.addData([cache]);
         mimickData[author.id].addData([cache]);
       }
-    } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined && channel.messages.cache[1]) {
+    } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined && channel.messages.cache.last(2)[1]) {
 
-      const substituteString = channel.messages.cache[1].content;
+      const substituteString = channel.messages.cache.last(2)[1].content;
       let tCache = data[`${id}.${i}`] = {
         ...cache,
         trimmedString: substituteString
@@ -418,7 +418,6 @@ const buildData = async (last = {}, channels, data, times) => {
   const tasks = channels.map(ch => fetchMessages(ch, last[ch.id]));
   const msgs = await Promise.all(tasks);
   const toCache = msgs instanceof Array ? msgs.filter(m => m.size > 0) : [];
-
   const splitter = new RegExp(config.messageSplitter);
 
   toCache.filter(m => m.size > 0).forEach(mm => {
@@ -427,7 +426,8 @@ const buildData = async (last = {}, channels, data, times) => {
     });
     if (mm.size < 100) {
       const i = msgs.indexOf(mm);
-      if ( i > -1 && msgs[i].size > 0) channels.delete(msgs[i].channel);
+      // console.log(msgs);
+      if ( i > -1 && msgs[i].size > 0) channels.delete(channels.findKey(chan => chan.id == msgs[i].channel));
     }
   });
   if (Object.values(data).length < config.arrayLimiter && times < 1000 && toCache.length > 0) {
