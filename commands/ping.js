@@ -1,4 +1,5 @@
 const path = require('path');
+const { SlashCommandBuilder } = require('@discordjs/builders');
 const COMMAND_NAME = path.basename(__filename, '.js');
 exports.help = () => 'Pong? \n';
 module.exports.run = message => {
@@ -18,10 +19,14 @@ CHANNEL	7
 ROLE	8
 MENTIONABLE	9
 */
-  return {
-    name: COMMAND_NAME,
-    description: 'Pong.'
-  };
+
+  // return {
+  //   name: COMMAND_NAME,
+  //   description: 'Pong.',
+  //   default_permission: true,
+  // };
+  const slashCommand = new SlashCommandBuilder().setName(COMMAND_NAME).setDescription('Pong~!');
+  return slashCommand.toJSON();
 };
 module.exports.interact = () => {
   return { data: {
@@ -32,3 +37,19 @@ module.exports.interact = () => {
     }}
   };
 };
+
+module.exports.execute = async (interaction) => {
+  console.log(interaction.member, interaction);
+  await interaction.reply({
+    content: 'Pong~?!',
+    ephemeral: true
+  });
+};
+
+//
+// module.exports = {
+//   data: new SlashCommandBuilder().setName('ping').setDescription('Replies with Pong!'),
+//   async execute(interaction) {
+//     await interaction.reply('Pong!');
+//   },
+// };

@@ -1,5 +1,34 @@
 const { Permissions } = require('discord.js');
 exports.help = () => 'Accuse a memeber of being a Bot Abuser. (User needs role permission)\n';
+const path = require('path');
+const COMMAND_NAME = path.basename(__filename, '.js');
+module.exports.getCommandData = () => {
+  /*
+  SUB_COMMAND	1
+SUB_COMMAND_GROUP	2
+STRING	3
+INTEGER	4
+BOOLEAN	5
+USER	6
+CHANNEL	7
+ROLE	8
+MENTIONABLE	9
+*/
+  return {
+    name: COMMAND_NAME,
+    description: 'Placeholder.',
+    default_permission: false,
+  };
+};
+module.exports.interact = () => {
+  return { data: {
+    type: 4,
+    data: {
+      content: 'Pong~',
+      flags: 1 << 6
+    }}
+  };
+};
 module.exports.run = (message, epeen, who = undefined) => {
   const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
   let members = who || message.mentions.members;

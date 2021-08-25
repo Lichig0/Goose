@@ -20,14 +20,14 @@ fs.readdir(COMMANDS_DIR, (err, files) => {
   });
 });
 
-const _getRegisteredCommands = () => state.client.api.applications(state.client.user.id).commands.get;
-const _registerCommand = () => state.client.api.applications(state.client.user.id).commands.post;
-const _registerDevCommand = () => state.client.api.applications(state.client.user.id).guilds('637314469894160405').commands.post;
-const _removeDevCommand = (id) => state.client.api.applications(state.client.user.id).guilds('637314469894160405').commands(id).delete;
-const _getRegisteredDevCommands = () => state.client.api.applications(state.client.user.id).guilds('637314469894160405').commands.get;
-const _updateRegisteredDevCommand = (id) => state.client.api.applications(state.client.user.id).guilds('637314469894160405').commands(id).patch;
-const _removeRegisteredCommand = (id) => state.client.api.applications(state.client.user.id).commands(id).delete;
-const _updateRegisteredCommand = (id) => state.client.api.applications(state.client.user.id).commands(id).patch;
+// const _getRegisteredCommands = () => state.client.api.applications(state.client.user.id).commands.get;
+// const _registerCommand = () => state.client.api.applications(state.client.user.id).commands.post;
+// const _registerDevCommand = () => state.client.api.applications(state.client.user.id).guilds('637314469894160405').commands.post;
+// const _removeDevCommand = (id) => state.client.api.applications(state.client.user.id).guilds('637314469894160405').commands(id).delete;
+// const _getRegisteredDevCommands = () => state.client.api.applications(state.client.user.id).guilds('637314469894160405').commands.get;
+// const _updateRegisteredDevCommand = (id) => state.client.api.applications(state.client.user.id).guilds('637314469894160405').commands(id).patch;
+// const _removeRegisteredCommand = (id) => state.client.api.applications(state.client.user.id).commands(id).delete;
+// const _updateRegisteredCommand = (id) => state.client.api.applications(state.client.user.id).commands(id).patch;
 const _updateCommandResponse = (token) => state.client.api.webhooks(state.client.user.id, token).messages('@original').patch;
 const _commandResponse = (id, token) => state.client.api.interactions(id, token).callback.post;
 
@@ -37,46 +37,46 @@ const initSlashCommands = (client) => {
     return;
   }
   state.client = client;
-  _getRegisteredCommands()().then(registeredCommands => {
-    const RCNameSet = new Set(registeredCommands.map(rc=> rc.name));
-    const slashCommands = state.slashCommands = new Set(Object.keys(commands).filter(c => commands[c].getCommandData));
-    //Add or update commands
-    slashCommands.forEach(slashCommand => {
-      //If already registered, update.
-      const cd = {data:commands[slashCommand].getCommandData()};
-      if(RCNameSet.has(slashCommand)) {
-        const {id} = registeredCommands.find(rc=>rc.name === slashCommand);
-        console.log(`${slashCommand} already registered`);
-        _updateRegisteredCommand(id)(cd).catch(console.error);
-        return;
-      }
-      _registerCommand()(cd).catch(console.error);
-    });
-    const toRemove = new Set([...RCNameSet].filter(rc => !slashCommands.has(rc)));
-    toRemove.forEach(depricatedCommand => {
-      const {id} = registeredCommands.find(rc=>rc.name === depricatedCommand);
-      _removeRegisteredCommand(id)().catch(console.error);
-    });
-    // Dev Commands
-    _getRegisteredDevCommands()().then(serverSlashCommands => {
-      const SSCNameSet = new Set(serverSlashCommands.map(rc=>rc.name));
-      slashCommands.forEach(slashCommand => {
-        const cd = {data:commands[slashCommand].getCommandData()};
-        if(SSCNameSet.has(slashCommand)) {
-          const {id} = serverSlashCommands.find(rc=>rc.name === slashCommand);
-          console.log(`server has ${slashCommand}`);
-          _updateRegisteredDevCommand(id)(cd).catch(console.error);
-          return;
-        }
-        _registerDevCommand()(cd).catch(console.error);
-      });
-      const toRemoveDev = new Set([...SSCNameSet].filter(rc => !slashCommands.has(rc)));
-      toRemoveDev.forEach(depricatedCommand => {
-        const {id} = serverSlashCommands.find(rc=>rc.name === depricatedCommand);
-        _removeDevCommand(id)().catch(console.error);
-      });
-    }).catch(console.error);
-  }).catch(console.error);
+  // _getRegisteredCommands()().then(registeredCommands => {
+  //   const RCNameSet = new Set(registeredCommands.map(rc=> rc.name));
+  //   const slashCommands = state.slashCommands = new Set(Object.keys(commands).filter(c => commands[c].getCommandData));
+  //   //Add or update commands
+  //   slashCommands.forEach(slashCommand => {
+  //     //If already registered, update.
+  //     const cd = {data:commands[slashCommand].getCommandData()};
+  //     if(RCNameSet.has(slashCommand)) {
+  //       const {id} = registeredCommands.find(rc=>rc.name === slashCommand);
+  //       console.log(`${slashCommand} already registered`);
+  //       _updateRegisteredCommand(id)(cd).catch(console.error);
+  //       return;
+  //     }
+  //     _registerCommand()(cd).catch(console.error);
+  //   });
+  //   const toRemove = new Set([...RCNameSet].filter(rc => !slashCommands.has(rc)));
+  //   toRemove.forEach(depricatedCommand => {
+  //     const {id} = registeredCommands.find(rc=>rc.name === depricatedCommand);
+  //     _removeRegisteredCommand(id)().catch(console.error);
+  //   });
+  //   // Dev Commands
+  //   _getRegisteredDevCommands()().then(serverSlashCommands => {
+  //     const SSCNameSet = new Set(serverSlashCommands.map(rc=>rc.name));
+  //     slashCommands.forEach(slashCommand => {
+  //       const cd = {data:commands[slashCommand].getCommandData()};
+  //       if(SSCNameSet.has(slashCommand)) {
+  //         const {id} = serverSlashCommands.find(rc=>rc.name === slashCommand);
+  //         console.log(`server has ${slashCommand}`);
+  //         _updateRegisteredDevCommand(id)(cd).catch(console.error);
+  //         return;
+  //       }
+  //       _registerDevCommand()(cd).catch(console.error);
+  //     });
+  //     const toRemoveDev = new Set([...SSCNameSet].filter(rc => !slashCommands.has(rc)));
+  //     toRemoveDev.forEach(depricatedCommand => {
+  //       const {id} = serverSlashCommands.find(rc=>rc.name === depricatedCommand);
+  //       _removeDevCommand(id)().catch(console.error);
+  //     });
+  //   }).catch(console.error);
+  // }).catch(console.error);
   client.ws.on('INTERACTION_CREATE', _onInteract);
 };
 

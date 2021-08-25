@@ -56,7 +56,6 @@ module.exports.run = (message, epeen) => {
 exports.getCommandData = () => {
   return {
     name: COMMAND_NAME,
-    type: 3,
     description: 'Make me say a thing',
     options: [{
       name: 'input',

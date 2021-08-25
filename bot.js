@@ -1,6 +1,8 @@
 require('dotenv').config();
-const {Client, Intents} = require('discord.js');
+const {Client, Intents, Collection} = require('discord.js');
 const fs = require('fs');
+
+const COMMANDS_DIR = './commands/';
 const initTables = require('./dbactions/initTables');
 const scUtil = require('./util/slashCommandUtil');
 const settings = require('./settings');
@@ -16,9 +18,33 @@ fs.readdir('./events/', (err, files) => {
 });
 initTables();
 
+fs.readdir(COMMANDS_DIR, (err, files) => {
+  files.forEach(file => {
+    const commandName = file.split('.')[0];
+    if(commandName === 'base') {
+      // const baseCommand = require(`.${COMMANDS_DIR}${file}`);
+      // commands[commandName] = new baseCommand;
+    }
+    const command = require(`${COMMANDS_DIR}${file}`);
+    client.commands.set([commandName], command);
+    // console.log(client.commands);
+  });
+});
+
+client.commands = new Collection();
 
 
 client.once('ready', () => {
+  // console.log(client.commands, 'ready');
+  const commandDataList = [];
+  client.commands.each((command) => {
+    // console.log(command);
+    if(command.getCommandData) commandDataList.push(command.getCommandData());
+    // if(command.getCommandData) client.application.commands.set([command.getCommandData()], '637314469894160405');
+  });
+  client.application.commands.set(commandDataList, '637314469894160405').then(console.log).catch(console.error);
+  // client.application.commands.fetch().then(console.log);
+  // client.application.commands.set();
   scUtil.initSlashCommands(client);
 });
 

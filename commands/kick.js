@@ -62,7 +62,7 @@ exports.getCommandData = () => {
   return {
     name: COMMAND_NAME,
     description: 'Kick a member.',
-    type: 3, // ???
+    // type: 3, // ???
     default_permission: true,
     options: [
       {
