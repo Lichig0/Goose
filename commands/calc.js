@@ -4,7 +4,7 @@ const math = require('mathjs');
 const COMMAND_NAME = `${path.basename(__filename, '.js')} `;
 const parser = math.parser();
 
-exports.help = () => 'Load the config (for chatter)\n';
+exports.help = () => '2 + 2\n';
 
 exports.run = (message) => {
   const { content } = message;
