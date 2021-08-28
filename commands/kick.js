@@ -15,54 +15,53 @@ exports.help = () => {
   return `'Kick a member. (User needs kick permission, or ${rv})\n`;
 };
 
-module.exports.run = (message, epeen) => {
-  const { mentions, channel, content} = message;
-  const member = mentions.members.first();
-  const config = settings.settings.kick || DEFAULTS;
-  const enabled = config.enabled;
-  const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
-  if (!member) {
-    return message.reply('Who are you trying to kick?').catch(console.error);
-  }
-  if(!member.kickable) {
-    return message.reply('I\'m sorry, I cannot do that.').catch(console.error);
-  }
-  if (kick_perm) {
-    return legacyKick(member, channel, content);
-  } else if(enabled) {
-    const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
-    const time = (config.voteTime || DEFAULTS.voteTime) * 1000;
-    const requiredVotes = config.requiredVotes || DEFAULTS.requiredVotes;
+// module.exports.run = (message, epeen) => {
+//   const { mentions, channel, content} = message;
+//   const member = mentions.members.first();
+//   const config = settings.settings.kick || DEFAULTS;
+//   const enabled = config.enabled;
+//   const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
+//   if (!member) {
+//     return message.reply('Who are you trying to kick?').catch(console.error);
+//   }
+//   if(!member.kickable) {
+//     return message.reply('I\'m sorry, I cannot do that.').catch(console.error);
+//   }
+//   if (kick_perm) {
+//     return legacyKick(member, channel, content);
+//   } else if(enabled) {
+//     const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
+//     const time = (config.voteTime || DEFAULTS.voteTime) * 1000;
+//     const requiredVotes = config.requiredVotes || DEFAULTS.requiredVotes;
 
-    message.react('👍').catch(console.error);
-    message.react('👎').catch(console.error);
+//     message.react('👍').catch(console.error);
+//     message.react('👎').catch(console.error);
 
-    const collector = message.createReactionCollector({filter,  time });
-    collector.on('end', collected => {
-      const upVote = collected.get('👍') ? collected.get('👍').count - 1 : 0;
-      const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
+//     const collector = message.createReactionCollector({filter,  time });
+//     collector.on('end', collected => {
+//       const upVote = collected.get('👍') ? collected.get('👍').count - 1 : 0;
+//       const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
 
-      const results = (upVote - downVote) >= requiredVotes || false;
-      message.reactions.removeAll().catch(e => {
-        console.error(e);
-        message.react('✅');
-      });
-      if (results) {
-        return legacyKick(member, channel, content);
-      } else {
-        return message.reply('Your authority is not recognized in Fort Kickass.').catch(console.error);
-      }
-    });
-  } else {
-    return message.reply('Your authority is not recognized in Fort Kickass.').catch(console.error);
-  }
-};
+//       const results = (upVote - downVote) >= requiredVotes || false;
+//       message.reactions.removeAll().catch(e => {
+//         console.error(e);
+//         message.react('✅');
+//       });
+//       if (results) {
+//         return legacyKick(member, channel, content);
+//       } else {
+//         return message.reply('Your authority is not recognized in Fort Kickass.').catch(console.error);
+//       }
+//     });
+//   } else {
+//     return message.reply('Your authority is not recognized in Fort Kickass.').catch(console.error);
+//   }
+// };
 
 exports.getCommandData = () => {
   return {
     name: COMMAND_NAME,
     description: 'Kick a member.',
-    // type: 3, // ???
     default_permission: true,
     options: [
       {
@@ -82,50 +81,36 @@ exports.getCommandData = () => {
 };
 
 
-exports.interact = (client, interaction, callback) => {
-  const options = interaction.data.options;
-  const memberOption = options.find(option=>option.name=='member');
-  const contentOption = options.find(option=>option.name=='reason');
+exports.execute = async (client, interaction, epeen) => {
+  const {options, guild, channel} = interaction;
+  const memberOption = options.get('member').value;
+  const contentOption = options.get('reason').value;
   const reason = (contentOption && contentOption.value) || '';
   const member_id = memberOption.value;
-  const {guild_id, channel_id} = interaction;
-  const guild = client.guilds.cache.get(guild_id);
   const member = guild.members.cache.get(member_id);
-  const userPermission = new Permissions(BigInt(interaction.member.permissions));
-  const channel = guild.channels.cache.get(channel_id);
-  const canKick = userPermission.has(Permissions.FLAGS.KICK_MEMBERS);
-  console.log(userPermission.toArray());
+  const userPermission = interaction.member.permissions;
+  const canKick = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
+  console.log(userPermission);
   if(!canKick) {
-    return {
-      data: {
-        type: 4,
-        data: {
-          content: 'Your authority is not recognized in Fort Kickass.',
-        }
-      }
-    };
+    interaction.reply('Your authority is not recognized in Fort Kickass.');
+    return;
   }
   if(!member.kickable) {
-    return {
-      data: {
-        type: 4,
-        data: {
-          content: 'I\'m sorry, I cannot do that.',
-        }
-      }
-    };
+    interaction.reply('I\'m sorry, I cannot do that.');
+    return;
   }
+  await interaction.deferReply();
 
   const kick = (member, invite = false) => {
     member.kick().then(()=> {
-      callback({data:{
+      interaction.editReply({
         content: `Kicked ${member}. (${reason}) ${invite ? '' : 'No invite was sent'}`,
-      }});
+      });
     }).catch((error) => {
       console.error(error);
-      callback({data:{
+      interaction.editReply({
         content: `Failed to kick ${member}`
-      }});
+      });
     });
   };
 
@@ -141,22 +126,5 @@ exports.interact = (client, interaction, callback) => {
 
 
   inviteAndKick(channel, member, reason);
-  return {data: {type: 5}};
-};
-
-const legacyKick = (member, channel, content) => {
-  // const { channel, content } = message;
-  return member
-    .kick()
-    .then(() => {
-      channel.createInvite({ maxUses: 1, unique: true }).then(invite => {
-        member.createDM().then(dm => {
-          dm.send(`Get kicked nerd.
-                    "${content}"`);
-          dm.send(invite.url);
-        }).catch(error => console.error(error));
-      }).catch(error => console.error(error));
-      channel.send(`Get kicked nerd. ${member.user.tag}`);
-    })
-    .catch(() => channel.send('Error.').catch(console.error));
+  return;
 };

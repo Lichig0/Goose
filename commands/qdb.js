@@ -159,19 +159,13 @@ exports.getCommandData = () => {
           }
         ]
       }
-      // {
-      //   name: 'get',
-      //   description: 'Get a quote from QDB',
-      //   type: 2,
-      //   options: [
-      //   ]
-      // }
     ]
   };
 };
 
 
-exports.interact = (client, interaction, callback) => {
+exports.execute = async (client, interaction) => {
+  await interaction.deferReply();
   const sendCallback = (e, body) => {
     if (e) {
       return console.error(e);
@@ -201,23 +195,53 @@ exports.interact = (client, interaction, callback) => {
         // console.log(embed);
         embeds.length < 10 ? embeds.push(embed) : console.warn(`Embeds is large: ${embeds.length}`);
       });
-      callback({data:{embeds:embeds}});
+      interaction.editReply({embeds:embeds}).then((sendMessage => {
+        const qid = id;
+        const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
+        const config = settings.qdb || {};
+        const time = config.voteTime || 60000;
+        sendMessage.react('👍').catch(console.error);
+        sendMessage.react('👎').catch(console.error);
+        const collector = sendMessage.createReactionCollector({filter,  time });
+        collector.on('end', collected => {
+          console.log(collected.get('👍').count ,collected.get('👎').count);
+          const upVote = collected.get('👍') ? collected.get('👍').count -1 : 0;
+          const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
+          // if (upVote == 0 && downVote == 0) {
+          //   return;
+          // }
+          const results = Number(score) + (upVote - downVote);
+          const newVotes = (Number(votes || 0)) + (upVote+downVote);
+          const scoreField = embed.fields.find(field=> field.name === 'Score');
+          const votesField = embed.fields.find(field => field.name === 'Votes');
+          scoreField.value = results;
+          votesField.value = newVotes;
+          qdb.vote(qid, results, newVotes);
+          sendMessage.edit({embed}).catch(console.error);
+          sendMessage.reactions.removeAll().catch(e => {
+            console.error(e);
+            sendMessage.react('👍').catch(console.error);
+            sendMessage.react('👎').catch(console.error);
+          });
+          sendMessage.react('✅').catch(console.error);
+        });
+      })).catch(e => console.error('Failed to send.', e));
     }
   };
 
   // const quoteNumber = interaction.data.options.find(option => option.name === PARAMETERS.QUOTE_NUMBER);
-  const subCommand = interaction.data.options[0].name;
-  const commandOptions = interaction.data.options[0].options;
+  const subCommand = interaction.options.getSubcommand();
+  const commandOptions = interaction.options;
   let option = undefined;
-  console.log(subCommand, interaction.data.options);
+  console.log(subCommand, interaction.options);
   switch (subCommand) {
   case SUBCOMMANDS.GET:
-    option = commandOptions.find(option => option.name === PARAMETERS.NUMBER);
-    qdb.get(option.value, sendCallback);
+    option = commandOptions.get(PARAMETERS.NUMBER).value;
+    qdb.get(option, sendCallback);
     break;
   case SUBCOMMANDS.FIND:
-    option = commandOptions.find(option => option.name === PARAMETERS.LIKE);
-    qdb.like(option.value,sendCallback);
+    option = commandOptions.get(PARAMETERS.LIKE).value;
+    qdb.like(option,sendCallback);
     break;
   default:
     qdb.get(undefined, sendCallback);
@@ -225,12 +249,5 @@ exports.interact = (client, interaction, callback) => {
     break;
   }
 
-  return { data: {type: 5}};
-  // return { data: {
-  //   type: 4,
-  //   data: {
-  //     content: 'Pong~',
-  //     flags: 1 << 6
-  //   }}
-  // };
+  return;
 };

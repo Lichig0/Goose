@@ -8,13 +8,8 @@ const commands = {};
 fs.readdir('./commands/', (err, files) => {
   files.forEach(file => {
     const commandName = file.split('.')[0];
-    if(commandName === 'base') {
-      const baseCommand = require(`../commands/${file}`);
-      commands[commandName] =  new baseCommand;
-    }
     commands[commandName] = require(`../commands/${file}`);
   });
-  // console.log(commands);
 });
 
 const reloadConfig = () => {
@@ -94,8 +89,6 @@ module.exports = (client, message) => {
   switch(command) {
   case 'g':
     return commands['google'].run(message, epeen);
-  case 'kys':
-    return commands['leave'].run(message, epeen);
   case 'help':
     return channel.send(helpGen()).catch(console.error);
   case 'audit':

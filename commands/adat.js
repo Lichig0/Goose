@@ -2,7 +2,7 @@ const path = require('path');
 const COMMAND_NAME = path.basename(__filename, '.js');
 
 module.exports.run = (message) => {
-  const {author, channel, guild} = message;
+  const {author, channel, guild} = message; // author is type User
   guild.members.fetch(author.id).then(m => {
     if (m.kickable === false) {
       return message.reply('ABAT!');
@@ -43,36 +43,28 @@ const getCommandData = () => {
   };
 };
 
-const interact = async (client, interaction, callback) => {
-  const options = interaction.data.options;
-  const messageOption = options && options.find(option=>option.name=='message');
-  const {guild_id, channel_id} = interaction;
-  const guild = client.guilds.cache.get(guild_id);
-  const channel = client.channels.cache.get(channel_id);
-  const member = await guild.members.fetch(interaction.member.user.id);
+const execute = async (client, interaction) => {
+  const messageOption = interaction.options.get('message').value;
+  // const {guild_id, channel_id} = interaction;
+  // const guild = client.guilds.cache.get(guild_id);
+  const channel = interaction.channel;
+  const member = interaction.member;
 
   if(!member.kickable) {
-    return {
-      data: {
-        type: 4,
-        data: {
-          content: 'You are not kickable',
-          flags: 64,
-        }
-      }
-    };
+    await interaction.reply({content: 'You are not kickable', ephemeral: true});
+    return;
   }
-
+  await interaction.deferReply();
   const kick = (member, channel, message) => {
     member.kick().then(() => {
       let sendString = 'Don\'t let the door hit you on the way out.';
       if(message) {
         sendString = `Reason: ${message.value}`;
       }
-      callback({data:{content:sendString}});
+      interaction.editReply(sendString);
     }).catch(kickError => {
       console.error(kickError);
-      callback({data:{content:'ABAT 😔'}});
+      interaction.editReply('ABAT 😔');
     });
   };
 
@@ -91,10 +83,9 @@ const interact = async (client, interaction, callback) => {
     channel.send('Couldn\'t send an invite. Sucks for them.').catch(console.error);
     kick(member, channel, messageOption);
   });
-  return {data: {type: 5}};
 };
 
 exports.help = help;
 exports.getCommandData = getCommandData;
-exports.interact = interact;
+exports.execute = execute;
 exports.isDev = true;

@@ -25,7 +25,7 @@ MENTIONABLE	9
   //   description: 'Pong.',
   //   default_permission: true,
   // };
-  const slashCommand = new SlashCommandBuilder().setName(COMMAND_NAME).setDescription('Pong~!');
+  const slashCommand = new SlashCommandBuilder().setName(COMMAND_NAME).setDescription('Pong~ | . |');
   return slashCommand.toJSON();
 };
 module.exports.interact = () => {
@@ -38,18 +38,10 @@ module.exports.interact = () => {
   };
 };
 
-module.exports.execute = async (interaction) => {
+module.exports.execute = async (client, interaction) => {
   console.log(interaction.member, interaction);
   await interaction.reply({
     content: 'Pong~?!',
     ephemeral: true
   });
 };
-
-//
-// module.exports = {
-//   data: new SlashCommandBuilder().setName('ping').setDescription('Replies with Pong!'),
-//   async execute(interaction) {
-//     await interaction.reply('Pong!');
-//   },
-// };

@@ -34,12 +34,16 @@ exports.getCommandData = () => {
   };
 };
 
-exports.interact = (client, interaction, callback) => {
-  const input = interaction.data.options[0].value;
+
+module.exports.execute = async (client, interaction) => {
+  const input = interaction.options.get('input').value;
   const terms = input.split(' ').join('+');
   console.log(terms);
   const search = `https://www.google.com/search?q=${terms}`;
   let ifl = undefined;
+
+  await interaction.deferReply();
+
   https.get(`${search}&btnI`, response => {
     const location = response.headers.location;
     if (location !== undefined) {
@@ -47,17 +51,10 @@ exports.interact = (client, interaction, callback) => {
     }
     const ret = ifl ? `${search} | ${ifl}` : search;
     console.log(ret);
-    const data = {
-      data: {
-        content: ret,
-      }
-    };
-    //console.log(data);
-    callback(data);
+    interaction.editReply({
+      content: ret,
+      ephemeral: false
+    });
   });
-  return {
-    data: {
-      type: 5,
-    }
-  };
+
 };

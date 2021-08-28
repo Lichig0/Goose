@@ -66,14 +66,7 @@ exports.getCommandData = () => {
   };
 };
 
-exports.interact = (client, interaction) => {
-  const input = interaction.data.options[0].value;
-  return {
-    data: {
-      type: 4,
-      data: {
-        content: input
-      }
-    }
-  };
+exports.execute = async (client, interaction) => {
+  const input = interaction.options.get('input').value;
+  return interaction.reply(input);
 };
