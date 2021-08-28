@@ -12,7 +12,7 @@ exports.coreThoughts = (cb) => {
     if(coreThoughts instanceof Array) {
       coreThoughts.forEach((coreThought, index) => {
         exports.coreCorpus[`core${index}`] = {
-          string: coreThought, id: `core${index}`, guild: 0, channel: 0, attachments: {}
+          string: coreThought, id: `core${index}`, guild: 0, channel: 0, nsfw: false, attachments: {}
         };
       });
     }
