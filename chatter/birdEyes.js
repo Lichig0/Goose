@@ -45,7 +45,7 @@ module.exports.fetch = async () => {
       recordedTweets.push(...tweets);
       markov.addData(tweets);
     }
-  });
+  }).catch(console.error);
 };
 
 module.exports.generateTweet = async (options = {}) => {
