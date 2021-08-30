@@ -6,15 +6,17 @@ const qdb = require('../dbactions/qdbTable');
 const COMMAND_NAME = path.basename(__filename, '.js');
 const SUBCOMMANDS = {
   FIND: 'find',
-  GET: 'get'
+  GET: 'get',
+  DELETE: 'delete',
+  ADD: 'add',
+  LOAD: 'load'
 };
 const PARAMETERS = {
-  ADD: 'add',
-  LOAD: 'load',
-  DELETE: 'delete',
-  GET: 'get',
   LIKE: 'like',
-  NUMBER: 'number'
+  NUMBER: 'number',
+  CONTENT: 'content',
+  NOTES: 'notes',
+  TAGS: 'tags'
 };
 
 exports.help = () => 'WIP: QDB feature. Get random quote from QDB archive.\n';
@@ -130,11 +132,11 @@ exports.run = (message, epeen) => {
 exports.getCommandData = () => {
   return {
     name: COMMAND_NAME,
-    description: '(DEV)Acces the Quote Database',
+    description: 'Acces the Quote Database',
     default_permission: true,
     options: [
       {
-        name: 'find',
+        name: SUBCOMMANDS.FIND,
         description: 'Find a quote in the QDB',
         type: 1,
         options: [
@@ -147,15 +149,53 @@ exports.getCommandData = () => {
         ]
       },
       {
-        name: PARAMETERS.GET,
+        name: SUBCOMMANDS.GET,
         description: 'Get a specific quote number',
         type: 1,
         options: [
           {
-            name: 'number',
+            name: PARAMETERS.NUMBER,
             description: 'Quote number',
             type: 4,
             required: true
+          }
+        ]
+      },
+      {
+        name: SUBCOMMANDS.ADD,
+        description: 'Add a new quote to the qdb',
+        type: 1,
+        options: [
+          {
+            name:PARAMETERS.CONTENT,
+            description: 'The "Quote" to be remembered.',
+            type: 3,
+            required: true
+          },
+          // {
+          //   name: PARAMETERS.NOTES,
+          //   description: 'Notes to save with the quote',
+          //   type: 3,
+          //   required: false
+          // },
+          // {
+          //   name: PARAMETERS.tags,
+          //   description: 'Tags to make this quote easier to find',
+          //   type: 3,
+          //   required: false
+          // }
+        ]
+      },
+      {
+        name: SUBCOMMANDS.DELETE,
+        description: 'Delete a quote from the QDB',
+        type: 1,
+        options: [
+          {
+            name: PARAMETERS.NUMBER,
+            description: 'Number of the quote to be deleted.',
+            required: true,
+            type: 4
           }
         ]
       }
@@ -207,9 +247,6 @@ exports.execute = async (client, interaction) => {
           console.log(collected.get('👍').count ,collected.get('👎').count);
           const upVote = collected.get('👍') ? collected.get('👍').count -1 : 0;
           const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
-          // if (upVote == 0 && downVote == 0) {
-          //   return;
-          // }
           const results = Number(score) + (upVote - downVote);
           const newVotes = (Number(votes || 0)) + (upVote+downVote);
           const scoreField = embed.fields.find(field=> field.name === 'Score');
@@ -226,10 +263,25 @@ exports.execute = async (client, interaction) => {
           sendMessage.react('✅').catch(console.error);
         });
       })).catch(e => console.error('Failed to send.', e));
+    } else {
+      interaction.editReply('I searched and search, I don\'t think that quote exists. Maybe I\'ll make one up next time.');
     }
   };
-
-  // const quoteNumber = interaction.data.options.find(option => option.name === PARAMETERS.QUOTE_NUMBER);
+  const addCallback = (entry) => {
+    console.log(entry);
+    qdb.get(entry.lastID, sendCallback);
+  };
+  const deleteCallback = () => {
+    const qn = commandOptions.get(PARAMETERS.NUMBER).value;
+    qdb.get(qn, (e, body) => {
+      if (e) {
+        console.error(e);
+      }
+      const quote = body[0];
+      if (quote) return interaction.editReply('Sorry bud. That isn\'t yours to delete.');
+      interaction.editReply('Poof. Gone.');
+    });
+  };
   const subCommand = interaction.options.getSubcommand();
   const commandOptions = interaction.options;
   let option = undefined;
@@ -243,6 +295,12 @@ exports.execute = async (client, interaction) => {
     option = commandOptions.get(PARAMETERS.LIKE).value;
     qdb.like(option,sendCallback);
     break;
+  case SUBCOMMANDS.ADD:
+    qdb.add(commandOptions.get(PARAMETERS.CONTENT).value, interaction, addCallback);
+    break;
+  case SUBCOMMANDS.DELETE:
+    qdb.delete(commandOptions.get(PARAMETERS.NUMBER).value, interaction.user, deleteCallback);
+    break;
   default:
     qdb.get(undefined, sendCallback);
     console.log(subCommand, commandOptions);
@@ -251,3 +309,4 @@ exports.execute = async (client, interaction) => {
 
   return;
 };
+exports.dev = false;

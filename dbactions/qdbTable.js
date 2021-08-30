@@ -66,7 +66,7 @@ exports.delete = (qid, author, callback) => {
     }
   });
   // delete from qdb where id=17 and author_id="<@166052926777851904>"
-  db.run('DELETE FROM qdb WHERE id=$id and author_id=$author', {$id:qid, $author:author}, callback).close(onClose);
+  db.run('DELETE FROM qdb WHERE id=$id and (author_id=$author OR author_id is null)', {$id:qid, $author:author}, callback).close(onClose);
 };
 
 exports.vote= (qid, score, votes, callback) => {
@@ -89,9 +89,10 @@ exports.add = (newQuote, message, callback, attachmentUrl, blob = Buffer.from([]
   // const tags = '';
   const score = '0';
   const votes = '0';
+  const messageUser = message.user ? message.user : message.author;
   db.run('INSERT INTO qdb' +
     ' (body, created, author_id, score, votes, attachment, attachmentUrl)' +
-    ' VALUES ($body, $created, $author_id, $score, $votes, $blob, $au)', { $body: newQuote, $created: Date(), $author_id: message.author, $score: score, $votes: votes, $blob:blob, $au:attachmentUrl }, function (err) {
+    ' VALUES ($body, $created, $author_id, $score, $votes, $blob, $au)', { $body: newQuote, $created: Date(), $author_id: messageUser, $score: score, $votes: votes, $blob:blob, $au:attachmentUrl }, function (err) {
     if (err) {
       return console.log(err.message);
     }
@@ -135,4 +136,3 @@ exports.load = (filename = 'dbactions/qdb.json') => {
     });
   });
 };
-
