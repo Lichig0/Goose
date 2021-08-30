@@ -1,4 +1,4 @@
-const { Permissions } = require('discord.js');
+const { Permissions, Constants: {ApplicationCommandTypes, ApplicationCommandOptionTypes} } = require('discord.js');
 const settings = require('../settings');
 const path = require('path');
 const COMMAND_NAME = path.basename(__filename, '.js');
@@ -60,19 +60,20 @@ exports.help = () => {
 
 exports.getCommandData = () => {
   return {
+    type: ApplicationCommandTypes.CHAT_INPUT,
     name: COMMAND_NAME,
-    description: 'Kick a member.',
+    description: 'Kick a member. Taking your votes now!',
     default_permission: true,
     options: [
       {
         name: 'member',
-        type: 6,
+        type: ApplicationCommandOptionTypes.MENTIONABLE,
         description: 'Member to kick',
         required: true,
       },
       {
         name: 'reason',
-        type: 3,
+        type: ApplicationCommandOptionTypes.STRING,
         description: 'Reson for kick',
         required: false
       }
@@ -90,15 +91,15 @@ exports.execute = async (client, interaction, epeen) => {
   const member = guild.members.cache.get(member_id);
   const userPermission = interaction.member.permissions;
   const canKick = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
+  const config = settings.settings.kick || DEFAULTS;
+  const enabled = config.enabled;
+
   console.log(userPermission);
   if(!canKick) {
     interaction.reply('Your authority is not recognized in Fort Kickass.');
     return;
   }
-  if(!member.kickable) {
-    interaction.reply('I\'m sorry, I cannot do that.');
-    return;
-  }
+
   await interaction.deferReply();
 
   const kick = (member, invite = false) => {
@@ -124,7 +125,37 @@ exports.execute = async (client, interaction, epeen) => {
     kick(member, sent);
   };
 
+  if(member.kickable) {
+    inviteAndKick(channel, member, reason);
+    return;
+  } else if(enabled) {
+    interaction.editReply('Lets have a vote~').then(interactionMessage => {
+      const filter = (reaction) => (reaction.emoji.name === '👍' || reaction.emoji.name === '👎');
+      const time = (config.voteTime || DEFAULTS.voteTime) * 1000;
+      const requiredVotes = config.requiredVotes || DEFAULTS.requiredVotes;
 
-  inviteAndKick(channel, member, reason);
+      interactionMessage.react('👍').catch(console.error);
+      interactionMessage.react('👎').catch(console.error);
+
+      const collector = interactionMessage.createReactionCollector({filter,  time });
+      collector.on('end', collected => {
+        const upVote = collected.get('👍') ? collected.get('👍').count - 1 : 0;
+        const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
+
+        const results = (upVote - downVote) >= requiredVotes || false;
+        interactionMessage.reactions.removeAll().catch(e => {
+          console.error(e);
+          interactionMessage.react('✅');
+        });
+        if (results) {
+          return inviteAndKick(member, channel, reason);
+        } else {
+          return interaction.followUp('Your authority is not recognized in Fort Kickass.').catch(console.error);
+        }
+      });
+    });
+  } else {
+    interaction.editReply('I\'m sorry, I cannot do that.');
+  }
   return;
 };
