@@ -5,7 +5,18 @@ const fs = require('fs');
 const COMMANDS_DIR = './commands/';
 const initTables = require('./dbactions/initTables');
 const settings = require('./settings');
-const client = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES], retryLimit: 3, presence: { activity:{name:'👀', type:'WATCHING'}}});
+const client = new Client({
+  intents: [
+    Intents.FLAGS.GUILDS,
+    Intents.FLAGS.GUILD_MESSAGES,
+    Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
+    Intents.FLAGS.GUILD_MEMBERS,
+    Intents.FLAGS.GUILD_INVITES
+  ],
+  retryLimit: 3,
+  presence: { activity:{name:'👀', type:'WATCHING'}
+  }
+});
 
 settings.loadConfig();
 fs.readdir('./events/', (err, files) => {
