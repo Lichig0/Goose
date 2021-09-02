@@ -1,5 +1,11 @@
-const { Permissions } = require('discord.js');
+const { Permissions, Constants: {ApplicationCommandOptionTypes} } = require('discord.js');
 const settings = require('../settings');
+const path = require('path');
+const COMMADN_NAME = path.basename(__filename, '.js');
+const PARAMS = {
+  MEMBER: 'member',
+  LIFT: 'lift'
+};
 
 const DEFAULTS = {
   requiredVotes: 5,
@@ -9,20 +15,20 @@ const DEFAULTS = {
 };
 
 exports.help = () => 'Cast curse on a member. (User needs role permission)\n';
-module.exports.run = (message, epeen, who = undefined) => {
+
+exports.execute = async (client, interaction, epeen) => {
   const config = settings.settings.curse || DEFAULTS;
   const enabled = config.enabled || DEFAULTS.enabled;
   const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
-  let members = who || message.mentions.members;
-  const guild = message.guild;
-  if(message.mentions.everyone) {
-    members = message.channel.members;
-  }
-  if (!members || !message.guild) {
-    return;
-  }
+  const guild = interaction.guild;
+  const mentionable = interaction.options.get(PARAMS.MEMBER);
+  const lift = interaction.options.get(PARAMS.lift)?.value;
+  // const members = mentionable.role.members ? [...mentionable.role.members.values()] : [mentionable];
+  console.log(mentionable);
+  // await interaction.deferReply();
+  await interaction.reply(`Casting curse on ${mentionable}`);
 
-  let role = message.guild.roles.cache.find(r => r.name === 'cursed');
+  let role = interaction.guild.roles.cache.find(r => r.name === 'cursed');
   if (!role) {
     // Create a new role with data and a reason
     guild.roles.create({
@@ -43,18 +49,25 @@ module.exports.run = (message, epeen, who = undefined) => {
   }
 
   const sendDenial = member => {
-    return member ? message.channel.send(`***Honk.*** (${member.user.username})`).catch(console.error): message.react('🦆').catch(console.error);
+    console.log('deny', member);
+    // return interaction.editReply(`***Honk.*** (${member.user.name})`).catch(console.error);
+    return member ? interaction.editReply(`***Honk.*** (${member})`).catch(console.error): interaction.editReply('🦆').catch(console.error);
+
   };
-  const curse = (member, timeout) => {
-    if (!message.content.includes('lift')) {
+  const curse = async (member, timeout) => {
+    if (!lift) {
       member.roles.add(role).catch(console.error);
+      await interaction.editReply('Cursing');
       if (timeout) setTimeout(() => member.roles.remove(role).catch(console.error), timeout);
     } else {
+      interaction.editReply('Lifting curse');
       return member.roles.remove(role).catch(console.error);
     }
   };
   const curseMembers = (timeout) => {
-    members.array().forEach(member => {
+    console.log(mentionable);
+    const members = mentionable.role ? [...mentionable.role.members.values()] : [mentionable.member];
+    members.map(member => {
       if (!member.manageable) {
         return sendDenial(member);
       }
@@ -71,31 +84,55 @@ module.exports.run = (message, epeen, who = undefined) => {
     const time = (config.voteTime || DEFAULTS.voteTime) * 1000;
     const timeOut = (config.timeOut || DEFAULTS.timeOut) * 1000;
     const requiredVotes = config.requiredVotes || DEFAULTS.requiredVotes;
+    interaction.editReply(`Voting to curse ${mentionable.name}`).then((message) => {
+      message.react('👍').catch(console.error);
+      message.react('👎').catch(console.error);
 
-    message.react('👍').catch(console.error);
-    message.react('👎').catch(console.error);
+      const collector = message.createReactionCollector({filter,  time });
+      collector.on('end', collected => {
+        const upVote = collected.get('👍') ? collected.get('👍').count - 1 : 0;
+        const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
 
-    const collector = message.createReactionCollector({filter,  time });
-    collector.on('end', collected => {
-      const upVote = collected.get('👍') ? collected.get('👍').count - 1 : 0;
-      const downVote = collected.get('👎') ? collected.get('👎').count - 1 : 0;
-
-      const results = (upVote - downVote) >= requiredVotes || false;
-      message.reactions.removeAll().catch(e => {
-        console.error(e);
-        message.react('👍').catch(console.error);
-        message.react('👎').catch(console.error);
+        const results = (upVote - downVote) >= requiredVotes || false;
+        message.reactions.removeAll().catch(e => {
+          console.error(e);
+          message.react('👍').catch(console.error);
+          message.react('👎').catch(console.error);
+        });
+        if (results) {
+          message.react('✅');
+          return curseMembers(timeOut);
+        } else {
+          message.react('❌');
+          return sendDenial();
+        }
       });
-      if (results) {
-        message.react('✅');
-        return curseMembers(timeOut);
-      } else {
-        message.react('❌');
-        return sendDenial();
-      }
     });
+
   } else {
     return sendDenial();
   }
-
 };
+
+exports.getCommandData = () => {
+  return {
+    name: COMMADN_NAME,
+    description: 'Sometimes you need to silence people',
+    default_permission: false,
+    options: [
+      {
+        name: PARAMS.MEMBER,
+        description: 'Member to curse',
+        type: ApplicationCommandOptionTypes.MENTIONABLE,
+        required: true
+      },
+      {
+        name: PARAMS.LIFT,
+        description: 'Lift the curse',
+        type: ApplicationCommandOptionTypes.BOOLEAN,
+        required: false
+      }
+    ]
+  };
+};
+exports.dev = false;
