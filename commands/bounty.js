@@ -32,13 +32,26 @@ Bounty {
 
 
 const path = require('path');
-const { MessageEmbed } = require('discord.js');
+const { MessageEmbed, MessageActionRow, MessageButton, Constants: {ApplicationCommandOptionTypes}, Constants } = require('discord.js');
 const GiantBomb = require('giant-bomb');
 const bbt = require('../dbactions/bountyBoardTable');
 const settings = require('../settings');
 const gb = new GiantBomb(process.env.GIANT_BOMB_KEY, 'Goose bot Bounty Board. Retrieve game info for bounties.');
 
 const COMMAND_NAME = path.basename(__filename, '.js');
+const SUBCOMMANDS = {
+  FIND: 'find',
+  ADD: 'add',
+  LIST: 'list',
+  DELETE: 'delete',
+};
+const PARAMETERS = {
+  LIKE: 'like',
+  // NUMBER: 'number',
+  // CONTENT: 'content',
+  // NOTES: 'notes',
+  // TAGS: 'tags'
+};
 
 exports.help = () => {
   let help = 'Game Bounty Board.(WIP)\n';
@@ -172,7 +185,73 @@ exports.run = (message) => {
   }
   return;
 };
+exports.getCommandData = () => {
+  return {
+    name: COMMAND_NAME,
+    description: 'Game Bounty Board(WIP)',
+    default_permission: false,
+    options: [
+      {
+        name: SUBCOMMANDS.FIND,
+        description: 'Find a specific bounty',
+        type: Constants.ApplicationCommandOptionTypes.SUB_COMMAND,
+        options: [
+          {
+            name: PARAMETERS.LIKE,
+            description: 'Name of the game that has a bounty',
+            type: ApplicationCommandOptionTypes.STRING,
+            required: true
+          }
+        ]
+      },
+      {
+        name: SUBCOMMANDS.LIST,
+        description: 'List the bounties',
+        type: ApplicationCommandOptionTypes.SUB_COMMAND
+      }
+    ]
+  };
+};
 
+exports.execute = async (client, interaction) => {
+  await interaction.deferReply();
+  const sendBountyCallback = (e, data) => {
+    if(e) {
+      return console.error(e);
+    }
+    if(data.length > 0) {
+      const bounty = new Bounty(data[0]);
+      const embed = bounty.generateEmbed();
+      const row = new MessageActionRow().addComponents(new MessageButton().setCustomId('claim').setLabel('Claim').setStyle('PRIMARY').setDisabled(true));
+      interaction.editReply({embeds: [embed], components: [row]}).catch(console.warn);
+    }
+  };
+
+  const subCommand = interaction.options.getSubcommand();
+  const commandOptions = interaction.options;
+  switch (subCommand) {
+  case SUBCOMMANDS.FIND:
+    //help or search
+    bbt.like((commandOptions.get[PARAMETERS.LIKE].value), sendBountyCallback);
+    break;
+  case SUBCOMMANDS.LIST:
+  default:
+    bbt.list((e, rows) => {
+      if(rows.length < 1) return interaction.editReply('There are no bounties.').catch(console.warn);
+      const embed = new MessageEmbed();
+      rows.forEach(row => {
+        const { id, gameName, reward, optReward, assigneeId } = row;
+        const b = new Bounty(row);
+        embed.addField(`#${id}:${gameName}`, `${b.STATUS[b.status]}  |  ${reward}  |  ${optReward || 'None'} ${assigneeId ? '  |  '+assigneeId : ''} `);
+      });
+      interaction.editReply({embeds: [embed]}).catch(console.warn);
+    });
+    console.log(subCommand, commandOptions);
+    break;
+  }
+};
+
+exports.dev = true;
 
 
 class Bounty { // This whole thing is messy
