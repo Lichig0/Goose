@@ -38,7 +38,7 @@ const addMessageToModel = (message, markovModel, splitRegex = undefined) => {
       }
     } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined) {
 
-      const substituteString = channel.messages.cache.array()[1].content;
+      const substituteString = [...channel.messages.cache.values()][1].content;
       let tCache = data[`${id}.${i}`] = {
         ...cache,
         trimmedString: substituteString

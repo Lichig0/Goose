@@ -26,8 +26,8 @@ module.exports.run = (message, epeen) => {
   audit.lastUsedBy = `${message.author.tag}[${message.author.id}]`;
   audit.usedIn = `${message.channel.name}[${message.channel.id}]`;
   if (message.mentions && message.mentions.channels.size > 0) {
-    channels = message.mentions.channels.array();
-    channels.forEach(ch => {
+    channels = message.mentions.channels;
+    channels.each(ch => {
       says = says.replace(`<#${ch.id}>`, '');
     });
   }

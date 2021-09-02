@@ -18,7 +18,7 @@ module.exports = (client, messageDelete) => {
   }
   if (messageDelete.attachments && messageDelete.attachments.size > 0 && messageDelete) { // If I change this to: message.attachments.size>0 && message it works with deleted image & text but as it is without this said line it doesn't function
 
-    var Attachment = (messageDelete.attachments).array();
+    var Attachment = [...(messageDelete.attachments).values()];
 
     Attachment.forEach(function (attachment) {
       const logembed = new Discord.MessageEmbed()
