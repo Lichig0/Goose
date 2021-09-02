@@ -84,10 +84,10 @@ exports.getCommandData = () => {
 
 exports.execute = async (client, interaction, epeen) => {
   const {options, guild, channel} = interaction;
-  const memberOption = options.get('member').value;
-  const contentOption = options.get('reason').value;
+  const mentionableOption = options.get('member');
+  const contentOption = options.get('reason');
   const reason = (contentOption && contentOption.value) || '';
-  const member_id = memberOption.value;
+  const member_id = mentionableOption.value;
   const member = guild.members.cache.get(member_id);
   const userPermission = interaction.member.permissions;
   const canKick = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
@@ -98,6 +98,8 @@ exports.execute = async (client, interaction, epeen) => {
   if(!canKick) {
     interaction.reply('Your authority is not recognized in Fort Kickass.');
     return;
+  } else if(mentionableOption.role) {
+    return interaction.reply('A whole role?');
   }
 
   await interaction.deferReply();
