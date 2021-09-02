@@ -44,7 +44,7 @@ const getCommandData = () => {
 };
 
 const execute = async (client, interaction) => {
-  const messageOption = interaction.options.get('message').value;
+  const messageOption = interaction.options.get('message')?.value;
   // const {guild_id, channel_id} = interaction;
   // const guild = client.guilds.cache.get(guild_id);
   const channel = interaction.channel;
