@@ -108,7 +108,7 @@ exports.run = (message, epeen) => {
         if (!error && response.statusCode == 200) {
           const d = Buffer.from(body).toString('base64');
           console.log(d);
-          qdb.add(newQuote, message, addCallback, message.attachments.first().attachment, d);
+          qdb.add(newQuote, message, addCallback, {attachmentUrl: message.attachments.first().attachment, blob: d});
         }
       });
     } else {
@@ -172,12 +172,12 @@ exports.getCommandData = () => {
             type: 3,
             required: true
           },
-          // {
-          //   name: PARAMETERS.NOTES,
-          //   description: 'Notes to save with the quote',
-          //   type: 3,
-          //   required: false
-          // },
+          {
+            name: PARAMETERS.NOTES,
+            description: 'Notes to save with the quote',
+            type: 3,
+            required: false
+          },
           // {
           //   name: PARAMETERS.tags,
           //   description: 'Tags to make this quote easier to find',
@@ -206,6 +206,7 @@ exports.getCommandData = () => {
 
 exports.execute = async (client, interaction) => {
   await interaction.deferReply();
+  const {guild} = interaction;
   const sendCallback = (e, body) => {
     if (e) {
       return console.error(e);
@@ -289,14 +290,14 @@ exports.execute = async (client, interaction) => {
   switch (subCommand) {
   case SUBCOMMANDS.GET:
     option = commandOptions.get(PARAMETERS.NUMBER).value;
-    qdb.get(option, sendCallback);
+    qdb.get(option, guild, sendCallback);
     break;
   case SUBCOMMANDS.FIND:
     option = commandOptions.get(PARAMETERS.LIKE).value;
-    qdb.like(option,sendCallback);
+    qdb.like(option, guild, sendCallback);
     break;
   case SUBCOMMANDS.ADD:
-    qdb.add(commandOptions.get(PARAMETERS.CONTENT).value, interaction, addCallback);
+    qdb.add(commandOptions.get(PARAMETERS.CONTENT).value, interaction, addCallback, {notes: commandOptions.get(PARAMETERS.NOTES).value});
     break;
   case SUBCOMMANDS.DELETE:
     qdb.delete(commandOptions.get(PARAMETERS.NUMBER).value, interaction.user, deleteCallback);

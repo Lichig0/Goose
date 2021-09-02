@@ -23,12 +23,14 @@ exports.init = (db, callback) => {
     score TEXT,
     votes TEXT,
     attachment BLOB,
-    attachmentUrl TEXT)
+    attachmentUrl TEXT,
+    guild TEXT NOT NULL)
     `);
   callback();
 };
 
-exports.get = (id, callback) => {
+exports.get = (id, guild, callback) => {
+  const guildId = guild.id ? guild.id : guild;
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
       return console.error(err.message);
@@ -36,7 +38,7 @@ exports.get = (id, callback) => {
   });
   const idInt = Number(id);
   if(!Number.isNaN(idInt)) {
-    db.all('SELECT * FROM qdb WHERE id = $id',{$id:idInt}, callback).close(onClose);
+    db.all('SELECT * FROM qdb WHERE id = $id AND guild = $guild',{$id:idInt, $guild:guildId}, callback).close(onClose);
   } else {
     db.all('SELECT * FROM qdb', callback).close((err) => {
       if (err) {
@@ -46,7 +48,8 @@ exports.get = (id, callback) => {
   }
 };
 
-exports.like = (like, callback) => {
+exports.like = (like, guild, callback) => {
+  const guildId = guild.id ? guild.id : guild;
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
       return console.error(err.message);
@@ -56,7 +59,7 @@ exports.like = (like, callback) => {
     return [];
   }
   const wildLike = `%${like}%`;
-  db.all('SELECT * FROM qdb WHERE body LIKE $like', {$like:wildLike}, callback).close(onClose);
+  db.all('SELECT * FROM qdb WHERE body LIKE $like AND guild = $guild', {$like:wildLike, $guild:guildId}, callback).close(onClose);
 };
 
 exports.delete = (qid, author, callback) => {
@@ -79,7 +82,8 @@ exports.vote= (qid, score, votes, callback) => {
   db.run('UPDATE qdb set score=$score, votes=$votes WHERE id=$id', {$score:score, $votes:votes, $id:qid}, callback).close(onClose);
 };
 
-exports.add = (newQuote, message, callback, attachmentUrl, blob = Buffer.from([]).toString('base64')) => {
+exports.add = (newQuote, message, callback, options) => {
+  const {attachmentUrl, blob  = Buffer.from([]).toString('base64'), tags, notes} = options;
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
       return console.error(err.message);
@@ -90,9 +94,10 @@ exports.add = (newQuote, message, callback, attachmentUrl, blob = Buffer.from([]
   const score = '0';
   const votes = '0';
   const messageUser = message.user ? message.user : message.author;
+  const guildId = message.guild.id;
   db.run('INSERT INTO qdb' +
-    ' (body, created, author_id, score, votes, attachment, attachmentUrl)' +
-    ' VALUES ($body, $created, $author_id, $score, $votes, $blob, $au)', { $body: newQuote, $created: Date(), $author_id: messageUser, $score: score, $votes: votes, $blob:blob, $au:attachmentUrl }, function (err) {
+    ' (body, notes, tags, created, author_id, guild, score, votes, attachment, attachmentUrl)' +
+    ' VALUES ($body, $notes, $tags, $created, $author_id, $guild, $score, $votes, $blob, $au)', { $body: newQuote, $notes:notes, $tags:tags, $created: Date(), $author_id: messageUser, $guild: guildId, $score: score, $votes: votes, $blob:blob, $au:attachmentUrl }, function (err) {
     if (err) {
       return console.log(err.message);
     }
@@ -102,7 +107,8 @@ exports.add = (newQuote, message, callback, attachmentUrl, blob = Buffer.from([]
   }).close(onClose);
 };
 
-exports.load = (filename = 'dbactions/qdb.json') => {
+exports.load = (filename = 'dbactions/qdb.json', guild='12345678987654321') => {
+  const guildId = guild.id ? guild.id : guild;
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
       return console.error(err.message);
@@ -121,9 +127,9 @@ exports.load = (filename = 'dbactions/qdb.json') => {
         data.forEach(row => {
           const { body, notes, tags, created, status, deleted, author_id, author_ip, score, votes } = row;
           db.run('INSERT INTO qdb' +
-          ' (body, notes, tags, created, status, deleted, author_id, author_ip, score, votes)'+
+          ' (body, notes, tags, created, status, deleted, author_id, author_ip, guild, score, votes)'+
           ' VALUES ($body, $notes, $tags, $created, $status, $deleted, $author_id, $author_ip, $score, $votes)',
-          {$body:body, $notes:notes, $tags:tags, $created:created, $status: status, $deleted:deleted, $author_id:author_id, $author_ip:author_ip, $score:score, $votes:votes}, function (err) {
+          {$body:body, $notes:notes, $tags:tags, $created:created, $status: status, $deleted:deleted, $author_id:author_id, $author_ip:author_ip, $guild:guildId, $score:score, $votes:votes}, function (err) {
             if (err) {
               return console.log(err.message);
             }
