@@ -27,8 +27,8 @@ module.exports.run = (message, epeen) => {
   audit.lastUsedBy = `${message.author.tag}[${message.author.id}]`;
   audit.usedIn = `${message.channel.name}[${message.channel.id}]`;
   if (message.mentions && message.mentions.channels.size > 0) {
-    channels = message.mentions.channels.array();
-    channels.forEach(ch => {
+    channels = message.mentions.channels;
+    channels.each(ch => {
       says = says.replace(`<#${ch.id}>`, '');
     });
   }
@@ -74,7 +74,7 @@ exports.getCommandData = () => {
 
 exports.execute = async (client, interaction) => {
   const activityId = interaction.options.get('id').value;
-  const activity = interaction.options.get('activity').value || 'chatter';
+  const activity = interaction.options.get('activity')?.value || 'chatter';
   let auditJSON;
   if (client.commands.get(activity) !== undefined) {
     auditJSON = commands[activity].audit(activityId);
