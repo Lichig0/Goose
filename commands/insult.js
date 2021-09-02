@@ -14,7 +14,7 @@ const insults = [
   '{member}? It\'s like the n-word and the c-word had a baby and it was raised by all the bad words for Jews.',
   '{member} would suck a dick just to cut in line to suck a bigger dick.',
   'Right now the only thing I want in this world besides for {member} to die of some heretofore unknown form of eyehole cancer is to leave this godforsaken sever!',
-  '{member}’s just as full of crap as {member} is chromosomes.',
+  '{member}’s just as full of crap as {member} is brain worms.',
   'I can envision millions of Americans rising up as one and demanding legislation that would require {member} legs to be amputated, burned, and buried next to Hitler.',
   '{member} won’t truly appreciate the awkwardness of this moment until they’re fondly reminiscing as a 35-year-old homosexual.',
   'Monetize this corkscrewed cock.',
@@ -44,8 +44,8 @@ exports.run = async message => {
     });
   }
   else {
-    if (message.mentions.members.array().length > 0) {
-      message.mentions.members.array().forEach(member => {
+    if (message.mentions.members.size > 0) {
+      message.mentions.members.each(member => {
         sendInsult(getInsult(message, member));
       });
     } else {
@@ -76,13 +76,13 @@ const getInsult = function (message, mentioned) {
 };
 
 const getRandomUsers = (message) => {
-  const members = message.channel.members.array();
-  return members[Math.floor(Math.random() * members.length)];
+  const members = message.channel.members;
+  return [...members.values()][Math.floor(Math.random() * members.length)];
 };
 
 const sendInsult = (channel, text, options) => {
   const a = audit;
-  
+
   channel.send(text, options).then((sentMessage) => {
     a.timestamp = Date.now();
     auditHisotry[sentMessage.id] = a;
