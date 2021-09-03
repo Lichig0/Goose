@@ -14,8 +14,6 @@ const DEFAULTS = {
   timeOut: 120
 };
 
-exports.help = () => 'Cast curse on a member. (User needs role permission)\n';
-
 exports.execute = async (client, interaction, epeen) => {
   const config = settings.settings.curse || DEFAULTS;
   const enabled = config.enabled || DEFAULTS.enabled;
@@ -24,7 +22,6 @@ exports.execute = async (client, interaction, epeen) => {
   const mentionable = interaction.options.get(PARAMS.MEMBER);
   const lift = interaction.options.get(PARAMS.lift)?.value;
   // const members = mentionable.role.members ? [...mentionable.role.members.values()] : [mentionable];
-  console.log(mentionable);
   // await interaction.deferReply();
   await interaction.reply(`Casting curse on ${mentionable}`);
 
@@ -49,15 +46,13 @@ exports.execute = async (client, interaction, epeen) => {
   }
 
   const sendDenial = member => {
-    console.log('deny', member);
-    // return interaction.editReply(`***Honk.*** (${member.user.name})`).catch(console.error);
     return member ? interaction.editReply(`***Honk.*** (${member})`).catch(console.error): interaction.editReply('🦆').catch(console.error);
 
   };
   const curse = async (member, timeout) => {
     if (!lift) {
       member.roles.add(role).catch(console.error);
-      await interaction.editReply('Cursing');
+      await interaction.editReply('Cursing').catch(console.error);
       if (timeout) setTimeout(() => member.roles.remove(role).catch(console.error), timeout);
     } else {
       interaction.editReply('Lifting curse');
@@ -65,7 +60,6 @@ exports.execute = async (client, interaction, epeen) => {
     }
   };
   const curseMembers = (timeout) => {
-    console.log(mentionable);
     const members = mentionable.role ? [...mentionable.role.members.values()] : [mentionable.member];
     members.map(member => {
       if (!member.manageable) {
@@ -107,7 +101,7 @@ exports.execute = async (client, interaction, epeen) => {
           return sendDenial();
         }
       });
-    });
+    }).catch(console.error);
 
   } else {
     return sendDenial();

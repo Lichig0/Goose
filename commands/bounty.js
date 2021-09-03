@@ -215,7 +215,7 @@ exports.getCommandData = () => {
 
 exports.execute = async (client, interaction) => {
   await interaction.deferReply();
-  const sendBountyCallback = (e, data) => {
+  const sendBountyCallback = async (e, data) => {
     if(e) {
       return console.error(e);
     }
@@ -223,7 +223,7 @@ exports.execute = async (client, interaction) => {
       const bounty = new Bounty(data[0]);
       const embed = bounty.generateEmbed();
       const row = new MessageActionRow().addComponents(new MessageButton().setCustomId('claim').setLabel('Claim').setStyle('PRIMARY').setDisabled(true));
-      interaction.editReply({embeds: [embed], components: [row]}).catch(console.warn);
+      return await interaction.editReply({embeds: [embed], components: [row]}).catch(console.warn);
     }
   };
 
@@ -236,15 +236,15 @@ exports.execute = async (client, interaction) => {
     break;
   case SUBCOMMANDS.LIST:
   default:
-    bbt.list((e, rows) => {
-      if(rows.length < 1) return interaction.editReply('There are no bounties.').catch(console.warn);
+    bbt.list(async (e, rows) => {
+      if(rows.length < 1) return await interaction.editReply('There are no bounties.').catch(console.warn);
       const embed = new MessageEmbed();
       rows.forEach(row => {
         const { id, gameName, reward, optReward, assigneeId } = row;
         const b = new Bounty(row);
         embed.addField(`#${id}:${gameName}`, `${b.STATUS[b.status]}  |  ${reward}  |  ${optReward || 'None'} ${assigneeId ? '  |  '+assigneeId : ''} `);
       });
-      interaction.editReply({embeds: [embed]}).catch(console.warn);
+      return await interaction.editReply({embeds: [embed]}).catch(console.warn);
     });
     console.log(subCommand, commandOptions);
     break;

@@ -26,9 +26,6 @@ module.exports = (client, messageDelete) => {
         .setAuthor(messageDelete.author.tag, messageDelete.author.displayAvatarURL)
         .setDescription(`**Image sent by ${messageDelete.author.tag} deleted in <#${messageDelete.channel.id}>**`)
         .setImage(attachment.proxyURL)
-
-        .setColor(messageDelete.guild.members.cache.get(client.user).displayHexColor)
-
         .setFooter('Deleted Image')
         .setTimestamp();
 
@@ -41,9 +38,6 @@ module.exports = (client, messageDelete) => {
       .setAuthor(messageDelete.author.tag, messageDelete.author.displayAvatarURL)
       .setDescription(`**Message sent by ${messageDelete.author.tag} deleted in <#${messageDelete.channel.id}>**`)
       .addField('Message Content', `${messageDelete.content}`)
-
-      .setColor(messageDelete.guild.members.cache.get(client.user).displayHexColor)
-
       .setFooter('Deleted Message')
       .setTimestamp();
 

@@ -35,38 +35,6 @@ const insults = [
 const auditHisotry = {};
 let audit = {};
 
-exports.help = () => {
-  insultTable.get('*', (e, rows) => {
-    const numInsults = insults.length + rows.length;
-    return `Say an insult! There are ${numInsults} insults.\n`;
-  });
-  return 'Say an insult; Tag users to target them.';
-};
-
-exports.run = async message => {
-  const { author, content, guild } = message;
-  if (content.startsWith('insult add ', 1)) {
-    let insult = content.split('insult add ')[1];
-    // console.log(insult)
-    insultTable.insert(insult, author.id, guild.id, err => {
-      if(err) {
-        message.react('❌');
-      } else {
-        message.react('✅');
-      }
-    });
-  }
-  else {
-    if (message.mentions.members.size > 0) {
-      message.mentions.members.each(member => {
-        sendInsult(getInsult(message, member));
-      });
-    } else {
-      sendInsult(getInsult(message));
-    }
-  }
-};
-
 const getInsult = function (callback, message, mentioned) {
   const config = settings.settings;
   const mentions = config.mentions || false;
@@ -93,27 +61,17 @@ const getRandomUsers = (message) => {
   return members[Math.floor(Math.random() * members.length)];
 };
 
-const sendInsult = (channel, text, options) => {
-  const a = audit;
-
-  channel.send(text, options).then((sentMessage) => {
-    a.timestamp = Date.now();
-    auditHisotry[sentMessage.id] = a;
-  }).catch(console.error);
-};
-
 exports.execute = async (client, interaction) => {
   await interaction.deferReply();
 
   const { user, options, guild, } = interaction;
   if (options.getSubcommand() == SUBCOMMANDS.ADD) {
     let insult = options.get(PARAMETERS.INSULT);
-    // console.log(insult)
     insultTable.insert(insult, user.id, guild.id, err => {
       if(err) {
-        interaction.editReply('Failed to add insult. I didn\t fail, you did.');
+        interaction.editReply('Failed to add insult. I didn\t fail, you did.').catch(console.error);
       } else {
-        interaction.editReply('Added. Someone hates you for that.');
+        interaction.editReply('Added. Someone hates you for that.').catch(console.error);
       }
     });
   }
