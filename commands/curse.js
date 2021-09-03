@@ -20,10 +20,10 @@ exports.execute = async (client, interaction, epeen) => {
   const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
   const guild = interaction.guild;
   const mentionable = interaction.options.get(PARAMS.MEMBER);
-  const lift = interaction.options.get(PARAMS.lift)?.value;
+  const lift = interaction.options.get(PARAMS.LIFT)?.value;
   // const members = mentionable.role.members ? [...mentionable.role.members.values()] : [mentionable];
   // await interaction.deferReply();
-  await interaction.reply(`Casting curse on ${mentionable}`);
+  await interaction.reply('Casting curse...');
 
   let role = interaction.guild.roles.cache.find(r => r.name === 'cursed');
   if (!role) {
@@ -50,13 +50,14 @@ exports.execute = async (client, interaction, epeen) => {
 
   };
   const curse = async (member, timeout) => {
+    console.log(lift);
     if (!lift) {
       member.roles.add(role).catch(console.error);
       await interaction.editReply('Cursing').catch(console.error);
       if (timeout) setTimeout(() => member.roles.remove(role).catch(console.error), timeout);
     } else {
-      interaction.editReply('Lifting curse');
-      return member.roles.remove(role).catch(console.error);
+      await interaction.editReply('Lifting curse').catch(console.error);
+      member.roles.remove(role).catch(console.error);
     }
   };
   const curseMembers = (timeout) => {

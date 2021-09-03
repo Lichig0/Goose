@@ -53,12 +53,14 @@ module.exports.execute = async (client, interaction, epeen) => {
   const members = mentionable.role ? [...mentionable.role.members.values()] : [mentionable.member];
   members.map(async member => {
     if (!member.manageable || !role_perm) {
-      return await interaction.editReply(`***Honk.*** (${member.user.username})`).catch(console.error);
+      await interaction.editReply(`***Honk.*** (${member.user.username})`).catch(console.error);
     }
-    if (lift) {
-      return member.roles.add(role);
+    else if (!lift) {
+      member.roles.add(role).catch(console.error);
+      await interaction.editReply(`${member.user.username} has been accuse of abusing bots.`).catch(console.error);
     } else {
-      return member.roles.remove(role);
+      member.roles.remove(role);
+      await interaction.editReply(`${member.user.username} better be on their best behavior.`).catch(console.error);
     }
   });
 };
