@@ -45,23 +45,23 @@ exports.execute = async (client, interaction, epeen) => {
   const enabled = config.enabled;
 
   console.log(userPermission);
-  if(!canKick) {
-    interaction.reply('Your authority is not recognized in Fort Kickass.');
+  if(mentionableOption.role) {
+    return await interaction.reply('A whole role?').catch(console.error);
+  } else if(!member.kickable) {
+    await interaction.reply('I can\t or won\'t do that.').catch(console.error);
     return;
-  } else if(mentionableOption.role) {
-    return interaction.reply('A whole role?');
   }
 
   await interaction.deferReply();
 
-  const kick = (member, invite = false) => {
-    member.kick().then(()=> {
-      interaction.editReply({
+  const kick = async(member, invite = false) => {
+    member.kick().then(async ()=> {
+      await interaction.editReply({
         content: `Kicked ${member}. (${reason}) ${invite ? '' : 'No invite was sent'}`,
       }).catch(console.error);
-    }).catch((error) => {
+    }).catch(async (error) => {
       console.error(error);
-      interaction.editReply({
+      await interaction.editReply({
         content: `Failed to kick ${member}`
       }).catch(console.error);
     });
@@ -77,7 +77,7 @@ exports.execute = async (client, interaction, epeen) => {
     kick(member, sent);
   };
 
-  if(member.kickable) {
+  if(canKick) {
     inviteAndKick(channel, member, reason);
     return;
   } else if(enabled) {
