@@ -9,7 +9,7 @@ module.exports = async (client, interaction) => {
   if(interaction.isCommand()) {
     const command = client.commands.get(interaction.commandName);
     console.log(`
-        >command: ${command}
+        >command: ${interaction.commandName}
         bot: ${interaction.bot}
         guild: ${guild}
         channel: ${interaction.channel}
