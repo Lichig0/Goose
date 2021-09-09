@@ -1,12 +1,14 @@
 {
+    "parser": "babel-eslint",
     "env": {
+        "es6": true,
         "commonjs": true,
-        "es2020": true,
         "node": true
     },
     "extends": "eslint:recommended",
     "parserOptions": {
-        "ecmaVersion": 11
+        "ecmaVersion": 2021,
+        "sourceType": "module"
     },
     "rules": {
         "indent": [
