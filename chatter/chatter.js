@@ -1,6 +1,6 @@
 const Discord = require('discord.js');
 // const mathjs = require('mathjs');
-const Markov = require('markov-strings').default;
+// const Markov = require('markov-strings').default;
 const settings = require('../settings');
 const coreThoughts = require('./coreThoughts');
 const insult = require('../commands/insult');
@@ -8,22 +8,17 @@ const game = require('../commands/game');
 const Chance = require('chance');
 const eyes = require('./birdEyes');
 const chatterUtil = require('./util');
+const {Brain} = require('./brain');
 
-const urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
-const userIDRegex = new RegExp(/^\s?(<@){1}([0-9]{18})>/i);
-const brokenUserIDRegex = new RegExp(/^\s?(<@){0}([0-9]{18})>/i);
-const data = coreThoughts.coreThoughts(ct => markov.addData(Object.values(ct)));
-const mimickData = {};
-let userToMimick = false;
-
+const guildBrains = {};
 const chance = new Chance();
-let messagesSince = 0;
-let mostRecent, makeNoise, noiseTimeout;
-let markov = new Markov({ stateSize: 2 });
 const auditHistory = {};
 let audit = {
   timestamp: Date.now()
 };
+
+let messagesSince = 0;
+let mostRecent, makeNoise, noiseTimeout;
 
 eyes.fetch();
 
@@ -46,17 +41,16 @@ module.exports.audit = (params) => {
 module.exports.init = async (client) => {
   const config = settings.settings.chatter;
   const disabled = config.disabledChannels || [];
-  const tasks = [];
+  const learningTasks = [];
 
   client.guilds.cache.each(guild => {
-    // const channelsToScrape = guild.channels.cache.filter(ch => ch.type == 'GUILD_TEXT' && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
     const channelsToScrape = guild.channels.cache.filter(ch => ch.isText() && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
-
-
-    tasks.push(scrapeHistory(guild, channelsToScrape));
+    const brain = guildBrains[guild.id] = new Brain(guild);
+    learningTasks.push(brain.scrapeGuildHistory(channelsToScrape));
   });
-  Promise.all(tasks).then((done) => {
-    console.log('[Finished scraping.]', done);
+  Promise.all(learningTasks).then(done => {
+    console.log('[Finished creating models.]', done.length);
+    console.log('[Finished scraping.]', done.map(guildData => guildData.length));
     client.user.setStatus('online');
     client.user.setActivity('👀', { type: 'WATCHING' });
   });
@@ -73,7 +67,7 @@ module.exports.run = (message = mostRecent, client) => {
   const honkChannel = (isMentioned && config.useHonk) ? theHonk : channel;
   const isHonk = channel.name === 'honk';
   const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
-  const nuRandRoll = chance.bool({ likelihood: (config.randomChat)}); console.log(nuRandRoll, `${messagesSince/(config.randomChat*100)}`, channel.name, author.tag);
+  const roll = chance.bool({ likelihood: (config.randomChat)}); console.log(roll, `${messagesSince/(config.randomChat*100)}`, channel.name, author.tag);
   audit.likelihood = messagesSince/(config.randomChat*100);
 
   // TODO: move this into it's own file; loaded in as something that happens every message.
@@ -87,7 +81,7 @@ module.exports.run = (message = mostRecent, client) => {
       client.user.setActivity('👀', { type: 'WATCHING' });
     }
   }
-  nuRandRoll ? messagesSince = 0 : messagesSince++;
+  roll ? messagesSince = 0 : messagesSince++;
 
   if(makeNoise) {
     if (noiseTimeout !== noiseFrequency) {
@@ -105,7 +99,7 @@ module.exports.run = (message = mostRecent, client) => {
       exports.run(mostRecent, client);
     }, noiseTimeout);
   }
-  addMessage(message);
+  guildBrains[guild.id].addMessage(message);
   mostRecent = message;
 
   const hasTriggerWord = (m) => {
@@ -118,13 +112,11 @@ module.exports.run = (message = mostRecent, client) => {
       return () => {
         return {likelihood: 100, string: 'Fucking leave then.'};
       };
-    } else if(content.startsWith(`${client.user}, mimick `)) {
-      userToMimick = content.split('mimick ')[0];
     }
   };
 
 
-  if ((isHonk || isMentioned || nuRandRoll || hasTriggerWord(content)) && !author.bot && !ignored.includes(channel.name)) {
+  if ((isHonk || isMentioned || roll || hasTriggerWord(content)) && !author.bot && !ignored.includes(channel.name)) {
     guild.members.fetch(author).then(m => {
       const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
       if (!hasRole) {
@@ -140,7 +132,7 @@ module.exports.run = (message = mostRecent, client) => {
 
         if (critRoll) console.log('Critical roll!');
 
-        critRoll ? sendSourString(honkChannel, message, client) : sendMarkovString(honkChannel, data, content);
+        critRoll ? sendSourString(honkChannel, message, client) : sendMarkovString(honkChannel, content);
       }
     });
   }
@@ -192,44 +184,18 @@ const sendSourString = (channel, message, client) => {
   chance.weighted(tsks, ws)();
 };
 
-const generateSentence = async (options = {}) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const result = markov.generate(options);
-      resolve(result);
-    } catch (e) {
-      reject(e);
-    }
-  });
-};
+const sendMarkovString = async (channel, content) => {
 
-const generateMimickSentence = async (options = {}) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const userMimick = mimickData[userToMimick] ? userToMimick : chance.pickone(Object.keys(mimickData));
-      console.debug('MIMICK', userMimick);
-      const result = mimickData[userMimick].generate(options);
-      resolve(result);
-    } catch (e) {
-      reject(e);
-    }
-  });
-};
-
-const sendMarkovString = async (channel, data, content) => {
-
-  console.log('okay', Object.values(data).length);
+  console.log('okay', Object.values(guildBrains[channel.guildId].corpus.data).length);
 
   let chatter = '🤫';
   let files = [];
+  const guildId = channel.guildId;
   const config = settings.settings.chatter;
   channel.sendTyping().then(() => {
     if (!config.mentions) chatter = Discord.Util.cleanContent(chatter, channel.lastMessage);
     sendChatter(channel, chatter, { embeds: files });
   });
-
-
-
   const refsScore = (refs) => { // this may be too agressive.
     let score = 0;
     const channelInfluence = config.channelInfluence || 2;
@@ -242,50 +208,12 @@ const sendMarkovString = async (channel, data, content) => {
     });
     return score;
   };
-
   const minimumScore = config.minimumScore || 2;
   const maxTries = 20;
-  // const maxTries = config.maxTries || 30;
-  /*
-  function sampleWithPRNG<T>(array: T[], prng: () => number = Math.random): T | undefined {
-    const length = array == null ? 0 : array.length
-    return length ? array[Math.floor(prng() * length)] : undefined
-    ////////////////////
-    const arr = [sampleWithPRNG(this.startWords, prng)!]
-
-      let score = 0
-
-      // loop to build a complete sentence
-      for (let innerTries = 0; innerTries < maxTries; innerTries++) {
-        const block = arr[arr.length - 1] // last value in array
-        const state = sampleWithPRNG(corpus[block.words], prng)
-  }
-
-  grab start words, return a random sorted given words location from start words, divide that by the length of start words. default to random after
-  */
-  const pRandomStartSelect = () => {
-    markov.startWords = chance.shuffle(markov.startWords);
-    const word = markov.startWords.findIndex(startWord => {
-      // we should have a common string normalizer?
-      const words = startWord.words.toLowerCase();
-      const contentWord = chance.pickone(content.split(' ')).toLowerCase();
-      return words !== '' && words.includes(contentWord);
-    });
-    // console.debug(word, markov.startWords[word].words);
-
-    if(word > 0){
-      const notSoRandom = (word/markov.startWords.length);
-      // console.debug(notSoRandom);
-      return notSoRandom;
-    }
-    const random = Math.random();
-    // console.debug('rand', random);
-    return random;
-  };
   const options = {
     maxTries, // Give up if I don't have a sentence after N tries (default is 10)
     // prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
-    prng: pRandomStartSelect,
+    prng: guildBrains[guildId].generateWordSeakingRandom(content),
     filter: (result) => {
       // const metScoreConstraints = chatterUtil.wordScore(result.string, content) + refsScore(result.refs) >= minimumScore;
       console.debug('Channel Ref score:', refsScore(result.refs));
@@ -298,21 +226,16 @@ const sendMarkovString = async (channel, data, content) => {
       return metScoreConstraints && metPairsConstraints && metNSFWConstraints && metUniqueConstraint;
     }
   };
-
-  // TODO: refactor further
-  // Generate a sentence
   const sentenceResultHandler = (result) => {
     const config = settings.settings.chatter;
     let attachments = [];
-    chatter = result.string.replace(brokenUserIDRegex, '<@$2>');
+    chatter = result.string;
 
     if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments));
     audit.refs = result.refs.flatMap(r => r.string);
     files = attachments.size > 0 ? [attachments.random()] : [];
 
-    // channel.stopTyping(true);
   };
-
   const sentenceFallbackHandler = (e) => {
     if (e) console.error(e);
     console.log('[Couldn\'t generate sentence with constraints]');
@@ -330,7 +253,7 @@ const sendMarkovString = async (channel, data, content) => {
       }
     };
     if(chance.bool({likelihood:95})) {
-      generateSentence({...tOpt, maxTries: 500}).then(sentenceResultHandler).catch(() => {
+      guildBrains[guildId].createSentence({...tOpt, maxTries: 500}).then(sentenceResultHandler).catch(() => {
         failsafe();
       });
     } else {
@@ -342,137 +265,12 @@ const sendMarkovString = async (channel, data, content) => {
         failsafe();
       }).finally(() => {
         eyes.fetch();
-        // channel.stopTyping(true);
       });
     }
 
   };
 
-  if(chance.bool({likelihood:75}) || !userToMimick){
-    generateSentence(options).then(sentenceResultHandler).catch(sentenceFallbackHandler);
-  } else {
-    const mOptions = {
-      maxTries: options.maxTries * 2,
-      filter: (result) => {
-        const metScoreConstraints = chatterUtil.wordScore(result.string, content);
-        const metPairsConstraints = chatterUtil.hasPairs(result.string);
-        const hasNSFWRef = result.refs.reduce(chatterUtil.nsfwCheck , false);
-        const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true;
-
-        return metScoreConstraints && metPairsConstraints && metNSFWConstraints;
-      }
-    };
-    generateMimickSentence(mOptions).then((result) => {
-      audit.mimicking = true;
-      sentenceResultHandler(result);
-    }).catch(sentenceFallbackHandler);
-  }
-};
-
-const addMessage = (message, splitRegex = undefined) => {
-  const { id, guild, content, channel, attachments, author } = message;
-  const config = settings.settings.chatter;
-  const splitter = splitRegex instanceof RegExp ? splitRegex : new RegExp(config.messageSplitter);
-
-  let resolvedUserNameContent = content.replace(brokenUserIDRegex, '<@$2>');
-  if(userIDRegex.test(resolvedUserNameContent)) {
-    const guildUser = guild.members.cache.get(userIDRegex.exec(resolvedUserNameContent)[2]);
-    if( guildUser ) {
-      const username = guildUser.nickname || guildUser.user.username;
-      resolvedUserNameContent = resolvedUserNameContent.replace(userIDRegex, username);
-    }
-  }
-
-  const subMessage = resolvedUserNameContent.match(urlRegex) ? [resolvedUserNameContent] : resolvedUserNameContent.split(splitter);
-  const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw };
-  if(mimickData[author.id] === undefined) mimickData[author.id] = new Markov({ stateSize: 2 });
-  subMessage.forEach((str, i) => {
-    const trimmedString = str.trim();
-
-    if (trimmedString !== '') { //skip empty strings
-      cache.string = chatterUtil.normalizeSentence(trimmedString);
-      if (data[`${id}.${i}`] !== undefined) {
-        return;
-      } else {
-        data[`${id}.${i}`] = cache;
-        markov.addData([cache]);
-        mimickData[author.id].addData([cache]);
-      }
-    } else if (cache.attachments.size > 0 && data[`${id}.${0}`] === undefined && channel.messages.cache.last(2)[1]) {
-
-      const substituteString = channel.messages.cache.last(2)[1].content;
-      let tCache = data[`${id}.${i}`] = {
-        ...cache,
-        trimmedString: substituteString
-      };
-      markov.addData([tCache]);
-      mimickData[author.id].addData([tCache]);
-    }
-  });
-  return cache;
-};
-
-const buildData = async (last = {}, channels, data, times) => {
-  times++;
-  const config = settings.settings.chatter;
-  const tasks = channels.map(ch => fetchMessages(ch, last[ch.id]));
-  const msgs = await Promise.all(tasks);
-  const toCache = msgs instanceof Array ? msgs.filter(m => m.size > 0) : [];
-  const splitter = new RegExp(config.messageSplitter);
-
-  toCache.filter(m => m.size > 0).forEach(mm => {
-    mm.forEach((m) => {
-      last[m.channel.id] = addMessage(m, splitter);
-    });
-    if (mm.size < 100) {
-      const i = msgs.indexOf(mm);
-      // console.log(msgs);
-      if ( i > -1 && msgs[i].size > 0) channels.delete(channels.findKey(chan => chan.id == msgs[i].channel));
-    }
-  });
-  if (Object.values(data).length < config.arrayLimiter && times < 1000 && toCache.length > 0) {
-    await buildData(last, channels, data, times);
-  }
-};
-
-const fetchMessages = async (channel, o) => {
-  return o.channel === channel.id ? channel.messages.fetch({ limit: 100, before: o.id }) : channel.messages.fetch({ limit: 100 });
-};
-
-const scrapeHistory = async (guild, textChannels, readRetry = 0) => {
-  return new Promise( (resolve, reject) => {
-    const {client} = guild;
-    let r = 0;
-
-    client.user.setStatus('dnd');
-    client.user.setActivity('📖🔍🤔', { type: 'WATCHING' });
-
-    console.log(`[Scraping History]: ${guild.name} | Channels: ${textChannels.map(channel=>channel.name)}`);
-
-    const last = {};
-    textChannels.forEach(tc=> last[tc.id] = {});
-    buildData(last, textChannels, data, r).then(() => {
-    }).catch((err) => {
-
-      console.error(err);
-
-      if (readRetry < 3) {
-        readRetry++;
-
-        console.warn('Retry: ', readRetry);
-
-        scrapeHistory(guild, textChannels, readRetry);
-      } else {
-        reject(err);
-      }
-    }).finally(() => {
-
-      console.log('[Done.]:', guild.name , Object.values(data).length);
-      resolve(Object.values(data).length);
-    });
-  });
+  guildBrains[guildId].createSentence(options).then(sentenceResultHandler).catch(sentenceFallbackHandler);
 };
 
 settings.loadConfig();
-
-exports.buildData = scrapeHistory;
