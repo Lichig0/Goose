@@ -41,7 +41,7 @@ module.exports = (client, messageDelete) => {
       .setFooter('Deleted Message')
       .setTimestamp();
 
-    deleteChannel.send(logembed);
+    deleteChannel.send(logembed).catch(console.error);
 
   }
 };
