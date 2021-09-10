@@ -56,6 +56,12 @@ module.exports.init = async (client) => {
   });
 };
 
+module.exports.addGuildBrain = async (guild) => {
+  const channelsToScrape = guild.channels.cache.filter(ch => ch.isText() && ch.viewable && !ch.nsfw);
+  const brain = guildBrains[guild.id] = new Brain(guild);
+  return brain.scrapeChannelHistory(channelsToScrape);
+};
+
 module.exports.run = (message = mostRecent, client) => {
   audit = {};
   const { author, channel, content, guild, mentions } = message;
@@ -192,10 +198,6 @@ const sendMarkovString = async (channel, content) => {
   let files = [];
   const guildId = channel.guildId;
   const config = settings.settings.chatter;
-  channel.sendTyping().then(() => {
-    if (!config.mentions) chatter = Discord.Util.cleanContent(chatter, channel.lastMessage);
-    sendChatter(channel, chatter, { embeds: files });
-  });
   const refsScore = (refs) => { // this may be too agressive.
     let score = 0;
     const channelInfluence = config.channelInfluence || 2;
@@ -235,6 +237,10 @@ const sendMarkovString = async (channel, content) => {
     audit.refs = result.refs.flatMap(r => r.string);
     files = attachments.size > 0 ? [attachments.random()] : [];
 
+    channel.sendTyping().then(() => {
+      if (!config.mentions) chatter = Discord.Util.cleanContent(chatter, channel.lastMessage);
+      sendChatter(channel, chatter, { embeds: files });
+    });
   };
   const sentenceFallbackHandler = (e) => {
     if (e) console.error(e);
@@ -253,9 +259,7 @@ const sendMarkovString = async (channel, content) => {
       }
     };
     if(chance.bool({likelihood:95})) {
-      guildBrains[guildId].createSentence({...tOpt, maxTries: 500}).then(sentenceResultHandler).catch(() => {
-        failsafe();
-      });
+      guildBrains[guildId].createSentence({...tOpt, maxTries: 500}).then(sentenceResultHandler).catch(failsafe);
     } else {
       eyes.generateTweet(tOpt).then(result => {
         chatter = result.string;
