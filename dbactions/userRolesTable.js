@@ -25,6 +25,7 @@ exports.set = (members, guildId, callback) => {
     db.parallelize(() => {
       members.forEach(member => {
         const roles = member.roles.cache.filter(r=>!r.managed).flatMap(r=>r.id);
+        if(roles.size <= 1) return console.warn(`${member.name} only has ${roles.size}`);
         db.run('INSERT INTO userRoles (roles, member, guild) VALUES ($roles,$member,$guildId) ON CONFLICT (member,guild) DO UPDATE SET roles=$roles WHERE member = $member',
           {$roles:roles, $member:member.id, $guildId:guildId}, function (err) {
             if (err) {
