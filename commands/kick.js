@@ -48,7 +48,7 @@ exports.execute = async (client, interaction, epeen) => {
   if(mentionableOption.role) {
     return await interaction.reply('A whole role?').catch(console.error);
   } else if(!member.kickable) {
-    await interaction.reply('I can\t or won\'t do that.').catch(console.error);
+    await interaction.reply('I can\'t or won\'t do that.').catch(console.error);
     return;
   }
 
