@@ -6,14 +6,18 @@ let canAnnounceDelete = true;
 
 module.exports = (client, messageDelete) => {
   const deleteChannel = messageDelete.guild.channels.cache.find(ch => ch.name === 'deleted');
-  console.log('[Message Deleted]');
-  if(!deleteChannel) {
-    console.log('No Delete channel');
+  const sendSawThat = (e) => {
+    console.error(e);
     if(chance.bool() && canAnnounceDelete) {
       messageDelete.channel.send('I saw that.').catch(console.error);
       canAnnounceDelete = false;
       setTimeout(()=>canAnnounceDelete = true,1*(1000*60*60*3));
     }
+  };
+  console.log('[Message Deleted]');
+  if(!deleteChannel) {
+    console.log('No Delete channel');
+    sendSawThat();
     return;
   }
   if (messageDelete.attachments && messageDelete.attachments.size > 0 && messageDelete) { // If I change this to: message.attachments.size>0 && message it works with deleted image & text but as it is without this said line it doesn't function
@@ -29,7 +33,7 @@ module.exports = (client, messageDelete) => {
         .setFooter('Deleted Image')
         .setTimestamp();
 
-      deleteChannel.send(logembed);
+      deleteChannel.send(logembed).catch(sendSawThat);
       console.log(attachment.proxyURL);
     });
   } else {
@@ -41,7 +45,7 @@ module.exports = (client, messageDelete) => {
       .setFooter('Deleted Message')
       .setTimestamp();
 
-    deleteChannel.send(logembed).catch(console.error);
+    deleteChannel.send(logembed).catch(sendSawThat);
 
   }
 };

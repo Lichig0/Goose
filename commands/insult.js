@@ -86,7 +86,7 @@ exports.execute = async (client, interaction) => {
     };
     if (mentionable) {
       const members = mentionable.role ? [...mentionable.role.members.values()] : [mentionable.member];
-      members.each(member => {
+      members.map(member => {
         getInsult(reply, interaction, member);
       });
     } else {
