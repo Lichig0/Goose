@@ -24,10 +24,11 @@ exports.set = (members, guildId, callback) => {
   db.serialize(() => {
     db.parallelize(() => {
       members.forEach(member => {
-        const roles = member.roles.cache.filter(r=>!r.managed).flatMap(r=>r.id);
+        const roles = member.roles.cache.filter(r=>!r.managed).map(r=>r.id);
         if(roles.size <= 1) return console.warn(`${member.name} only has ${roles.size}`);
-        db.run('INSERT INTO userRoles (roles, member, guild) VALUES ($roles,$member,$guildId) ON CONFLICT (member,guild) DO UPDATE SET roles=$roles WHERE member = $member',
-          {$roles:roles, $member:member.id, $guildId:guildId}, function (err) {
+        const rolesArray = [...roles.values()];
+        db.run('INSERT INTO userRoles (roles, member, guild) VALUES ($roles,$member,$guildId) ON CONFLICT (member,guild) DO UPDATE SET roles=$roles WHERE member = $member AND guild=$guildId',
+          {$roles:`${rolesArray}`, $member:member.id, $guildId:guildId}, function (err) {
             if (err) {
               return console.log(err.message);
             }
@@ -51,7 +52,7 @@ exports.update = (member, roles, callback) => {
     }
   });
   db.run('UPDATE userRoles SET roles = $roles WHERE guild = $guild AND member = $member',
-    {$member:member.id,$guild:member.guild.id,$roles:roles}, callback);
+    {$member:member.id,$guild:member.guild.id,$roles:`${roles}`}, callback);
 };
 
 exports.get = (member, callback) => {

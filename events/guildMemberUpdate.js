@@ -1,16 +1,26 @@
 const userRolesTable = require('../dbactions/userRolesTable');
 
 module.exports = (client, oldMember, newMember) => {
+  const roles = newMember.roles.cache.filter(r => !r.managed).map(r => r.id);
+  const rolesArray = [...roles.values()];
   userRolesTable.get(newMember, (err, rolesString) => {
-    // Everyone should have @everyone if they were seen before....
-    if(rolesString && rolesString.length === 0) {
-      userRolesTable.set(newMember, newMember.guild.id).catch(console.error);
+    if(rolesString && rolesString.length === 0 && rolesArray.length > 0) {
+      try {
+        userRolesTable.set(newMember, newMember.guild.id);
+      } catch (e) {
+        console.error(e);
+      }
     }
     else if (rolesString && rolesString.length > 0) {
-      const roles = newMember.roles.cache.filter(r => !r.managed).flatMap(r => r.id);
-      const rolesArray = [...roles.values()];
-      console.log(newMember.name, rolesArray.map(role=> role.name));
-      if (rolesArray.lenght > 0 ) userRolesTable.update(newMember, roles.rolesArray).catch(console.error);
+      const roles = newMember.roles.cache.filter(r => !r.managed).map(r => r.id);
+      console.log(newMember.name, roles);
+      if (roles.length > 0 ) {
+        try {
+          userRolesTable.update(newMember, roles)?.catch(console.error);
+        } catch (e) {
+          console.error(e);
+        }
+      }
     }
   });
 };
