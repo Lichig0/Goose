@@ -10,6 +10,7 @@
     "discord-api-types": "^0.22.0",
     "discord.js": "^13.1.0",
     "dotenv": "^8.6.0",
+    "entities": "^3.0.1",
     "giant-bomb": "^2.0.1",
     "markov-strings": "^3.0.1",
     "mathjs": "^7.6.0",
@@ -30,7 +31,8 @@
   "nodemonConfig": {
     "ignore": [
       "*.sqlite",
-      "*.json"
+      "*.json",
+      "*.md"
     ]
   },
   "keywords": [],
