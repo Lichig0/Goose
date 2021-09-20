@@ -19,4 +19,12 @@ exports.setConfig = newSettings => {
     return;
   });
 };
-exports.loadConfig();
+
+const autoReload = () => {
+  console.log('[Settings refreshed]');
+  exports.loadConfig();
+  setTimeout(() => {
+    autoReload();
+  }, ((60 * 1000) * 5));
+};
+autoReload();
