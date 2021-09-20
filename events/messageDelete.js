@@ -3,17 +3,27 @@ const Chance = require('chance');
 
 const chance = new Chance();
 let canAnnounceDelete = true;
+const deleteMessages = [
+  'Why don\'t you dissapear like your messages.',
+  'I saw that.',
+  '🙄',
+  'Um.',
+  '|| **R E D A C T E D** ||',
+  'Nice password.'
+];
 
 module.exports = (client, messageDelete) => {
   const deleteChannel = messageDelete.guild.channels.cache.find(ch => ch.name === 'deleted');
   const sendSawThat = (e) => {
-    console.error(e);
+    if(e) console.error(e);
     if(chance.bool() && canAnnounceDelete) {
-      messageDelete.channel.send('I saw that.').catch(console.error);
+      const chatter = chance.bool({likelihood: 90}) ? 'I saw that.' : chance.pickone(deleteMessages);
+      messageDelete.channel.send(chatter).catch(console.error);
       canAnnounceDelete = false;
       setTimeout(()=>canAnnounceDelete = true,1*(1000*60*60*3));
     }
   };
+
   console.log('[Message Deleted]');
   if(!deleteChannel) {
     console.log('No Delete channel');
@@ -34,7 +44,6 @@ module.exports = (client, messageDelete) => {
         .setTimestamp();
 
       deleteChannel.send(logembed).catch(sendSawThat);
-      console.log(attachment.proxyURL);
     });
   } else {
     const logembed = new Discord.MessageEmbed()

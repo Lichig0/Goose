@@ -1,6 +1,4 @@
 const Discord = require('discord.js');
-// const mathjs = require('mathjs');
-// const Markov = require('markov-strings').default;
 const settings = require('../settings');
 const coreThoughts = require('./coreThoughts');
 const insult = require('../commands/insult');
@@ -21,6 +19,7 @@ let messagesSince = 0;
 let mostRecent, makeNoise, noiseTimeout;
 
 eyes.fetch();
+eyes.stream();
 
 const sendChatter = (channel, text, options) => {
   const a = audit;
@@ -72,8 +71,8 @@ module.exports.run = (message = mostRecent, client) => {
   const isMentioned = mentions.has(client.user.id);
   const honkChannel = (isMentioned && config.useHonk) ? theHonk : channel;
   const isHonk = channel.name === 'honk';
-  const theHonk = guild.channels.cache.find(ch => ch.name === 'honk') || channel;
-  const roll = chance.bool({ likelihood: (config.randomChat)}); console.log(roll, `${messagesSince/(config.randomChat*100)}`, channel.name, author.tag);
+  const theHonk = guild.channels.cache.find(ch => ch.name.includes('honk')) || channel;
+  const roll = chance.bool({ likelihood: (config.randomChat)}); console.log(roll, `${(messagesSince/(config.randomChat*100)).toFixed(3)}`, channel.name, author.tag);
   audit.likelihood = messagesSince/(config.randomChat*100);
 
   // TODO: move this into it's own file; loaded in as something that happens every message.
@@ -193,6 +192,7 @@ const sendSourString = (channel, message, client) => {
 const sendMarkovString = async (channel, content) => {
 
   console.log('okay', Object.values(guildBrains[channel.guildId].corpus.data).length);
+  await channel.sendTyping();
 
   let chatter = '🤫';
   let files = [];
@@ -217,9 +217,9 @@ const sendMarkovString = async (channel, content) => {
     // prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
     prng: guildBrains[guildId].generateWordSeakingRandom(content),
     filter: (result) => {
-      // const metScoreConstraints = chatterUtil.wordScore(result.string, content) + refsScore(result.refs) >= minimumScore;
+      const metScoreConstraints = chatterUtil.wordScore(result.string, content) + refsScore(result.refs) >= minimumScore;
       console.debug('Channel Ref score:', refsScore(result.refs));
-      const metScoreConstraints = chatterUtil.wordScore(result.string, content) >= minimumScore;
+      // const metScoreConstraints = chatterUtil.wordScore(result.string, content) >= minimumScore;
       const metUniqueConstraint = result.refs.length >= 2 && !result.refs.includes(result.string);
       const metPairsConstraints = chatterUtil.hasPairs(result.string);
       const hasNSFWRef = result.refs.reduce(chatterUtil.nsfwCheck , false);
@@ -236,18 +236,16 @@ const sendMarkovString = async (channel, content) => {
     if (!config.disableImage) result.refs.forEach(ref => attachments = attachments.concat(ref.attachments));
     audit.refs = result.refs.flatMap(r => r.string);
     files = attachments.size > 0 ? [attachments.random()] : [];
-
-    channel.sendTyping().then(() => {
-      if (!config.mentions) chatter = Discord.Util.cleanContent(chatter, channel.lastMessage);
-      sendChatter(channel, chatter, { embeds: files });
-    });
+    if (!config.mentions) chatter = Discord.Util.cleanContent(chatter, channel.lastMessage);
+    return sendChatter(channel, chatter, { embeds: files });
   };
-  const sentenceFallbackHandler = (e) => {
-    if (e) console.error(e);
+  const sentenceFallbackHandler = () => {
     console.log('[Couldn\'t generate sentence with constraints]');
     const failsafe = () => {
-      chatter = channel.client.emojis.cache.random().toString();
+      console.log('[Failsafe used]');
+      chatter = chance.bool() ? channel.client.emojis.cache.random().toString() : guildBrains[guildId].getRandomWord();
       audit.refs = 'Skipped. Did not meet constraints.';
+      sendChatter(channel, chatter);
     };
     const minimumScore = config.minimumScore || 2;
     const tOpt = {
@@ -258,23 +256,28 @@ const sendMarkovString = async (channel, content) => {
         return (multiRef + goodLength) >= minimumScore && !r.refs.includes(r.string);
       }
     };
-    if(chance.bool({likelihood:95})) {
-      guildBrains[guildId].createSentence({...tOpt, maxTries: 500}).then(sentenceResultHandler).catch(failsafe);
+    if(chance.bool()) {
+      console.log('[Trying again, take as long as it needs]');
+      guildBrains[guildId].createSentence({...options, maxTries: Infinity}).then(sentenceResultHandler).catch(failsafe);
+    } else if(chance.bool({likelihood: 50})) {
+      failsafe();
     } else {
+      console.log('[Twitter used]');
       eyes.generateTweet(tOpt).then(result => {
         chatter = result.string;
         audit.refs = result.refs.flatMap(r => r.string);
         audit.source = 'Twitter';
+        sendChatter(channel, chatter);
       }).catch(() => {
         failsafe();
       }).finally(() => {
         eyes.fetch();
+        eyes.stream();
       });
     }
 
   };
-
-  guildBrains[guildId].createSentence(options).then(sentenceResultHandler).catch(sentenceFallbackHandler);
+  return guildBrains[guildId].createSentence(options).then(sentenceResultHandler).catch(sentenceFallbackHandler);
 };
 
 settings.loadConfig();

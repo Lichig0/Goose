@@ -5,6 +5,7 @@ class Brain {
   #guild;
   #corpus;
   #data;
+  #singleWords = {};
   #processedMessages;
   #chance = new Chance();
 
@@ -17,13 +18,14 @@ class Brain {
     this.#corpus = new Markov({stateSize: 2});
     this.#data = [];
     this.#processedMessages = new Set();
-    this.splitRegex = new RegExp('\n.?!;()"'); //eslint-disable-line
+    this.splitRegex = new RegExp(/[\n.?!;()"]/);
 
     coreThoughts(ct => this.#corpus.addData(Object.values(ct)));
   }
 
 
   static normalizeSentence (sentence = '') {
+    if (sentence.match(Brain.urlRegex)) return sentence;
     let resolvedUserNameContent = sentence.replace(Brain.brokenUserIDRegex, '<@$2>');
     const capitalized = `${resolvedUserNameContent.replace(resolvedUserNameContent[0], resolvedUserNameContent[0].toUpperCase())}`;
     return (capitalized.endsWith('.') || capitalized.endsWith('?') || capitalized.endsWith('!')) ? capitalized : `${capitalized}.`;
@@ -34,7 +36,7 @@ class Brain {
   }
 
   async #fetchMessages(channel, beforeMessage) {
-    return beforeMessage.channel?.id === channel.id ? channel.messages.fetch({ limit: 100, before: beforeMessage.id }) : channel.messages.fetch({ limit:100 });
+    return beforeMessage.channel?.id === channel.id ? channel.messages.fetch({ limit: 100, before: beforeMessage.id }, {cache: false, force: true}) : channel.messages.fetch({ limit:100 }, {cache: false, force: true});
     // return beforeMessage.channel?.id === channel.id ? this.#testFetch(channel, { limit: 100, before: beforeMessage.id }) : this.#testFetch(channel, { limit:100 });
   }
 
@@ -55,8 +57,20 @@ class Brain {
 
   async #processMessages(channelMessages = []) {
     channelMessages.forEach(nonEmptyMessage => {
+      if(nonEmptyMessage.author.bot) return;
       this.#processedMessages.add(this.addMessage(nonEmptyMessage));
     });
+  }
+
+  #addSingleWord(word) {
+    if(word === '') return;
+    // const normalized = Brain.normalizeSentence(word);
+    if(this.#singleWords[word]) {
+      this.#singleWords[word].count++;
+    } else {
+      this.#singleWords[word] = { count: 1, word:word};
+    }
+
   }
 
   async createSentence(options = {}) {
@@ -70,6 +84,10 @@ class Brain {
         reject(e);
       }
     });
+  }
+
+  getRandomWord() {
+    return this.#chance.pickone(Object.values(this.#singleWords)).word;
   }
 
   generateWordSeakingRandom = (content) => {
@@ -131,7 +149,7 @@ class Brain {
         }
       }
     } while(fetched && fetched.size === 100);
-    console.log('[End of channel]', channel.name, fullHistory.length, this.#corpus.data.length, Object.values(this.#data).length);
+    console.log('[Channel End]', channel.name, fullHistory.length, this.#corpus.data.length, Object.values(this.#data).length, Object.keys(this.#singleWords).length);
     return fullHistory;
   }
   addMessage(message, splitter = this.splitRegex) {
@@ -145,7 +163,7 @@ class Brain {
         resolvedUserNameContent = resolvedUserNameContent.replace(Brain.userIDRegex, username);
       }
     }
-
+    if(resolvedUserNameContent.split(' ').length === 1) return this.#addSingleWord(resolvedUserNameContent);
     const subMessage = resolvedUserNameContent.match(Brain.urlRegex) ? [resolvedUserNameContent] : resolvedUserNameContent.split(splitter);
     const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw };
     subMessage.forEach((str, i) => {
