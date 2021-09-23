@@ -9,6 +9,7 @@ const client = new Twitter({
 });
 const recordedTweets = [];
 let markov = new Markov({ stateSize: 2 });
+let connectionRetries = 0;
 
 const queriesCatalog = [
   'nobody asked',
@@ -77,10 +78,12 @@ const consumeTweet = (tweet) => {
 
 module.exports.stream = async (keyWords) => {
   await setStreamRules(keyWords).then(({meta}) => console.log(meta.summary)).catch((e) => console.error(e.message));
-
+  if(connectionRetries !== 0) {
+    console.warn('[Twitter] Stream already in retry.');
+  }
   async function listenForever(streamFactory, dataConsumer) {
     setTimeout(() => {
-      console.log('Closing...');
+      console.log('[Twitter] Closing...');
       streamFactory().close();
       removeStreamRules();
     }, 300000);
@@ -89,13 +92,18 @@ module.exports.stream = async (keyWords) => {
         dataConsumer(data);
       }
       // The stream has been closed by Twitter. It is usually safe to reconnect.
-      console.log('Stream disconnected healthily. Reconnecting.');
-      // listenForever(streamFactory, dataConsumer);
+      console.log('[Twitter] Stream disconnected healthily.');
     } catch (error) {
       // An error occurred so we reconnect to the stream. Note that we should
       // probably have retry logic here to prevent reconnection after a number of
       // closely timed failures (may indicate a problem that is not downstream).
-      console.warn('Stream disconnected with error. Retrying...', error.message);
+      console.warn(`[Twitter] Stream disconnected with error. Retrying... (${error.message})`);
+      if (connectionRetries === 4) {
+        console.error(`[Twitter] Tried ${connectionRetries} times. Giving up.`);
+        connectionRetries = 0;
+        return;
+      }
+      connectionRetries++;
       setTimeout(() => {
         listenForever(streamFactory, dataConsumer);
       }, 30000);
