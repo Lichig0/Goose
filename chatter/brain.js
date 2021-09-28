@@ -163,7 +163,8 @@ class Brain {
         resolvedUserNameContent = resolvedUserNameContent.replace(Brain.userIDRegex, username);
       }
     }
-    if(resolvedUserNameContent.split(' ').length === 1) return this.#addSingleWord(resolvedUserNameContent);
+    const wordCount = resolvedUserNameContent.split(' ').length;
+    if(wordCount > 0 && wordCount <= 2) return this.#addSingleWord(resolvedUserNameContent);
     const subMessage = resolvedUserNameContent.match(Brain.urlRegex) ? [resolvedUserNameContent] : resolvedUserNameContent.split(splitter);
     const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw };
     subMessage.forEach((str, i) => {
