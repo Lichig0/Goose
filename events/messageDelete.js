@@ -17,10 +17,10 @@ module.exports = (client, messageDelete) => {
   const sendSawThat = (e) => {
     if(e) console.error(e);
     if(chance.bool() && canAnnounceDelete) {
-      const chatter = chance.bool({likelihood: 90}) ? 'I saw that.' : chance.pickone(deleteMessages);
+      const chatter = chance.bool({likelihood: 65}) ? 'I saw that.' : chance.pickone([...deleteMessages,chance.syllable(), chance.sentence()]);
       messageDelete.channel.send(chatter).catch(console.error);
       canAnnounceDelete = false;
-      setTimeout(()=>canAnnounceDelete = true,1*(1000*60*60*3));
+      setTimeout(()=>canAnnounceDelete = true,1*(1000*60*60*3),chance.bool({likelihood:65}));
     }
   };
 

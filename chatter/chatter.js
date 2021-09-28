@@ -43,7 +43,7 @@ module.exports.init = async (client) => {
   const learningTasks = [];
 
   client.guilds.cache.each(guild => {
-    const channelsToScrape = guild.channels.cache.filter(ch => ch.isText() && ch.viewable && !ch.nsfw && !disabled.includes(ch.name));
+    const channelsToScrape = guild.channels.cache.filter(ch => ch.isText() && ch.viewable && !disabled.includes(ch.name));
     const brain = guildBrains[guild.id] = new Brain(guild);
     learningTasks.push(brain.scrapeGuildHistory(channelsToScrape));
   });
@@ -56,6 +56,7 @@ module.exports.init = async (client) => {
 };
 
 module.exports.addGuildBrain = async (guild) => {
+  // TODO: must fetch channel list, a new server would have no cache
   const channelsToScrape = guild.channels.cache.filter(ch => ch.isText() && ch.viewable && !ch.nsfw);
   const brain = guildBrains[guild.id] = new Brain(guild);
   return brain.scrapeChannelHistory(channelsToScrape);
@@ -72,7 +73,7 @@ module.exports.run = (message = mostRecent, client) => {
   const honkChannel = (isMentioned && config.useHonk) ? theHonk : channel;
   const isHonk = channel.name === 'honk';
   const theHonk = guild.channels.cache.find(ch => ch.name.includes('honk')) || channel;
-  const roll = chance.bool({ likelihood: (config.randomChat)}); console.log(roll, `${(messagesSince/(config.randomChat*100)).toFixed(3)}`, channel.name, author.tag);
+  const roll = chance.bool({ likelihood: (config.randomChat)}); console.log('[Chatter]', roll, `${(messagesSince/(config.randomChat*100)).toFixed(3)}`, channel.name, author.tag);
   audit.likelihood = messagesSince/(config.randomChat*100);
 
   // TODO: move this into it's own file; loaded in as something that happens every message.
@@ -190,8 +191,8 @@ const sendSourString = (channel, message, client) => {
 };
 
 const sendMarkovString = async (channel, content) => {
-
-  console.log('okay', Object.values(guildBrains[channel.guildId].corpus.data).length);
+  const contentSize = Object.values(guildBrains[channel.guildId].corpus.data).length;
+  console.log('okay', contentSize);
   await channel.sendTyping();
 
   let chatter = '🤫';
@@ -211,7 +212,7 @@ const sendMarkovString = async (channel, content) => {
     return score;
   };
   const minimumScore = config.minimumScore || 2;
-  const maxTries = 20;
+  const maxTries = 10;
   const options = {
     maxTries, // Give up if I don't have a sentence after N tries (default is 10)
     // prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
@@ -257,8 +258,9 @@ const sendMarkovString = async (channel, content) => {
       }
     };
     if(chance.bool()) {
-      console.log('[Trying again, take as long as it needs]');
-      guildBrains[guildId].createSentence({...options, maxTries: Infinity}).then(sentenceResultHandler).catch(failsafe);
+      console.log('[Trying again.]');
+      // guildBrains[guildId].createSentence({...options, maxTries: (contentSize / 10)}).then(sentenceResultHandler).catch(failsafe);
+      guildBrains[guildId].createSentence(options).then(sentenceResultHandler).catch(failsafe);
     } else if(chance.bool({likelihood: 50})) {
       failsafe();
     } else {

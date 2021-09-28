@@ -51,8 +51,8 @@ client.once('ready', () => {
       }
     }
   });
-  client.application.commands.set(devCommandDataList, '637314469894160405').then(commands => console.log('Dev',commands.map(c=>c.name))).catch(console.error);
-  client.application.commands.set(commandDataList).then(commands => console.log(commands.map(c=>c.name))).catch(console.error);
+  client.application.commands.set(devCommandDataList, '637314469894160405').then(commands => console.log('[Dev Commands]',commands.map(c=>c.name))).catch(console.error);
+  client.application.commands.set(commandDataList).then(commands => console.log(`[Commands] ${commands.map(c=>c.name)}`)).catch(console.error);
 });
 
 
