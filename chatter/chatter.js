@@ -202,12 +202,8 @@ const sendMarkovString = async (channel, content) => {
   const refsScore = (refs) => { // this may be too agressive.
     let score = 0;
     const channelInfluence = config.channelInfluence || 2;
-    const theHonk = channel.guild.channels.cache.find(ch => ch.name === 'honk');
     refs.forEach(ref => {
       score += ref.channel === channel.id ? channelInfluence : -channelInfluence;
-      if(theHonk) {
-        score += ref.channel === theHonk.id ? channelInfluence*2 : 0;
-      }
     });
     return score;
   };
@@ -244,7 +240,13 @@ const sendMarkovString = async (channel, content) => {
     console.log('[Couldn\'t generate sentence with constraints]');
     const failsafe = () => {
       console.log('[Failsafe used]');
-      chatter = chance.bool() ? channel.client.emojis.cache.random().toString() : guildBrains[guildId].getRandomWord();
+      const failsafeArray = [
+        channel.client.emojis.cache.random().toString(),
+        guildBrains[guildId].getRandomWord(),
+        chance.sentence(),
+        `${chance.syllable()}.`
+      ];
+      chatter = chance.pickone(failsafeArray);
       audit.refs = 'Skipped. Did not meet constraints.';
       sendChatter(channel, chatter);
     };
