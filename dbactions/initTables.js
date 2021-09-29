@@ -8,7 +8,7 @@ module.exports = () => {
     if (err) {
       return console.error(err.message);
     }
-    console.log('Connected to the SQlite database.');
+    console.log('[DB] Connected to the SQlite database.');
   });
 
   fs.readdir('./dbactions', (err, files) => {
@@ -22,23 +22,23 @@ module.exports = () => {
         const dbt = dbTables[dbTable] = require(`./${file}`);
         if(dbt.init) {
           dbTables[dbTable].init(db, () => {
-            console.log(`Initialized ${dbTable}`);
+            console.log(`[DB] Initialized ${dbTable}`);
           });
         } else {
-          console.warn(`${dbTable} does not have init`);
+          console.warn(`[DB] ${dbTable} does not have init`);
         }
       }
     });
     closeDb();
   });
-  
+
   const closeDb = () => {
     // close the database connection
     db.close((err) => {
       if (err) {
         return console.error(err.message);
       }
-      console.log('Close the database connection.');
+      console.log('[DB] Close the database connection.');
     });
   };
 
