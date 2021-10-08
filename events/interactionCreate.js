@@ -8,9 +8,8 @@ module.exports = async (client, interaction) => {
   const epeen = guild && member ? member.permissions : new Permissions(Permissions.DEFAULT);
   if(interaction.isCommand()) {
     const command = client.commands.get(interaction.commandName);
-    console.log(`
-        >command: ${interaction.commandName}
-        bot: ${interaction.bot}
+    console.log(`>command: ${interaction.commandName}
+        bot: ${interaction.user.bot}
         guild: ${guild}
         channel: ${interaction.channel}
         author: ${interaction.user}`);
