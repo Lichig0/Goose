@@ -3,6 +3,7 @@ const Chance = require('chance');
 const Markov = require('markov-strings').default;
 class Brain {
   #guild;
+  #client;
   #corpus;
   #data;
   #singleWords = {};
@@ -15,6 +16,7 @@ class Brain {
 
   constructor(guild) {
     this.#guild = guild;
+    this.#client = guild.client;
     this.#corpus = new Markov({stateSize: 2});
     this.#data = [];
     this.#processedMessages = new Set();
@@ -153,7 +155,9 @@ class Brain {
     return fullHistory;
   }
   addMessage(message, splitter = this.splitRegex) {
-    const { id, guild, content, channel, attachments } = message;
+    const { id, guild, channel, attachments, author } = message;
+    const optedOutIds = this.#guild.client.optedOutUsers.map(({userId}) => userId);
+    const content = optedOutIds.includes(author?.id) ? this.#chance.sentence() : message.content;
     let resolvedUserNameContent = content.replace(Brain.brokenUserIDRegex, '<@$2>');
 
     if(Brain.userIDRegex.test(resolvedUserNameContent)) {

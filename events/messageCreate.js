@@ -19,7 +19,9 @@ module.exports = (client, message) => {
   const {content, author, guild, channel} = message;
   const config = settings.settings;
   const prefix = config.prefix || '.';
+  const optedOutIds = client.optedOutUsers.map(({userId}) => userId);
   if(!guild) return;
+  if(optedOutIds.includes(author.id)) return;
   let command = undefined;
 
   if (!content.startsWith(prefix) || !guild) {

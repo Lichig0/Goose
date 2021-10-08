@@ -63,8 +63,10 @@ module.exports.addGuildBrain = async (guild) => {
 };
 
 module.exports.run = (message = mostRecent, client) => {
-  audit = {};
   const { author, channel, content, guild, mentions } = message;
+  const optedOutIds = client.optedOutUsers.map(({userId}) => userId);
+  audit = {};
+  if(optedOutIds.includes(author.id)) return;
   const config = settings.settings.chatter;
   const triggerWords = config.triggerWords || [];
   const ignored = config.ignoredChannels || [];
