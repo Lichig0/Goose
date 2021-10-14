@@ -22,7 +22,7 @@ exports.getCommandData = () => {
 
 exports.execute = async (client, interaction) => {
   const equation = interaction.options.get('input').value;
-  await interaction.deferReply();
+  await interaction.deferReply().catch(console.error);
   try {
     const result = parser.evaluate(equation.trim());
     await interaction.editReply(result.name || result.toString()).catch(console.error);
