@@ -184,7 +184,7 @@ exports.execute = async (client, interaction) => {
     qdb.like(option, guild, sendCallback);
     break;
   case SUBCOMMANDS.ADD:
-    qdb.add(commandOptions.get(PARAMETERS.CONTENT).value, interaction, addCallback, {notes: commandOptions.get(PARAMETERS.NOTES).value});
+    qdb.add(commandOptions.get(PARAMETERS.CONTENT).value, interaction, addCallback, {notes: commandOptions.get(PARAMETERS.NOTES)?.value});
     break;
   case SUBCOMMANDS.DELETE:
     qdb.delete(commandOptions.get(PARAMETERS.NUMBER).value, interaction.user, deleteCallback);
