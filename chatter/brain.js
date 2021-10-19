@@ -42,6 +42,11 @@ class Brain {
     // return beforeMessage.channel?.id === channel.id ? this.#testFetch(channel, { limit: 100, before: beforeMessage.id }) : this.#testFetch(channel, { limit:100 });
   }
 
+  clearGuildCache() {
+    console.log('[Brain] Clearing data cache');
+    this.#data = [];
+  }
+
   async #testFetch(channel, {before = -1}) {
     return new Promise((resolve, reject) => {
       const fakeMessages = [];
@@ -126,8 +131,8 @@ class Brain {
         readRetry++;
         this.scrapeChannelHistory(chan, readRetry);
       }));
-      const guildHisotry = Promise.all(tasks);
-      readRetry <= 3 ? resolve(guildHisotry) : reject(new Error);
+      const guildHistory = Promise.all(tasks);
+      readRetry <= 3 ? resolve(guildHistory) : reject(new Error);
     });
   }
   async scrapeChannelHistory(channel, retries = 0) {
@@ -150,7 +155,7 @@ class Brain {
           recentFetch = fetched.last();
         }
       }
-    } while(fetched && fetched.size === 100);
+    } while(fetched && fetched.size === 100 && this.#corpus.data.length <= 225000);
     console.log('[Channel End]', channel.name, fullHistory.length, this.#corpus.data.length, Object.values(this.#data).length, Object.keys(this.#singleWords).length);
     return fullHistory;
   }

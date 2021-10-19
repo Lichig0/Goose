@@ -50,6 +50,7 @@ module.exports.init = async (client) => {
   Promise.all(learningTasks).then(done => {
     console.log('[Finished creating models.]', done.length);
     console.log('[Finished scraping.]', done.map(guildData => guildData.length));
+    Object.values(guildBrains).map(gb=>gb.clearGuildCache());
     client.user.setStatus('online');
     client.user.setActivity('👀', { type: 'WATCHING' });
   });
