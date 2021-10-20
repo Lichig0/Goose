@@ -15,7 +15,8 @@ const PARAMETERS = {
   NUMBER: 'number',
   CONTENT: 'content',
   NOTES: 'notes',
-  TAGS: 'tags'
+  TAGS: 'tags',
+  IMAGE_URL: 'iurl'
 };
 
 exports.getCommandData = () => {
@@ -67,6 +68,12 @@ exports.getCommandData = () => {
             type: 3,
             required: false
           },
+          {
+            name: PARAMETERS.IMAGE_URL,
+            description: 'Image URL',
+            type: 3,
+            required: false
+          }
           // {
           //   name: PARAMETERS.tags,
           //   description: 'Tags to make this quote easier to find',
@@ -184,7 +191,10 @@ exports.execute = async (client, interaction) => {
     qdb.like(option, guild, sendCallback);
     break;
   case SUBCOMMANDS.ADD:
-    qdb.add(commandOptions.get(PARAMETERS.CONTENT).value, interaction, addCallback, {notes: commandOptions.get(PARAMETERS.NOTES)?.value});
+    qdb.add(commandOptions.get(PARAMETERS.CONTENT).value, interaction, addCallback, {
+      notes: commandOptions.get(PARAMETERS.NOTES)?.value,
+      attachmentUrl: commandOptions.get(PARAMETERS.IMAGE_URL)?.value
+    });
     break;
   case SUBCOMMANDS.DELETE:
     qdb.delete(commandOptions.get(PARAMETERS.NUMBER).value, interaction.user, deleteCallback);
