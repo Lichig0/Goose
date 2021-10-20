@@ -68,10 +68,10 @@ exports.delete = (qid, author, callback) => {
       return console.error(err.message);
     }
   });
-  db.run('DELETE FROM qdb WHERE id=$id and (author_id=$author OR author_id is null)', {$id:qid, $author:author.id}, callback).close(onClose);
+  db.run('DELETE FROM qdb WHERE id=$id and (author_id=$author OR author_id is null)', {$id:qid, $author:`${author}`}, callback).close(onClose);
 };
 
-exports.vote= (qid, score, votes, callback) => {
+exports.vote = (qid, score, votes, callback) => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
       return console.error(err.message);
@@ -92,7 +92,7 @@ exports.add = (newQuote, message, callback, options) => {
   // const tags = '';
   const score = '0';
   const votes = '0';
-  const messageUserId = message.user ? message.user.id : message.author.id;
+  const messageUserId = message.user ? `${message.user}` : message.author.id;
   const guildId = message.guild.id;
   db.run('INSERT INTO qdb' +
     ' (body, notes, tags, created, author_id, guild, score, votes, attachment, attachmentUrl)' +
