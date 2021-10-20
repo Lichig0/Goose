@@ -129,7 +129,7 @@ exports.execute = async (client, interaction) => {
       const embeds = [];
       Util.splitMessage(body).forEach(splitBody => {
         embed.setDescription(splitBody);
-        embeds.length < 10 ? embeds.push(embed) : console.warn(`Embeds is large: ${embeds.length}`);
+        embeds.length < 9 ? embeds.push(embed) : console.warn(`Embeds is large: ${embeds.length}`);
       });
       interaction.editReply({embeds:embeds}).then((sendMessage => {
         const qid = id;
@@ -158,7 +158,10 @@ exports.execute = async (client, interaction) => {
           });
           sendMessage.react('✅').catch(console.error);
         });
-      })).catch(e => console.error('Failed to send.', e));
+      })).catch(e => {
+        console.error('Failed to send.', e);
+        interaction.editReply('That quote is too powerful.').catch(console.error);
+      });
     } else {
       interaction.editReply('I searched and search, I don\'t think that quote exists. Maybe I\'ll make one up next time.').catch(console.error);
     }
