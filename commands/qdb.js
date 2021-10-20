@@ -97,6 +97,7 @@ exports.execute = async (client, interaction) => {
   const {guild} = interaction;
   const sendCallback = (e, body) => {
     if (e) {
+      interaction.editReply('I threw up a little.');
       return console.error(e);
     }
     const quote = body[Math.floor(Math.random() * body.length)];
@@ -155,13 +156,12 @@ exports.execute = async (client, interaction) => {
       interaction.editReply('I searched and search, I don\'t think that quote exists. Maybe I\'ll make one up next time.').catch(console.error);
     }
   };
-  const addCallback = (entry) => {
-    console.log(entry);
-    qdb.get(entry.lastID, sendCallback);
+  const addCallback = (entry, guildId) => {
+    qdb.get(entry.lastID, guildId, sendCallback);
   };
   const deleteCallback = () => {
     const qn = commandOptions.get(PARAMETERS.NUMBER).value;
-    qdb.get(qn, (e, body) => {
+    qdb.get(qn, guild.id, (e, body) => {
       if (e) {
         console.error(e);
       }

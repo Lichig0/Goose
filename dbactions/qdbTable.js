@@ -68,8 +68,7 @@ exports.delete = (qid, author, callback) => {
       return console.error(err.message);
     }
   });
-  // delete from qdb where id=17 and author_id="<@166052926777851904>"
-  db.run('DELETE FROM qdb WHERE id=$id and (author_id=$author OR author_id is null)', {$id:qid, $author:author}, callback).close(onClose);
+  db.run('DELETE FROM qdb WHERE id=$id and (author_id=$author OR author_id is null)', {$id:qid, $author:author.id}, callback).close(onClose);
 };
 
 exports.vote= (qid, score, votes, callback) => {
@@ -93,17 +92,17 @@ exports.add = (newQuote, message, callback, options) => {
   // const tags = '';
   const score = '0';
   const votes = '0';
-  const messageUser = message.user ? message.user : message.author;
+  const messageUserId = message.user ? message.user.id : message.author.id;
   const guildId = message.guild.id;
   db.run('INSERT INTO qdb' +
     ' (body, notes, tags, created, author_id, guild, score, votes, attachment, attachmentUrl)' +
-    ' VALUES ($body, $notes, $tags, $created, $author_id, $guild, $score, $votes, $blob, $au)', { $body: newQuote, $notes:notes, $tags:tags, $created: Date(), $author_id: messageUser, $guild: guildId, $score: score, $votes: votes, $blob:blob, $au:attachmentUrl }, function (err) {
+    ' VALUES ($body, $notes, $tags, $created, $author_id, $guild, $score, $votes, $blob, $au)', { $body: newQuote, $notes:notes, $tags:tags, $created: Date(), $author_id: messageUserId, $guild: guildId, $score: score, $votes: votes, $blob:blob, $au:attachmentUrl }, function (err) {
     if (err) {
       return console.log(err.message);
     }
     // get the last insert id
     console.log(`A row has been inserted with rowid ${this.lastID}`);
-    callback(this);
+    callback(this, guildId);
   }).close(onClose);
 };
 
