@@ -16,7 +16,7 @@ exports.audit = () => { return audit; };
 
 exports.execute = async (client, interaction) => {
   const {guild, user, id} = interaction;
-  await interaction.deferReply();
+  await interaction.deferReply().catch(console.warn);
   const question = interaction.options.get(PARAMS.QUESTION);
   const choices = interaction.options.data.filter((choice) => choice.name.startsWith(PARAMS.OPTION));
 

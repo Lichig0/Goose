@@ -52,7 +52,7 @@ exports.execute = async (client, interaction, epeen) => {
     return;
   }
 
-  await interaction.deferReply();
+  await interaction.deferReply().catch(console.warn);
 
   const kick = async(member, invite = false) => {
     member.kick().then(async ()=> {

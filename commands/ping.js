@@ -16,5 +16,5 @@ module.exports.execute = async (client, interaction) => {
   await interaction.reply({
     content: 'Pong~?!',
     ephemeral: true
-  });
+  }).catch(console.warn);
 };

@@ -62,7 +62,7 @@ const getRandomUsers = (message) => {
 };
 
 exports.execute = async (client, interaction) => {
-  await interaction.deferReply();
+  await interaction.deferReply().catch(console.warn);
 
   const { user, options, guild, } = interaction;
   if (options.getSubcommand() == SUBCOMMANDS.ADD) {

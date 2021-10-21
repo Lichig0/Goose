@@ -25,7 +25,7 @@ module.exports.execute = async (client, interaction) => {
   const { member } = interaction;
   // await interaction.reply('Whoops, I don\'t know what that means yet.');
   // return;
-  await interaction.deferReply();
+  await interaction.deferReply().catch(console.warn);
 
 
   const toOptOut = interaction.options.get('optout')?.value ?? true;
@@ -35,7 +35,7 @@ module.exports.execute = async (client, interaction) => {
         console.log('[OptOut]', ids);
         client.optedOutUsers = ids;
       });
-      interaction.editReply('Always took you as an egomaniac.');
+      interaction.editReply('Always took you as an egomaniac.').catch(console.warn);
     });
   } else {
     optOutTable.add(member.id, [], () => {
@@ -43,7 +43,7 @@ module.exports.execute = async (client, interaction) => {
         console.log('[OptOut]', ids);
         client.optedOutUsers = ids;
       });
-      interaction.editReply('You were always dead to me anyways.');
+      interaction.editReply('You were always dead to me anyways.').catch(console.warn);
     });
   }
   return;

@@ -100,11 +100,11 @@ exports.getCommandData = () => {
 };
 
 exports.execute = async (client, interaction) => {
-  await interaction.deferReply();
+  await interaction.deferReply().catch(console.warn);
   const {guild} = interaction;
   const sendCallback = (e, body) => {
     if (e) {
-      interaction.editReply('I threw up a little.');
+      interaction.editReply('I threw up a little.').catch(console.warn);
       return console.error(e);
     }
     const quote = body[Math.floor(Math.random() * body.length)];

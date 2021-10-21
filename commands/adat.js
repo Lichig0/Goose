@@ -20,10 +20,10 @@ const execute = async (client, interaction) => {
   const member = interaction.member;
 
   if(!member.kickable) {
-    await interaction.reply({content: 'You are not kickable', ephemeral: true});
+    await interaction.reply({content: 'You are not kickable', ephemeral: true}).catch(console.warn);
     return;
   }
-  await interaction.deferReply();
+  await interaction.deferReply().catch(console.warn);
   const kick = (member, channel, message) => {
     member.kick().then(async () => {
       let sendString = 'Don\'t let the door hit you on the way out.';

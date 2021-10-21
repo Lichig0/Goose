@@ -15,7 +15,7 @@ module.exports.getCommandData = () => {
 module.exports.execute = async (client, interaction, epeen) => {
   const admin_perm = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
   const {guild} = interaction;
-  await interaction.deferReply();
+  await interaction.deferReply().catch(console.warn);
   if (admin_perm) {
     guild.members.fetch().then(members => {
       userRolesTable.set([...members.values()], guild.id);

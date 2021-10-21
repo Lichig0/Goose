@@ -33,7 +33,7 @@ module.exports.execute = async (client, interaction, epeen) => {
   const lift = interaction.options.get(PARAMETERS.LIFT)?.value;
   const guild = interaction.guild;
 
-  await interaction.deferReply();
+  await interaction.deferReply().catch(console.warn);
   let role = interaction.guild.roles.cache.find(r => r.name === 'Bot Abuser');
   if (!role) {
     // Create a new role with data and a reason

@@ -214,7 +214,7 @@ exports.getCommandData = () => {
 };
 
 exports.execute = async (client, interaction) => {
-  await interaction.deferReply();
+  await interaction.deferReply().catch(console.warn);
   const sendBountyCallback = async (e, data) => {
     if(e) {
       return console.error(e);

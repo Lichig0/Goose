@@ -27,7 +27,7 @@ module.exports = async (client, interaction) => {
       });
     } catch (error) {
       console.error(error);
-      await interaction.reply({content: 'Whoops, something went wrong.', ephemeral: true});
+      await interaction.reply({content: 'Whoops, something went wrong.', ephemeral: true}).catch(console.warn);
     }
   }
 };

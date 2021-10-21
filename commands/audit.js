@@ -39,7 +39,7 @@ exports.execute = async (client, interaction) => {
     auditJSON = chatter.audit(activityId);
   }
   const response = `Audit:\n ${'```'}${JSON.stringify(auditJSON, null, 2)}${'```'}`;
-  return interaction.reply({content: response, ephemeral: true});
+  return interaction.reply({content: response, ephemeral: true}).catch(console.warn);
 };
 
 exports.dev = false;

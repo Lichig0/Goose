@@ -21,5 +21,5 @@ exports.getCommandData = () => {
 
 exports.execute = async (client, interaction) => {
   const input = interaction.options.get('input').value;
-  return interaction.reply(input);
+  return interaction.reply(input).catch(console.warn);
 };

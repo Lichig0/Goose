@@ -23,7 +23,7 @@ exports.execute = async (client, interaction, epeen) => {
   const lift = interaction.options.get(PARAMS.LIFT)?.value;
   // const members = mentionable.role.members ? [...mentionable.role.members.values()] : [mentionable];
   // await interaction.deferReply();
-  await interaction.reply('Casting curse...');
+  await interaction.reply('Casting curse...').catch(console.warn);
 
   let role = interaction.guild.roles.cache.find(r => r.name === 'cursed');
   if (!role) {

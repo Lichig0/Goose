@@ -22,7 +22,7 @@ module.exports.execute = async (client, interaction) => {
   const search = `https://www.google.com/search?q=${terms}`;
   let ifl = undefined;
 
-  await interaction.deferReply();
+  await interaction.deferReply().catch(console.warn);
 
   https.get(`${search}&btnI`, response => {
     const location = response.headers.location;
