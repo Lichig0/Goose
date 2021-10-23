@@ -16,7 +16,7 @@ const PARAMETERS = {
   CONTENT: 'content',
   NOTES: 'notes',
   TAGS: 'tags',
-  IMAGE_URL: 'iurl'
+  IMAGE_URL: 'imageurl'
 };
 
 exports.getCommandData = () => {
@@ -73,13 +73,13 @@ exports.getCommandData = () => {
             description: 'Image URL',
             type: 3,
             required: false
+          },
+          {
+            name: PARAMETERS.TAGS,
+            description: 'Tags to make this quote easier to find',
+            type: 3,
+            required: false
           }
-          // {
-          //   name: PARAMETERS.tags,
-          //   description: 'Tags to make this quote easier to find',
-          //   type: 3,
-          //   required: false
-          // }
         ]
       },
       {
@@ -196,6 +196,7 @@ exports.execute = async (client, interaction) => {
   case SUBCOMMANDS.ADD:
     qdb.add(commandOptions.get(PARAMETERS.CONTENT).value, interaction, addCallback, {
       notes: commandOptions.get(PARAMETERS.NOTES)?.value,
+      tags: commandOptions.get(PARAMETERS.TAGS)?.value,
       attachmentUrl: commandOptions.get(PARAMETERS.IMAGE_URL)?.value
     });
     break;
