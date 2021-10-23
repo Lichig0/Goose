@@ -58,13 +58,9 @@ module.exports.fetch = async () => {
   };
   client.get('tweets/search/recent', params).then(response => {
     if(response.data) {
-
-      const tweets = response.data.map(tweet => {
-        const string = chatterUtil.normalizeSentence(tweet.text);
-        return `${string.replace(/&amp;/gi, '&')}`;
+      response.data.map(tweet => {
+        consumeTweet(tweet);
       });
-      recordedTweets.push(...tweets);
-      markov.addData(tweets);
     }
   }).catch(console.error);
 };
