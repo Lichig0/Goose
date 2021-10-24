@@ -270,7 +270,7 @@ const sendMarkovString = async (channel, content) => {
       console.log('[Trying again.]');
       // guildBrains[guildId].createSentence({...options, maxTries: (contentSize / 10)}).then(sentenceResultHandler).catch(failsafe);
       guildBrains[guildId].createSentence(options).then(sentenceResultHandler).catch(failsafe);
-    } else if(chance.bool({likelihood: 36})) {
+    } else if(chance.bool({likelihood: 15})) {
       failsafe();
     } else {
       console.log('[Twitter used]');
