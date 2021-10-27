@@ -227,7 +227,10 @@ const sendMarkovString = async (channel, message) => {
       weight: weights[1],
       task: async () => {
         console.log('[Twitter used]');
-        return await eyes.generateTweet().catch(console.error).finally(eyes.fetch());
+        return await eyes.generateTweet().catch(console.error).finally(() => {
+          eyes.fetch();
+          eyes.stream();
+        });
       }
     },
     {

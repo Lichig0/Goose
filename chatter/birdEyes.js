@@ -10,6 +10,7 @@ const client = new Twitter({
 const recordedTweets = [];
 let markov = new Markov({ stateSize: 2 });
 let connectionRetries = 0;
+let isStreamOpen = false;
 const minimumScore = 2; // TODO: Grab from config
 const twitterGenOptions = {
   maxTries: 10,
@@ -90,6 +91,7 @@ module.exports.stream = async (keyWords) => {
     setTimeout(() => {
       console.log('[Twitter] Closing...');
       streamFactory().close();
+      isStreamOpen = false;
       removeStreamRules();
     }, 300000);
     try {
@@ -115,6 +117,8 @@ module.exports.stream = async (keyWords) => {
     }
   }
 
+  if(isStreamOpen) return;
+  isStreamOpen = true;
   listenForever(
     () => client.stream('tweets/search/stream'),
     (data) => consumeTweet(data)
