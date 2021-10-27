@@ -22,7 +22,7 @@ module.exports = async (client, interaction) => {
       guild.members.fetch(interaction.user.id).then(async m => {
         const hasRole = m.roles.cache.find(r => r.name == 'Bot Abuser');
         if (!hasRole) {
-          await command.execute(client, interaction, epeen);
+          await command.execute(client, interaction, epeen).catch(console.error);
         }
       });
     } catch (error) {

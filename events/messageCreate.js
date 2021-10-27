@@ -7,6 +7,6 @@ module.exports = (client, message) => {
   if(optedOutIds.includes(author.id)) return;
 
   if (guild) {
-    chatter.run(message, client);
+    chatter.run(message, client).then(() => console.log('[Chatter Run]')).catch(console.error);
   }
 };
