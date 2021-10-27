@@ -10,6 +10,15 @@ const client = new Twitter({
 const recordedTweets = [];
 let markov = new Markov({ stateSize: 2 });
 let connectionRetries = 0;
+const minimumScore = 2; // TODO: Grab from config
+const twitterGenOptions = {
+  maxTries: 10,
+  filter: (r) => {
+    const multiRef = r.refs.length;
+    const goodLength = chatterUtil.wordScore(r.string);
+    return (multiRef + goodLength) >= minimumScore && !r.refs.includes(r.string);
+  }
+};
 
 const queriesCatalog = [
   'nobody asked',
@@ -112,7 +121,7 @@ module.exports.stream = async (keyWords) => {
   );
 };
 
-module.exports.generateTweet = async (options = {}) => {
+module.exports.generateTweet = async (options = twitterGenOptions) => {
   return new Promise((resolve, reject) => {
     try {
       const result = markov.generate(options);
