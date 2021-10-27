@@ -1,11 +1,15 @@
 const { coreThoughts } = require('./coreThoughts');
 const Chance = require('chance');
+const settings = require('../settings');
 const Markov = require('markov-strings').default;
+const chatterUtil = require('./util');
+
 class Brain {
   #guild;
   #client;
   #corpus;
   #data;
+  #generationOptions;
   #singleWords = {};
   #processedMessages;
   #chance = new Chance();
@@ -21,10 +25,31 @@ class Brain {
     this.#data = [];
     this.#processedMessages = new Set();
     this.splitRegex = new RegExp(/[\n.?!;()"]/);
-
     coreThoughts(ct => this.#corpus.addData(Object.values(ct)));
   }
 
+  static generateFilter(content, channel) {
+    const { channelInfluence = 2, minimumScore = 2 } = settings.settings.chatter;
+    const refsScore = (refs) => { // this may be too agressive.
+      let score = 0;
+      refs.forEach(ref => {
+        score += ref.channel === channel.id ? channelInfluence : -channelInfluence;
+      });
+      return score;
+    };
+    const filter = (result) => {
+      const metScoreConstraints = chatterUtil.wordScore(result.string, content) + refsScore(result.refs) >= minimumScore;
+      console.debug('Channel Ref score:', refsScore(result.refs));
+      // const metScoreConstraints = chatterUtil.wordScore(result.string, content) >= minimumScore;
+      const metUniqueConstraint = result.refs.length >= 2 && !result.refs.includes(result.string);
+      const metPairsConstraints = chatterUtil.hasPairs(result.string);
+      const hasNSFWRef = result.refs.reduce(chatterUtil.nsfwCheck , false);
+      const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true;
+
+      return metScoreConstraints && metPairsConstraints && metNSFWConstraints && metUniqueConstraint;
+    };
+    return filter;
+  }
 
   static normalizeSentence (sentence = '') {
     if (sentence.match(Brain.urlRegex)) return sentence;
@@ -144,7 +169,7 @@ class Brain {
     let recentFetch = {};
     let fetched = [];
     do {
-      fetched = await this.#fetchMessages(channel, recentFetch);
+      fetched = await this.#fetchMessages(channel, recentFetch).catch(console.error);
       if(fetched && fetched.size > 0) {
         fullHistory.push(...fetched.values());
         this.#processMessages(fetched);
