@@ -111,27 +111,12 @@ module.exports.run = async (message = mostRecent, client) => {
     return !(triggerWords.findIndex(tw => m.toLowerCase().includes(tw)) < 0);
   };
 
-  const searchForEggs = (message) => {
-    const { content } = message;
-    if(content.toLowerCase().includes('this discord sucks')) {
-      return () => {
-        return {likelihood: 100, string: 'Fucking leave then.'};
-      };
-    }
-  };
-
 
   if ((isHonk || isMentioned || roll || hasTriggerWord(content)) && !author.bot && !ignoredChannels.includes(channel.name)) {
     const member = await guild.members.fetch(author).catch(console.warn);
     const hasRole = member.roles.cache.find(r => r.name == 'Bot Abuser');
     if (!hasRole) {
       audit.sentOn = content;
-      const easterEgg = searchForEggs(message);
-      if(easterEgg) {
-        // Roll for rotten egg
-        const rottenRoll = chance.bool({likelihood: easterEgg().likelihood});
-        if (rottenRoll) return sendChatter(honkChannel, easterEgg().string);
-      }
       // Roll for critical
       const critRoll = chance.bool({likelihood: 2});
 
