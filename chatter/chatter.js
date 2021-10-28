@@ -213,7 +213,7 @@ const sendMarkovString = async (channel, message) => {
       task: async () => {
         console.log('[Twitter used]');
         return await eyes.generateTweet().catch(console.error).finally(() => {
-          eyes.fetch();
+          eyes.fetch(chance.pickone(content.split(/\s/)));
           eyes.stream();
         });
       }
