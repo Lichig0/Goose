@@ -10,6 +10,12 @@ exports.init = (db, callback) => {
   callback();
 };
 
+const onClose = (error) => {
+  if (error) {
+    return console.error(error);
+  }
+};
+
 exports.add = (user, guildsArray = [], callback) => {
   let db = new sqlite3.Database('goosedb.sqlite', (error) => {
     if (error) {
@@ -23,7 +29,7 @@ exports.add = (user, guildsArray = [], callback) => {
         return console.error(error.message);
       }
       console.log(`[Added OptOut] ${this.lastID}`);
-    }, callback);
+    }, callback).close(onClose);
 };
 
 exports.remove = (user, callback) => {
@@ -39,7 +45,7 @@ exports.remove = (user, callback) => {
         return console.error(error.message);
       }
       console.log(`[Removed OptOut] ${this}`);
-    }, callback);
+    }, callback).close(onClose);
 };
 
 exports.get = (callback) => {
@@ -53,9 +59,5 @@ exports.get = (callback) => {
     if (error) {
       return console.error(error.message);
     }
-  }, callback).close((error) => {
-    if (error) {
-      return console.error(error.message);
-    }
-  });
+  }, callback).close(onClose);
 };

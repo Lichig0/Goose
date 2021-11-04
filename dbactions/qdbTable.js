@@ -40,11 +40,7 @@ exports.get = (id, guild, callback) => {
   if(!Number.isNaN(idInt)) {
     db.all('SELECT * FROM qdb WHERE id = $id AND guild = $guild',{$id:idInt, $guild:guildId}, callback).close(onClose);
   } else {
-    db.all('SELECT * FROM qdb', callback).close((err) => {
-      if (err) {
-        return console.error(err.message);
-      }
-    });
+    db.all('SELECT * FROM qdb', callback).close(onClose);
   }
 };
 

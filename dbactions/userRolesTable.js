@@ -11,6 +11,12 @@ exports.init = (db, callback) => {
   callback();
 };
 
+const onClose = (error) => {
+  if(error) {
+    return console.error(error);
+  }
+};
+
 exports.set = (members, guildId, callback) => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
@@ -52,7 +58,7 @@ exports.update = (member, roles, callback) => {
     }
   });
   db.run('UPDATE userRoles SET roles = $roles WHERE guild = $guild AND member = $member',
-    {$member:member.id,$guild:member.guild.id,$roles:`${roles}`}, callback);
+    {$member:member.id,$guild:member.guild.id,$roles:`${roles}`}, callback).close(onClose);
 };
 
 exports.get = (member, callback) => {
@@ -63,6 +69,6 @@ exports.get = (member, callback) => {
   });
 
   const {guild} = member;
-  db.all('SELECT roles FROM userRoles WHERE guild = $guild AND member = $member', {$guild:guild.id, $member:member.id}, callback);
+  db.all('SELECT roles FROM userRoles WHERE guild = $guild AND member = $member', {$guild:guild.id, $member:member.id}, callback).close(onClose);
 
 };
