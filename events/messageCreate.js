@@ -1,6 +1,7 @@
 const chatter = require('../chatter/chatter');
 
 module.exports = (client, message) => {
+  console.log('[Message event]');
   const {author, guild} = message;
   const optedOutIds = client.optedOutUsers.map(({userId}) => userId);
   if(!guild) return;
@@ -8,7 +9,7 @@ module.exports = (client, message) => {
 
   if (guild) {
     try {
-      chatter.run(message, client).then(() => console.log('[Chatter Run]')).catch(console.error);
+      chatter.run(message, client).catch(console.error);
     } catch (e) {
       console.error(e);
     }

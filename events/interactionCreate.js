@@ -1,6 +1,7 @@
 const { Permissions } = require('discord.js');
 
 module.exports = async (client, interaction) => {
+  console.log('[Interaction]');
   const { member, guild} = interaction;
   if(!interaction.guild) {
     return await interaction.reply('Not here').catch(console.error);

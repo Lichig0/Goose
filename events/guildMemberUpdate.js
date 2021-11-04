@@ -1,6 +1,7 @@
 const userRolesTable = require('../dbactions/userRolesTable');
 
 module.exports = (client, oldMember, newMember) => {
+  console.log('[Member Update]');
   const roles = newMember.roles.cache.filter(r => !r.managed).map(r => r.id);
   const rolesArray = [...roles.values()];
   userRolesTable.get(newMember, (err, rolesString) => {
