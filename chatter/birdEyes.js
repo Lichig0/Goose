@@ -7,6 +7,7 @@ const chance = new Chance();
 const client = new Twitter({
   bearer_token: process.env.TWITTER_BEARER_TOKEN
 });
+const emojiReplaceRegex = /a?[():<>0-9]/ig;
 const recordedTweets = [];
 let markov = new Markov({ stateSize: 2 });
 let connectionRetries = 0;
@@ -60,8 +61,12 @@ const setStreamRules = async  (kws = chance.pickone(filtersCatalog)) => {
   return client.post('tweets/search/stream/rules', {add: rules});
 };
 
-module.exports.fetch = async () => {
-  const q = `${queryFilter} ${chance.pickone(queriesCatalog)}`;
+module.exports.fetch = async (keyWord) => {
+  const cleanRegex = /[^\w\s]/gi;
+  const cleanedKeyWord = keyWord ? keyWord.replaceAll(emojiReplaceRegex, '').replaceAll(cleanRegex, '') : undefined;
+  console.log('[Twitter Fetch]', keyWord);
+  const q = `${queryFilter} ${keyWord ? `${cleanedKeyWord}` : `${chance.pickone(queriesCatalog)}`}`;
+  console.log('[Twitter Fetch]', q);
   const params = {
     query: q,
     max_results: 100
@@ -83,6 +88,7 @@ const consumeTweet = (tweet) => {
 };
 
 module.exports.stream = async (keyWords) => {
+  console.log('[Twitter Stream]', keyWords);
   await setStreamRules(keyWords).then(({meta}) => console.log(meta.summary)).catch((e) => console.error(e.message));
   if(connectionRetries !== 0) {
     console.warn('[Twitter] Stream already in retry.');
@@ -112,7 +118,11 @@ module.exports.stream = async (keyWords) => {
       }
       connectionRetries++;
       setTimeout(() => {
-        listenForever(streamFactory, dataConsumer);
+        try {
+          listenForever(streamFactory, dataConsumer).catch(console.error);
+        } catch(e) {
+          console.error(e);
+        }
       }, 30000);
     }
   }
