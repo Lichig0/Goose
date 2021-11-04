@@ -75,8 +75,10 @@ module.exports.run = async (message = mostRecent, client) => {
   const honkChannel = (isMentioned && useHonk) ? theHonk : channel;
   const isHonk = channel.name === 'honk';
   const theHonk = guild.channels.cache.find(ch => ch.name.includes('honk')) || channel;
-  const roll = chance.bool({ likelihood: (randomChat)}); console.log('[Chatter]', roll, `${(messagesSince/(randomChat*100)).toFixed(3)}`, channel.name, author.tag);
-  audit.likelihood = messagesSince/(randomChat*100);
+  const thursdayMultiplier = new Date().getDay() === 4 ? 2 : 1;
+  const chatFrequency = randomChat * thursdayMultiplier;
+  const roll = chance.bool({ likelihood: (chatFrequency)}); console.log('[Chatter]', roll, `${(messagesSince/(chatFrequency*100)).toFixed(3)}`, channel.name, author.tag);
+  audit.likelihood = messagesSince/(chatFrequency*100);
 
   // TODO: move this into it's own file; loaded in as something that happens every message.
   if(Math.abs(1 - audit.likelihood) < 0.015) {
@@ -107,6 +109,11 @@ module.exports.run = async (message = mostRecent, client) => {
   guildBrains[guild.id].addMessage(message);
   mostRecent = message;
 
+  const words = Discord.Util.cleanContent(content, channel).split(/\s/);
+  if (words.length <=3) {
+    eyes.fetch(`${chance.bool() ? message : chance.pickone(words) }`);
+  }
+
   const hasTriggerWord = (m) => {
     return !(triggerWords.findIndex(tw => m.toLowerCase().includes(tw)) < 0);
   };
@@ -118,7 +125,7 @@ module.exports.run = async (message = mostRecent, client) => {
     if (!hasRole) {
       audit.sentOn = content;
       // Roll for critical
-      const critRoll = chance.bool({likelihood: 2});
+      const critRoll = chance.bool({likelihood: 2 * thursdayMultiplier});
 
       if (critRoll) console.log('Critical roll!');
 
