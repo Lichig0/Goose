@@ -9,7 +9,14 @@ const deleteMessages = [
   '🙄',
   'Um.',
   '|| **R E D A C T E D** ||',
-  'Nice password.'
+  'Nice password.',
+  'Adding to the heap.',
+  'I would have done that too.',
+  'I don\'t think anyone noticed',
+  '*NSA#8008 has joined the party.*',
+  '*NSA#8008 has joined chat.*',
+  'At least share something good next time.',
+  'W̶̯͑ḧ̸́ͅä̶̜t̴͕͐ ̸̭͘h̶̺́a̷̖͝v̴̼̐e̷̐ͅ ̵̤̒y̴̫̾ö̶́ͅu̶͚͆ ̷̦̂d̶̬̀o̶͇͊n̴̲̽ě̴̟!̸̯͋?̶̛̻',
 ];
 
 module.exports = (client, messageDelete) => {
