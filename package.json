@@ -15,7 +15,7 @@
     "markov-strings": "^3.0.1",
     "mathjs": "^7.6.0",
     "nodemon": "^2.0.12",
-    "sqlite3": "^4.2.0",
+    "sqlite3": "^5.0.2",
     "twitter-v2": "^1.1.0",
     "utf-8-validate": "^5.0.5",
     "zalgo-js": "^1.0.0",
