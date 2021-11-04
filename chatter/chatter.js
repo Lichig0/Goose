@@ -6,6 +6,7 @@ const game = require('../commands/game');
 const Chance = require('chance');
 const eyes = require('./birdEyes');
 const {Brain} = require('./brain');
+const zaglo = require('zalgo-js');
 
 const guildBrains = {};
 // const chance = new Chance();
@@ -22,8 +23,11 @@ eyes.stream();
 
 const sendChatter = (channel, text, options) => {
   const a = audit;
-
   channel.send(text, options).then((sentMessage) => {
+    const chance = new Chance(sentMessage.id);
+    if(chance.bool({likelihood: 1})) {
+      sentMessage.edit(zaglo(sentMessage.content)).catch(console.error);
+    }
     a.timestamp = Date.now();
     auditHistory[sentMessage.id] = a;
   }).catch(console.error);
