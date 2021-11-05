@@ -27,6 +27,7 @@ module.exports = (client, message) => {
   const disabledCommand = config.disabledCommands || [];
   const prefix = config.prefix || '.';
   if(!guild) return;
+  if(author.bot) return;
   //const data = [];
   let command = undefined;
 
