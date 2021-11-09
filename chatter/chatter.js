@@ -6,7 +6,7 @@ const game = require('../commands/game');
 const Chance = require('chance');
 const eyes = require('./birdEyes');
 const {Brain} = require('./brain');
-const zaglo = require('zalgo-js');
+const zalgo = require('zalgo-js');
 
 const guildBrains = {};
 // const chance = new Chance();
@@ -18,15 +18,15 @@ let audit = {
 let messagesSince = 0;
 let mostRecent, makeNoise, noiseTimeout;
 
-eyes.fetch();
-eyes.stream();
+eyes.fetch().catch(console.error);
+eyes.stream().catch(console.error);
 
 const sendChatter = (channel, text, options) => {
   const a = audit;
   channel.send(text, options).then((sentMessage) => {
     const chance = new Chance(sentMessage.id);
     if(chance.bool({likelihood: 1})) {
-      sentMessage.edit(zaglo(sentMessage.content)).catch(console.error);
+      sentMessage.edit(zalgo.default(sentMessage.content)).catch(console.error);
     }
     a.timestamp = Date.now();
     auditHistory[sentMessage.id] = a;
@@ -113,11 +113,6 @@ module.exports.run = async (message = mostRecent, client) => {
   guildBrains[guild.id].addMessage(message);
   mostRecent = message;
 
-  const words = Discord.Util.cleanContent(content, channel).split(/\s/);
-  if (words.length <=3) {
-    eyes.fetch(`${chance.bool() ? message : chance.pickone(words) }`);
-  }
-
   const hasTriggerWord = (m) => {
     return !(triggerWords.findIndex(tw => m.toLowerCase().includes(tw)) < 0);
   };
@@ -157,6 +152,7 @@ const sendSourString = (channel, message) => {
       name: 'insult',
       weight: 1,
       task: () => {
+        console.debug('<INSULT>');
         insult.getInsult((insult) => {
           sendChatter(channel, insult);
         }, message);
@@ -166,6 +162,7 @@ const sendSourString = (channel, message) => {
       name: 'coreThought',
       weight: 1.2,
       task: () => {
+        console.debug('<CORE THOGUHT>');
         const ct = coreThoughts.raw || [];
         sendChatter(channel, chance.pickone(ct));
       }
@@ -174,6 +171,7 @@ const sendSourString = (channel, message) => {
       name: 'react',
       weight: 4,
       task: () => {
+        console.debug('<REACT>');
         message.react(message.client.emojis.cache.random().id).catch(console.error);
       }
     }
@@ -224,22 +222,24 @@ const sendMarkovString = async (channel, message) => {
       task: async () => {
         console.log('[Twitter used]');
         return await eyes.generateTweet().catch(console.error).finally(() => {
-          eyes.fetch(chance.pickone(content.split(/\s/)));
-          eyes.stream();
+          eyes.fetch(guildBrains[guildId].getRandomWord()).catch(console.error);
+          eyes.stream().catch(console.error);
         });
       }
     },
     {
       name: 'Guild Emoji',
       weight: weights[2],
-      task: () => {
+      task: async () => {
+        console.debug('<GUILD EMOJI>');
         return { string: channel.client.emojis.cache.random().toString() };
       }
     },
     {
       name: 'Core',
       weight: weights[2],
-      task: () => {
+      task: async () => {
+        console.debug('<CORE>');
         return { string: chance.pickone(coreThoughts.raw) };
       }
     }
@@ -252,7 +252,13 @@ const sendMarkovString = async (channel, message) => {
   });
   const picked = chance.weighted(tsks, ws);
   audit.source = picked.name;
-  const { string = chance.sentence(), refs = [] } = await picked.task();
+  const { string = chance.sentence(), refs = [] } = await picked.task().catch((error) => {
+    console.error(error);
+    return {
+      string: chance.sentence(),
+      refs: []
+    };
+  });
   console.log(string);
   let attachments = [];
   let files = [];

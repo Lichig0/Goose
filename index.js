@@ -8,4 +8,4 @@ const manager = new ShardingManager('./bot.js', { token });
 manager.on('shardCreate', shard => console.log(`Launched shard ${shard.id}`));
 manager.spawn().then(shardCollection => {
   console.log('[Sharding Manager]', shardCollection.keys());
-}).catch(console.log);
+}).catch(console.error);

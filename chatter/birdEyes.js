@@ -63,9 +63,9 @@ const setStreamRules = async  (kws = chance.pickone(filtersCatalog)) => {
 
 module.exports.fetch = async (keyWord) => {
   const cleanRegex = /[^\w\s]/gi;
-  const cleanedKeyWord = keyWord ? keyWord.replaceAll(emojiReplaceRegex, '').replaceAll(cleanRegex, '') : undefined;
+  const cleanedKeyWord = keyWord ? keyWord.replaceAll(emojiReplaceRegex, '').replaceAll(cleanRegex, ' ') : undefined;
   console.log('[Twitter Fetch]', keyWord);
-  const q = `${queryFilter} ${keyWord ? `${cleanedKeyWord}` : `${chance.pickone(queriesCatalog)}`}`;
+  const q = `${queryFilter} ${cleanedKeyWord ? `${cleanedKeyWord}` : `${chance.pickone(queriesCatalog)}`}`;
   console.log('[Twitter Fetch]', q);
   const params = {
     query: q,
@@ -73,6 +73,7 @@ module.exports.fetch = async (keyWord) => {
   };
   client.get('tweets/search/recent', params).then(response => {
     if(response.data) {
+      queriesCatalog.push(cleanedKeyWord);
       response.data.map(tweet => {
         consumeTweet(tweet);
       });
@@ -132,7 +133,7 @@ module.exports.stream = async (keyWords) => {
   listenForever(
     () => client.stream('tweets/search/stream'),
     (data) => consumeTweet(data)
-  );
+  ).catch(console.error);
 };
 
 module.exports.generateTweet = async (options = twitterGenOptions) => {
