@@ -3,6 +3,7 @@ const Chance = require('chance');
 
 const chance = new Chance();
 let canAnnounceDelete = true;
+let isBotMessage = false;
 const deleteMessages = [
   'Why don\'t you dissapear like your messages.',
   'I saw that.',
@@ -20,10 +21,12 @@ const deleteMessages = [
 ];
 
 module.exports = (client, messageDelete) => {
+  console.log('[Message Deleted]');
+  isBotMessage = messageDelete.author.bot;
   const deleteChannel = messageDelete.guild.channels.cache.find(ch => ch.name === 'deleted');
   const sendSawThat = (e) => {
     if(e) console.error(e);
-    if(chance.bool({likelihood: 33}) && canAnnounceDelete) {
+    if(chance.bool({likelihood: 33}) && canAnnounceDelete && !isBotMessage) {
       const chatter = chance.bool() ? 'I saw that.' : chance.pickone([...deleteMessages,chance.syllable(), chance.sentence()]);
       messageDelete.channel.send(chatter).catch(console.error);
       canAnnounceDelete = false;
@@ -31,7 +34,6 @@ module.exports = (client, messageDelete) => {
     }
   };
 
-  console.log('[Message Deleted]');
   if(!deleteChannel) {
     console.log('No Delete channel');
     sendSawThat();
@@ -57,10 +59,9 @@ module.exports = (client, messageDelete) => {
       //.setTitle('Message Deleted')
       .setAuthor(messageDelete.author.tag, messageDelete.author.displayAvatarURL)
       .setDescription(`**Message sent by ${messageDelete.author.tag} deleted in <#${messageDelete.channel.id}>**`)
-      .addField('Message Content', `${messageDelete.content}`)
       .setFooter('Deleted Message')
       .setTimestamp();
-
+    if(messageDelete.content) logembed.addField('Message Content', `${messageDelete.content}`);
     deleteChannel.send(logembed).catch(sendSawThat);
 
   }
