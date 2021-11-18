@@ -48,7 +48,7 @@ module.exports.init = async (client) => {
   client.guilds.cache.each(guild => {
     const channelsToScrape = guild.channels.cache.filter(ch => ch.isText() && ch.viewable && !disabled.includes(ch.name));
     const brain = guildBrains[guild.id] = new Brain(guild);
-    learningTasks.push(brain.scrapeGuildHistory(channelsToScrape));
+    learningTasks.push(brain.scrapeGuildHistory(channelsToScrape).catch(console.error));
   });
   Promise.all(learningTasks).then(done => {
     console.log('[Finished creating models.]', done.length);
@@ -88,7 +88,7 @@ module.exports.run = async (message = mostRecent, client) => {
   if(Math.abs(1 - audit.likelihood) < 0.015) {
     const playGame = chance.bool({likelihoood: 0.4});
     if (playGame) {
-      game.getGame((game) => {
+      game.getGame(undefined, (game) => {
         client.user.setActivity(`🎮 ${game.name}`);
       });
     } else {
@@ -128,7 +128,7 @@ module.exports.run = async (message = mostRecent, client) => {
 
       if (critRoll) console.log('Critical roll!');
 
-      critRoll ? sendSourString(honkChannel, message) : sendMarkovString(honkChannel, message);
+      critRoll ? sendSourString(honkChannel, message) : sendMarkovString(honkChannel, message).catch(e=>console.error('Failed sending Markov', e));
     }
   }
 
