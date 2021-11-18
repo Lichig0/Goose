@@ -118,13 +118,12 @@ module.exports.getGame = (id, callback) => {
       'expected_release_year', 'expected_release_month', 'expected_release_day', 'expected_release_quarter'
     ]
   };
-
   gb.getGame(options).then( response => {
     if(response === null) { return console.warn(response); }
     const json = JSON.parse(response);
     if (json.status_code !== 1) { return console.warn(json.error); }
     callback(json.results);
-  });
+  }).catch(console.error);
 };
 
 module.exports.getCommandData = () => {
