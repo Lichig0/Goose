@@ -113,7 +113,7 @@ class Brain {
         result.string = chatter;
         resolve(result);
       } catch (e) {
-        reject(e);
+        reject(`Bad Sentence ${e}`);
       }
     });
   }
@@ -157,7 +157,7 @@ class Brain {
         this.scrapeChannelHistory(chan, readRetry);
       }));
       const guildHistory = Promise.all(tasks);
-      readRetry <= 3 ? resolve(guildHistory) : reject(new Error);
+      readRetry <= 3 ? resolve(guildHistory) : reject('Failed to read history');
     });
   }
   async scrapeChannelHistory(channel, retries = 0) {
@@ -225,7 +225,7 @@ class Brain {
       });
       return cache;
     } catch (e) {
-      console.error(e);
+      console.error('Error adding message', e);
     }
   }
 

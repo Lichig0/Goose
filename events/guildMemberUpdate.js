@@ -9,7 +9,7 @@ module.exports = (client, oldMember, newMember) => {
       try {
         userRolesTable.set(newMember, newMember.guild.id);
       } catch (e) {
-        console.error(e);
+        console.error('Error adding member', e);
       }
     }
     else if (rolesString && rolesString.length > 0) {
@@ -19,7 +19,7 @@ module.exports = (client, oldMember, newMember) => {
         try {
           userRolesTable.update(newMember, roles)?.catch(console.error);
         } catch (e) {
-          console.error(e);
+          console.error('Error updating member', e);
         }
       }
     }

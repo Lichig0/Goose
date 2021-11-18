@@ -99,7 +99,7 @@ module.exports.stream = async (keyWords) => {
       console.log('[Twitter] Closing...');
       streamFactory().close();
       isStreamOpen = false;
-      removeStreamRules();
+      removeStreamRules().catch(console.error);
     }, 300000);
     try {
       for await (const { data } of streamFactory()) {
@@ -136,13 +136,13 @@ module.exports.stream = async (keyWords) => {
   ).catch(console.error);
 };
 
-module.exports.generateTweet = async (options = twitterGenOptions) => {
+module.exports.generateTweet = (options = twitterGenOptions) => {
   return new Promise((resolve, reject) => {
     try {
       const result = markov.generate(options);
       resolve(result);
     } catch (e) {
-      reject(e);
+      reject(`Could not generate Tweet ${e}`);
     }
   });
 };

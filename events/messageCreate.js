@@ -11,7 +11,7 @@ module.exports = (client, message) => {
     try {
       chatter.run(message, client).catch(console.error);
     } catch (e) {
-      console.error(e);
+      console.error('Error in chatter', e);
     }
   }
 };
