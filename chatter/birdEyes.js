@@ -24,22 +24,22 @@ const twitterGenOptions = {
 
 const queriesCatalog = [
   'nobody asked',
-  'gay',
-  '(tits OR titties)',
-  'pussy',
-  'cuck',
-  'shit',
-  'fuck',
-  'brainlet',
-  'simp'
+  'bad',
+  'nft',
+  'discord',
+  'amazon',
+  'good',
+  'twitch',
+  'no cap',
+  'meme'
 ];
 
 const filtersCatalog = [
-  'context:94.*',
+  // 'context:94.*', // Journalist
   'context:79.*',
   'context:3.*',
   'conext:139.*',
-  'context:35.*',
+  // 'context:35.*', // Political figures
   'context:136.*'
 ];
 const queryFilter = '(-has:links -has:mentions -is:retweet lang:en)';
