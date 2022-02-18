@@ -6,12 +6,9 @@ const url = require('url');
 const math = require('mathjs');
 
 const COMMAND_NAME = path.basename(__filename, '.js');
-const SUB_COMMAND = {
-  GET: 'get',
-  SET: 'set',
-};
 const OPTIONS = {
-  LOCATION: 'location'
+  LOCATION: 'location',
+  REMEMBER: 'remember'
 };
 const BUTTON_IDS = {
   CURRENT: 'weatherCurrent',
@@ -112,6 +109,7 @@ const getLocation = async (locationName) => {
       res.on('end', () => {
         try {
           const finishedResponse = JSON.parse(rawData);
+          if (finishedResponse.features === undefined) reject(rawData);
           const resolvedLocations = finishedResponse.features.map(location => {
             return {
               name: location.place_name,
@@ -177,7 +175,7 @@ const saveLocation = async (memberId, locationName, lon, lat) => {
         return reject(e);
       }
       const DbLocation = await weatherTable.asyncGet(memberId).catch(console.error);
-      if (DbLocation == locationName) {
+      if (DbLocation.name == locationName) {
         resolve(locationName);
       } else {
         reject(`Failed to save: ${locationName} does not match ${DbLocation}`);
@@ -186,170 +184,166 @@ const saveLocation = async (memberId, locationName, lon, lat) => {
   });
 };
 
+const reportWeather = async (interaction, codedLocation) => {
+  const components = [];
+  const row = new MessageActionRow();
+  const { id, member } = interaction;
+  console.log(codedLocation);
+  getWeatherOneCall(codedLocation.lat, codedLocation.lon).then(data => {
+    const { name } = codedLocation;
+    const forecastEmbed = new MessageEmbed();
+    // const alertEmbeds = [];
+    const alertEmbed = new MessageEmbed();
+    const currentEmbed = new MessageEmbed();
+    const {current, daily, alerts} = data;
+
+    row.addComponents(currentButton.setCustomId(`${BUTTON_IDS.CURRENT}_${id}`))
+      .addComponents(forecastButton.setCustomId(`${BUTTON_IDS.FORECAST}_${id}`))
+      .addComponents(alertsButton.setCustomId(`${BUTTON_IDS.ALERTS}_${id}`).setDisabled(!alerts));
+    components.push(row);
+
+    currentEmbed.setTitle('Current Conditions')
+      .setColor('GREEN')
+      .addField('Right Now', stringifyCurrent(current),true)
+      .addField('Today', stringifyDay(daily[0]),true)
+      .setFooter(`Location: ${name}`);
+
+    forecastEmbed.setTitle('Weather Forecast')
+      .setColor('BLURPLE')
+      .addField('Today', stringifyDay(daily[0]),true)
+      .addField('Tomorrow', stringifyDay(daily[1]),true)
+      .addField('The Day After', stringifyDay(daily[2]),true)
+      .setFooter(`Location: ${name}`);
+
+    if(alerts) {
+      forecastEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
+      currentEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
+      alertEmbed.setTitle('Alerts')
+        .setColor('RED')
+        .setFooter(`Location: ${name}`);
+      alerts.map(alert => {
+        alertEmbed.addField(alert.event, Util.splitMessage(alert.description, {maxLength: 1000})[0], true);
+      });
+    }
+
+    interaction.editReply({embeds: [currentEmbed], components}).catch(console.warn);
+
+    const filter = buttonInteract => Object.values(BUTTON_IDS).map(bid=>`${bid}_${id}`).includes(buttonInteract.customId) && buttonInteract.user.id === member.id;
+    const collector = interaction.channel.createMessageComponentCollector({ filter, time: 90000 });
+    collector.on('collect', async buttonInteract => {
+      if (buttonInteract.customId === `${BUTTON_IDS.ALERTS}_${id}`) {
+        await buttonInteract.update({ embeds: [alertEmbed] }).catch(console.error);
+      } else if (buttonInteract.customId === `${BUTTON_IDS.FORECAST}_${id}`) {
+        await buttonInteract.update({ embeds: [forecastEmbed] }).catch(console.error);
+      } else if (buttonInteract.customId === `${BUTTON_IDS.CURRENT}_${id}`) {
+        await buttonInteract.update({ embeds: [currentEmbed] }).catch(console.error);
+      }
+    });
+    collector.on('end', () => {
+      interaction.editReply({components:[]}).catch(console.warn);
+    });
+  }).catch((error) => {
+    interaction.editReply(`${error}`).catch(console.warn);
+  });
+};
+
 module.exports.getCommandData = () => {
   const options = [
     {
       name: OPTIONS.LOCATION,
       type: ApplicationCommandOptionTypes.STRING,
-      description: 'City Name OR Zip',
+      description: 'Location',
       required: false
     },
+    {
+      name: OPTIONS.REMEMBER,
+      type: ApplicationCommandOptionTypes.BOOLEAN,
+      description: 'Remember this location for you?',
+      required: false,
+    }
 
   ];
   return {
     type: ApplicationCommandTypes.CHAT_INPUT,
     name: COMMAND_NAME,
-    description: '!(WIP)! Sky is wet?',
+    description: '(Beta) Sky is wet?',
     default_permission: true,
-    options: [
-      {
-        name: SUB_COMMAND.GET,
-        type: ApplicationCommandOptionTypes.SUB_COMMAND,
-        description: '(beta) Get current conditions, 3-day forecast, and alerts.',
-        options
-      },
-      {
-        name: SUB_COMMAND.SET,
-        type: ApplicationCommandOptionTypes.SUB_COMMAND,
-        description: '(beta) Save weather location with either the zip code or city name',
-        default_permissions: true,
-        options: [
-          {
-            ...options[0],
-            required: true,
-          }
-        ]
-      },
-    ]
+    options,
   };
 };
 
 module.exports.execute = async (client, interaction) => {
-  const subCommand = interaction.options.getSubcommand();
-  await interaction.deferReply({ephemeral: subCommand === SUB_COMMAND.SET}).catch(console.warn);
-
+  await interaction.deferReply().catch(console.warn);
   const { id, member } = interaction;
-  const savedLocation = await weatherTable.asyncGet(member.id).catch(console.error);
-  const location = interaction.options.get(OPTIONS.LOCATION)?.value ?? savedLocation;
-  const codedLocations = await getLocation(location).catch(console.error);
-  const locations = codedLocations.map(({name})=>`"${name}" `);
-  const components = [];
-  const row = new MessageActionRow();
-  const locationsRow = new MessageActionRow();
-  const locationButtonMap = {};
+  
+  const savedLocation = await weatherTable.asyncGet(member.id).catch(console.error) ?? false;
+  const location = interaction.options.get(OPTIONS.LOCATION)?.value ?? false;
+  const remember = interaction.options.get(OPTIONS.REMEMBER)?.value ?? false;
+
+  const codedLocations = location ? await getLocation(location).catch(console.error) ?? false : [savedLocation];
 
 
-  if (codedLocations.length === 0) {
-    interaction.editReply('Location wasn\'t found.');
-    return;
-  } else if (codedLocations.length > 1) {
+  if (codedLocations.length > 1 && codedLocations[0].name) {
+    const locations = codedLocations.map(({name})=>`"${name}" `);
+    const locationsRow = new MessageActionRow();
+    const locationButtonMap = {};
+
     codedLocations.map((location, index) => {
       const buttonId = `${id}_${index}`;
       locationButtonMap[buttonId] = location.name;
       locationsRow.addComponents(locationButton.setCustomId(buttonId).setLabel(location.name));
     });
-  }
 
-  switch (subCommand) {
-  case SUB_COMMAND.GET:
-    if(!location) return interaction.editReply('No location saved for you. Use `/weather set` to set a loction.').catch(console.warn);
-    getWeatherOneCall(codedLocations[0].lat, codedLocations[0].lon).then(data => {
-      const { name } = codedLocations[0];
-      const forecastEmbed = new MessageEmbed();
-      // const alertEmbeds = [];
-      const alertEmbed = new MessageEmbed();
-      const currentEmbed = new MessageEmbed();
-      const {current, daily, alerts} = data;
+    interaction.editReply({
+      content: `Found multiple places with that name: ${locations}`,
+      components: [locationsRow],
+    }).catch(console.error);
 
-      row.addComponents(currentButton.setCustomId(`${BUTTON_IDS.CURRENT}_${id}`))
-        .addComponents(forecastButton.setCustomId(`${BUTTON_IDS.FORECAST}_${id}`))
-        .addComponents(alertsButton.setCustomId(`${BUTTON_IDS.ALERTS}_${id}`).setDisabled(!alerts));
-      components.push(row);
+    const filter = buttonInteract => Object.keys(locationButtonMap).includes(buttonInteract.customId) && buttonInteract.user.id === member.id;
+    const collector = interaction.channel.createMessageComponentCollector({filter, time: 90000 });
+    collector.on('collect', async buttonInteract => {
 
-      currentEmbed.setTitle('Current Conditions')
-        .setColor('GREEN')
-        .addField('Right Now', stringifyCurrent(current),true)
-        .addField('Today', stringifyDay(daily[0]),true)
-        .setFooter(`Location: ${name}`);
-
-      forecastEmbed.setTitle('Weather Forecast')
-        .setColor('BLURPLE')
-        .addField('Today', stringifyDay(daily[0]),true)
-        .addField('Tomorrow', stringifyDay(daily[1]),true)
-        .addField('The Day After', stringifyDay(daily[2]),true)
-        .setFooter(`Location: ${name}`);
-
-      if(alerts) {
-        forecastEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
-        currentEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
-        alertEmbed.setTitle('Alerts')
-          .setColor('RED')
-          .setFooter(`Location: ${name}`);
-        alerts.map(alert => {
-          alertEmbed.addField(alert.event, Util.splitMessage(alert.description)[0], true);
-        });
-      }
-
-      interaction.editReply({embeds: [currentEmbed], components}).catch(console.warn);
-
-      const filter = buttonInteract => Object.values(BUTTON_IDS).map(bid=>`${bid}_${id}`).includes(buttonInteract.customId) && buttonInteract.user.id === member.id;
-      const collector = interaction.channel.createMessageComponentCollector({ filter, time: 90000 });
-      collector.on('collect', async buttonInteract => {
-        if (buttonInteract.customId === `${BUTTON_IDS.ALERTS}_${id}`) {
-          await buttonInteract.update({ embeds: [alertEmbed] }).catch(console.error);
-        } else if (buttonInteract.customId === `${BUTTON_IDS.FORECAST}_${id}`) {
-          await buttonInteract.update({ embeds: [forecastEmbed] }).catch(console.error);
-        } else if (buttonInteract.customId === `${BUTTON_IDS.CURRENT}_${id}`) {
-          await buttonInteract.update({ embeds: [currentEmbed] }).catch(console.error);
-        }
-      });
-      collector.on('end', () => {
-        interaction.editReply({components:[]}).catch(console.warn);
-      });
-    }).catch((error) => {
-      interaction.editReply(`${error}`).catch(console.warn);
-    });
-
-    break;
-  case SUB_COMMAND.SET:
-    if (codedLocations.length > 1) {
-
-      interaction.editReply({
-        content: `Found multiple places with that name: ${locations}`,
-        components: [locationsRow],
-      }).catch(console.error);
-
-      const filter = buttonInteract => Object.keys(locationButtonMap).includes(buttonInteract.customId) && buttonInteract.user.id === member.id;
-      const collector = interaction.channel.createMessageComponentCollector({filter, time: 90000 });
-      collector.on('collect', async buttonInteract => {
-        const locationName = locationButtonMap[buttonInteract.customId];
-        buttonInteract.update({content: `Setting ${locationName}`, components:[]}).catch(console.error);
-        console.log(`HIT: ${locationButtonMap[buttonInteract.customId]}`);
-        if (locationName) {
-          const {name, lat, lon} = codedLocations.find((location) => location.name === locationName);
-          saveLocation(member.id, name, lon, lat).then((setLocName) => {
-            buttonInteract.editReply({
-              components: [],
-              content: `Location set to ${setLocName}`,
-              ephemeral: true
-            }).catch(console.error);
-          }).catch((e) => {
+      const locationName = locationButtonMap[buttonInteract.customId];
+      if (locationName) {
+        buttonInteract.update({content: `Using ${locationName}`, components:[]}).catch(console.error);
+        const codedLocation = codedLocations.find((location) => location.name === locationName);
+        const {name, lat, lon} = codedLocation;
+        if(remember) {
+          buttonInteract.update({content: `Saving ${locationName}`, components:[]}).catch(console.error);
+          const setLocName = await saveLocation(member.id, name, lon, lat).then().catch((e) => {
             buttonInteract.editReply({
               components: [],
               content: e
             }).catch(console.error);
           });
+          buttonInteract.editReply({
+            components: [],
+            content: `Location set to ${setLocName}`,
+            ephemeral: true
+          }).catch(console.error);
         }
-      });
+        reportWeather(interaction, codedLocation).catch(console.error);
+      } else {
+        buttonInteract.update({content: 'Oops, I messed up.', components:[]}).catch(console.error);
+      }
+    });
 
-      collector.on('end', () => {
+    collector.on('end', () => {
+      console.log('Collect end');
+    });
+  } else if( codedLocations.length === 1 && codedLocations[0]?.name ) {
+    if (remember) {
+      const {name, lon, lat} = codedLocations[0];
+      saveLocation(member.id, name, lon, lat).then().catch((e) => {
         interaction.editReply({
-          content: 'Done.',
-          ephemeral: true,
-          components:[]
+          content: e
         }).catch(console.error);
       });
     }
+    reportWeather(interaction, codedLocations[0]);
+  } else {
+    interaction.editReply('Location wasn\'t found.');
+    return;
   }
 };
 

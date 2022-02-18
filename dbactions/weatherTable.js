@@ -70,7 +70,7 @@ exports.asyncGet = (userId) => {
         if(response.length === 0) {
           return reject('No locations found.');
         }
-        const location = response[0].name;
+        const location = response[0];
         return resolve(location);
 
       }));
