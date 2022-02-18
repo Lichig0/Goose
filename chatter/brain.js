@@ -161,6 +161,7 @@ class Brain {
     });
   }
   async scrapeChannelHistory(channel, retries = 0) {
+    const { hisotryCoverage = 100 } = settings.settings.chatter;
     const fullHistory = [];
     if(retries >= 3) {
       return fullHistory;
@@ -170,18 +171,19 @@ class Brain {
     let fetched = [];
     do {
       fetched = await this.#fetchMessages(channel, recentFetch).catch(console.error);
-      if(fetched && fetched.size > 0) {
-        fullHistory.push(...fetched.values());
-        this.#processMessages(fetched);
-        if(recentFetch.id === fetched.last().id) {
+      const split = fetched.partition(() => this.#chance.bool({likelihood: hisotryCoverage})); // Reduce total size to save on memory for now
+      if(split[0] && split[0].size > 0) {
+        fullHistory.push(...split[0].values());
+        this.#processMessages(split[0]);
+        if(recentFetch.id === split[0].last().id) {
           break;
         }
         else {
-          recentFetch = fetched.last();
+          recentFetch = split[0].last();
         }
       }
     } while(fetched && fetched.size === 100 && this.#corpus.data.length <= 225000);
-    console.log('[Channel End]', channel.name, fullHistory.length, this.#corpus.data.length, Object.values(this.#data).length, Object.keys(this.#singleWords).length);
+    console.log('[Channel End]', channel.name, fullHistory.length, this.#corpus.data.length, Object.values(this.#data).length, Object.keys(this.#singleWords).length, (process.memoryUsage().heapTotal / 1024));
     return fullHistory;
   }
   addMessage(message, splitter = this.splitRegex) {
