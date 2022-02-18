@@ -9,5 +9,5 @@ module.exports.getCommandData = () => {
 };
 
 module.exports.execute = async (client, interaction) => {
-  return interaction.reply(client.emojis.cache.random().toString()).catch(console.error);
+  return interaction.reply(interaction.emojis.cache.random().toString()).catch(console.error);
 };

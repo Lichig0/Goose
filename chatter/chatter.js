@@ -172,7 +172,7 @@ const sendSourString = (channel, message) => {
       weight: 4,
       task: () => {
         console.debug('<REACT>');
-        message.react(message.client.emojis.cache.random().id).catch(console.error);
+        message.react(message.guild.emojis.cache.random().id).catch(console.error);
       }
     }
   ];
@@ -232,7 +232,7 @@ const sendMarkovString = async (channel, message) => {
       weight: weights[2],
       task: async () => {
         console.debug('<GUILD EMOJI>');
-        return { string: channel.client.emojis.cache.random().toString() };
+        return { string: channel.guild.emojis.cache.random().toString() };
       }
     },
     {
