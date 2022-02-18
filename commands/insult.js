@@ -22,7 +22,7 @@ const insults = [
   'So don\'t speak to me. Ever. And while you’re not ever speaking to me; jump up {member}\'s ass and die.',
   'Do I get bonus points if I act like I care?',
   'Don\'t break an arm jerking yourself off.',
-  '{member}? It\'s like the n-word and the c-word had a baby and it was raised by all the bad words for Jews.',
+  '{member}? It\'s like {member} and {member} had a baby and it was raised by all the bad words for {member}.',
   '{member} would suck a dick just to cut in line to suck a bigger dick.',
   'Right now the only thing I want in this world besides for {member} to die of some heretofore unknown form of eyehole cancer is to leave this godforsaken sever!',
   '{member}’s just as full of crap as {member} is brain worms.',
