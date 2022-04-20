@@ -12,6 +12,7 @@
     "dotenv": "^8.6.0",
     "entities": "^3.0.1",
     "giant-bomb": "^2.0.1",
+    "grawlix-racism": "^1.0.2",
     "markov-strings": "^3.0.1",
     "mathjs": "^7.6.0",
     "nodemon": "^2.0.12",

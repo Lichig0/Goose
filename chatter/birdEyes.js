@@ -1,4 +1,5 @@
 const Twitter = require('twitter-v2');
+const grawlix = require('grawlix');
 const entities = require('entities');
 const Markov = require('markov-strings').default;
 const Chance = require('chance');
@@ -9,6 +10,18 @@ const client = new Twitter({
 });
 const emojiReplaceRegex = /a?[():<>0-9]/ig;
 const recordedTweets = [];
+
+grawlix.setDefaults({
+  style: 'redacted',
+  plugins: [
+    {
+      plugin: require('grawlix-racism'),
+      options: {
+        style: 'redacted'
+      }
+    }
+  ]
+});
 let markov = new Markov({ stateSize: 2 });
 let connectionRetries = 0;
 let isStreamOpen = false;
@@ -24,14 +37,19 @@ const twitterGenOptions = {
 
 const queriesCatalog = [
   'nobody asked',
+  'who asked',
   'bad',
   'nft',
   'discord',
   'amazon',
   'good',
-  'twitch',
-  'no cap',
-  'meme'
+  'meme',
+  'bugs',
+  'my AI',
+  'I learned',
+  'TIL',
+  'I\'m programed to',
+  'Fun fact:'
 ];
 
 const filtersCatalog = [
@@ -82,7 +100,7 @@ module.exports.fetch = async (keyWord) => {
 };
 
 const consumeTweet = (tweet) => {
-  const string = chatterUtil.normalizeSentence(tweet.text);
+  const string = grawlix(chatterUtil.normalizeSentence(tweet.text));
   const normalizedTweet =  entities.decodeHTML(string);
   recordedTweets.push(normalizedTweet);
   markov.addData([normalizedTweet]);
