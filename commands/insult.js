@@ -31,6 +31,7 @@ const insults = [
   'Monetize this corkscrewed cock.',
   'Please stop talking.',
   'What is this, amature hour?',
+  'Ew, {member} made a mess all over the floor.'
 ];
 const auditHisotry = {};
 let audit = {};
