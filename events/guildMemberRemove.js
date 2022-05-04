@@ -5,5 +5,5 @@ module.exports = (client, member) => {
   // Do nothing if the channel wasn't found on this server
   if (!channel) return;
   // Send the message, mentioning the member
-  channel.send(`${member}[${member.user.username}] left.`);
+  channel.send(`${member}[${member.user.username}] left.`).catch(console.warn);
 };
