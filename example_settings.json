@@ -1,11 +1,4 @@
 {
-  "prefix": ".",
-  "diabledCommands": [
-    "say",
-    "export",
-    "load",
-    "save"
-  ],
   "insult": {
      "mentions": false
   },
@@ -15,22 +8,18 @@
       "goose",
       "gooz"
     ],
-    "arrayLimiter": 75000,
+    "weights": [1000, 750, 450, 1],
+    "hisotryCoverage": 100,
+    "frequency": 13,
     "useHonk": false,
-    "messageSplitter": "[\n.;()]",
-    "preFormat": true,
     "minimumScore": 2,
+    "channelInfluence": 0.5,
     "maxTries": 30,
     "mentions": false,
+    "disableImage": false,
     "disabledChannels": [
       "admin"
-    ],
-    "sentence": {
-      "maxTries": 20
-    },
-    "corpus": {
-      "stateSize": 2
-    }
+    ]
   },
   "kick": {
     "requiredVotes": 5,

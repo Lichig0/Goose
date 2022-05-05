@@ -18,7 +18,4 @@ module.exports = (client, member) => {
       });
     }
   });
-  member.createDM().catch(e=>{
-    console.error('[Could not open DM]',e);
-  });
 };

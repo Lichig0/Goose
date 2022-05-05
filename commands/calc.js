@@ -1,19 +1,35 @@
 const path = require('path');
 const math = require('mathjs');
+const {Constants: {ApplicationCommandOptionTypes}} = require('discord.js');
 
 const COMMAND_NAME = `${path.basename(__filename, '.js')} `;
 const parser = math.parser();
 
-exports.help = () => 'Load the config (for chatter)\n';
+exports.getCommandData = () => {
+  return {
+    name: COMMAND_NAME,
+    description: 'Maths',
+    options: [
+      {
+        name: 'input',
+        description: 'Equation here',
+        type: ApplicationCommandOptionTypes.STRING,
+        required: true
+      }
+    ],
+  };
+};
 
-exports.run = (message) => {
-  const { content } = message;
-  const equation = content.split(COMMAND_NAME)[1];
+exports.execute = async (client, interaction) => {
+  const equation = interaction.options.get('input').value;
+  await interaction.deferReply().catch(console.error);
   try {
     const result = parser.evaluate(equation.trim());
-    message.channel.send(result.name || result.toString()).catch(console.error);
+    await interaction.editReply(result.name || result.toString()).catch(console.error);
   } catch (e){
-    if(e.message) message.channel.send(e.message).catch(console.error);
+    if(e.message) await interaction.editReply(e.message).catch(console.error);
   }
   return;
 };
+
+exports.dev = false;

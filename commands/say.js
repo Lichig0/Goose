@@ -1,52 +1,25 @@
-const {Permissions} = require('discord.js');
-const commands = {};
-const fs = require('fs');
+const path = require('path');
+const COMMAND_NAME = path.basename(__filename, '.js');
 
 const audit = {
   timestamp: Date.now()
 };
-const emojiRegex = new RegExp(/:[^:\s]*(?:::[^:\s]*)*:/);
 module.exports.audit = () => audit;
 
-exports.help = () => 'Make me say something.\n';
-fs.readdir('./commands/', (err, files) => {
-  files.forEach(file => {
-    const commandName = file.split('.')[0];
-    commands[commandName] = require(`../commands/${file}`);
-  });
-});
-module.exports.run = (message, epeen) => {
-  const admin_perm = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
-  const { client, content } = message;
-  let says = content.split(' ').slice(1).join(' '); // remove says
-  let channels = [message.channel];
-  audit.timestamp = Date.now();
-  audit.lastUsedBy = `${message.author.tag}[${message.author.id}]`;
-  audit.usedIn = `${message.channel.name}[${message.channel.id}]`;
-  if (message.mentions && message.mentions.channels.size > 0) {
-    channels = message.mentions.channels.array();
-    channels.forEach(ch => {
-      says = says.replace(`<#${ch.id}>`, '');
-    });
-  }
-  says = says.replace(emojiRegex, (match) => {
-    const emoji = client.emojis.cache.find((emote) => `:${emote.name}:` == match);
-    console.log(emoji.identifier);
-    return says.includes(emoji.toString()) ? match : emoji.toString();
-  });
+exports.getCommandData = () => {
+  return {
+    name: COMMAND_NAME,
+    description: 'Make me say a thing',
+    options: [{
+      name: 'input',
+      type: 3,
+      description: 'What should be said',
+      required: true,
+    }]
+  };
+};
 
-  if (commands[says.split(' ')[0].toLowerCase().slice(1)] && !admin_perm){
-    return message.channel.send('Quack');
-  }
-
-  if (!channels || !message.guild) {
-    return;
-  }
-
-  channels.forEach(ch => {
-    if(ch.viewable) {
-      return ch.send(says);
-    }
-  });
-
+exports.execute = async (client, interaction) => {
+  const input = interaction.options.get('input').value;
+  return interaction.reply(input).catch(console.warn);
 };

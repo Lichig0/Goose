@@ -11,6 +11,12 @@ exports.init = (db, callback) => {
   callback();
 };
 
+const onClose = (error) => {
+  if(error) {
+    return console.error(error);
+  }
+};
+
 exports.set = (members, guildId, callback) => {
   let db = new sqlite3.Database('goosedb.sqlite', (err) => {
     if (err) {
@@ -24,9 +30,11 @@ exports.set = (members, guildId, callback) => {
   db.serialize(() => {
     db.parallelize(() => {
       members.forEach(member => {
-        const roles = member.roles.cache.array().filter(r=>!r.managed).flatMap(r=>r.id);
-        db.run('INSERT INTO userRoles (roles, member, guild) VALUES ($roles,$member,$guildId) ON CONFLICT (member,guild) DO UPDATE SET roles=$roles WHERE member = $member',
-          {$roles:roles, $member:member.id, $guildId:guildId}, function (err) {
+        const roles = member.roles.cache.filter(r=>!r.managed).map(r=>r.id);
+        if(roles.size <= 1) return console.warn(`${member.name} only has ${roles.size}`);
+        const rolesArray = [...roles.values()];
+        db.run('INSERT INTO userRoles (roles, member, guild) VALUES ($roles,$member,$guildId) ON CONFLICT (member,guild) DO UPDATE SET roles=$roles WHERE member = $member AND guild=$guildId',
+          {$roles:`${rolesArray}`, $member:member.id, $guildId:guildId}, function (err) {
             if (err) {
               return console.log(err.message);
             }
@@ -50,7 +58,7 @@ exports.update = (member, roles, callback) => {
     }
   });
   db.run('UPDATE userRoles SET roles = $roles WHERE guild = $guild AND member = $member',
-    {$member:member.id,$guild:member.guild.id,$roles:roles}, callback);
+    {$member:member.id,$guild:member.guild.id,$roles:`${roles}`}, callback).close(onClose);
 };
 
 exports.get = (member, callback) => {
@@ -61,6 +69,6 @@ exports.get = (member, callback) => {
   });
 
   const {guild} = member;
-  db.all('SELECT roles FROM userRoles WHERE guild = $guild AND member = $member', {$guild:guild.id, $member:member.id}, callback);
+  db.all('SELECT roles FROM userRoles WHERE guild = $guild AND member = $member', {$guild:guild.id, $member:member.id}, callback).close(onClose);
 
 };
