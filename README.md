@@ -2,10 +2,11 @@
 - [Description](#description)
     - [Origin](#origin)
     - [Evolution](#evolution)
-    - [Future Ideas](#future)
-- [Where does my data go?](#data-table)
-- [Developers](#contribute)
-    - [Requirements](#reqs)
+    - [Future Ideas](#future-ideas)
+- [Where does my data go?](#where-does-the-data-go)
+- [Developers](#developers)
+    - [Requirements](#requirements)
+    - [Install](#install--setup)
 ---
 ## Description
 Goose, Goose bot, Bruce, or Groose are all identities of this bot. This codebase has served bots with various identities which has left it with an identity crysis, but Goose is the OG.
@@ -26,7 +27,7 @@ Some ideas I am looking to explore
 - [ ] Make a GUI for the settings. (Maybe move them to the DB)
 - [ ] Build task to minify/optimize for "prod"
 ---
-## Where does the data go? {#data-table}
+## Where does the data go?
 For the sake of privacy, everything that can sensibliy be held in memory, ~~should~~ will be. If it is not, it should be fixed. Everytime the bot gets shut down, host loses power, or even when it crashes, everything in memory has to be re-fetched from Discord Servers. Goose's knowledge of you is only a subset of what is already on Discord's servers, and less so if restricted with Guild/Role/User permisisons in any one Guild.
 
 | Type | Location | Crosses Guilds |
@@ -40,7 +41,7 @@ For the sake of privacy, everything that can sensibliy be held in memory, ~~shou
 | Opt Out | **Disc Storage/Sqlite** | **True** |
 ---
 ## Developers
-### Requirements {#requirements}
+### Requirements
 - Dependencies
     - sqlite3 3.27.2
     - NodeJS 16 (16.9.0)
@@ -70,7 +71,7 @@ At the top level of the project, run:
 ```
 npm install
 ```
-You may run into issues with `sqlite3` in which case refer to their [documentation](#https://www.npmjs.com/package/sqlite3). You may need to install sqlite a different way, or you may need to use [nvm](https://github.com/nvm-sh/nvm#installing-and-updating) to install nodejs 14 
+You may run into issues with `sqlite3` in which case refer to their [documentation](#https://www.npmjs.com/package/sqlite3). You may need to install sqlite a different way, or you may need to use [nvm](https://github.com/nvm-sh/nvm#installing-and-updating) to install nodejs 14
 
 **Setup Environment**
 
@@ -92,7 +93,7 @@ You may run into issues with `sqlite3` in which case refer to their [documentati
 - Run code???
     - Run dev:
         - >npm run dev
-    - Run not dev(but not prod): 
+    - Run not dev(but not prod):
         - >npm run start
 
-*TODO.... validate steps above... make more friendly* 
+*TODO.... validate steps above... make more friendly*
