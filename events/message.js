@@ -23,11 +23,10 @@ const reloadConfig = () => {
 
 module.exports = (client, message) => {
   const {content, author, guild, channel} = message;
-  const config = settings.settings; 
+  const config = settings.settings;
   const disabledCommand = config.disabledCommands || [];
   const prefix = config.prefix || '.';
   if(!guild) return;
-  if(author.bot) return;
   //const data = [];
   let command = undefined;
 
@@ -36,6 +35,7 @@ module.exports = (client, message) => {
   } else {
     command = content.split(' ')[0].toLowerCase().slice(1);
   }
+  if(author.bot) return;
   if (command) {
     console.log(`
         >command: ${command || content}
