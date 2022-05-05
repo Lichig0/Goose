@@ -9,14 +9,13 @@ const {Brain} = require('./brain');
 const zalgo = require('zalgo-js');
 
 const guildBrains = {};
-// const chance = new Chance();
 const auditHistory = {};
 let audit = {
   timestamp: Date.now()
 };
 
 let messagesSince = 0;
-let mostRecent, makeNoise, noiseTimeout;
+const deadChatIntervals = {};
 
 eyes.fetch().catch(console.error);
 eyes.stream().catch(console.error);
@@ -25,6 +24,10 @@ const sendChatter = (channel, text, options) => {
   const a = audit;
   channel.send(text, options).then((sentMessage) => {
     const chance = new Chance(sentMessage.id);
+    options = {
+      ...options,
+      tts: chance.bool({likelihood: 1}),
+    };
     if(chance.bool({likelihood: 1})) {
       sentMessage.edit(zalgo.default(sentMessage.content)).catch(console.error);
     }
@@ -50,6 +53,7 @@ module.exports.init = async (client) => {
     const brain = guildBrains[guild.id] = new Brain(guild);
     learningTasks.push(brain.scrapeGuildHistory(channelsToScrape).catch(console.error));
   });
+
   Promise.all(learningTasks).then(done => {
     console.log('[Finished creating models.]', done.length);
     console.log('[Finished scraping.]', done.map(guildData => guildData.length));
@@ -66,7 +70,8 @@ module.exports.addGuildBrain = async (guild) => {
   return brain.scrapeChannelHistory(channelsToScrape).catch(console.warn);
 };
 
-module.exports.run = async (message = mostRecent, client) => {
+module.exports.run = async (message, client) => {
+  if(!message) return console.error('message is required: message was ', message);
   const { author, channel, content, guild, mentions } = message;
   const chance = new Chance(message.id);
   const optedOutIds = client.optedOutUsers.map(({userId}) => userId);
@@ -81,7 +86,7 @@ module.exports.run = async (message = mostRecent, client) => {
   const theHonk = guild.channels.cache.find(ch => ch.name.includes('honk')) || channel;
   const thursdayMultiplier = new Date().getDay() === 4 ? 2 : 1;
   const chatFrequency = randomChat * thursdayMultiplier;
-  const roll = chance.bool({ likelihood: (chatFrequency)}); console.log('[Chatter]', roll, `${(messagesSince/(chatFrequency*100)).toFixed(3)}`, channel.name, author.tag);
+  const roll = chance.bool({ likelihood: (chatFrequency)}); console.log('[Chatter]', roll, `${(messagesSince/(chatFrequency*100)).toFixed(3)}`, guild.name, channel.name, author.tag);
   audit.likelihood = messagesSince/(chatFrequency*100);
 
   // TODO: move this into it's own file; loaded in as something that happens every message.
@@ -97,21 +102,13 @@ module.exports.run = async (message = mostRecent, client) => {
   }
   roll ? messagesSince = 0 : messagesSince++;
 
-  if(makeNoise) {
-    if (noiseTimeout !== noiseFrequency) {
-      makeNoise.close();
-      makeNoise = undefined;
-    } else {
-      makeNoise.refresh();
-    }
-  } else {
-    noiseTimeout = noiseFrequency;
-    makeNoise = setTimeout(() => {
-      exports.run(mostRecent, client).catch(console.error);
-    }, noiseTimeout);
-  }
+  if(deadChatIntervals[guild]) clearInterval(deadChatIntervals[guild]);
+  deadChatIntervals[guild] = setInterval((message, client) => {
+    console.log('[Chatter]', 'Dead chat LOL', noiseFrequency);
+    exports.run(message, client).catch(console.error);
+  }, noiseFrequency, message, client);
+
   guildBrains[guild.id].addMessage(message);
-  mostRecent = message;
 
   const hasTriggerWord = (m) => {
     return !(triggerWords.findIndex(tw => m.toLowerCase().includes(tw)) < 0);
