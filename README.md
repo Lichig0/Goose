@@ -97,3 +97,5 @@ You may run into issues with `sqlite3` in which case refer to their [documentati
         - >npm run start
 
 *TODO.... validate steps above... make more friendly*
+
+[![paypal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/donate/?business=DEY2DJJ8WZ2SL&no_recurring=0&currency_code=USD&item_name=GOOSE+BOT)
