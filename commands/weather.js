@@ -1,12 +1,12 @@
-import { basename } from 'path';
-import discordJs from 'discord.js';
-const { MessageEmbed, Constants: { ApplicationCommandTypes, ApplicationCommandOptionTypes }, MessageButton, MessageActionRow, Util } = discordJs;
-import { add, asyncGet } from '../dbactions/weatherTable';
-import { get } from 'https';
-import { parse, format } from 'url';
-import { unit, round } from 'mathjs';
+const path = require('path');
+const { MessageEmbed, Constants: {ApplicationCommandTypes, ApplicationCommandOptionTypes}, MessageButton, MessageActionRow, Util } = require('discord.js');
+const weatherTable = require('../dbactions/weatherTable');
+const https = require('https');
+const url = require('url');
+const math = require('mathjs');
 
-const COMMAND_NAME = basename(__filename, '.js');
+
+const COMMAND_NAME = path.basename(__filename, '.js');
 const OPTIONS = {
   LOCATION: 'location',
   REMEMBER: 'remember'
@@ -46,13 +46,13 @@ const locationButton = new MessageButton({
 const stringifyCurrent = (json) => {
   const { temp, humidity, weather, rain, snow } = json;
   const { description, /*main, icon*/ } = weather[0];
-  const kTemp = unit(temp, 'degF');
+  const kTemp = math.unit(temp, 'degF');
   const cTemp = Math.round(kTemp.to('degC').toNumber());
   const fTemp = Math.round(kTemp.to('degF').toNumber());
-  const snowAccu = unit(snow?.['1h'] ?? 0, 'mm');
-  const rainAccu = unit(rain?.['1h'] ?? 0, 'mm');
-  const snowIn = unit(round((snowAccu.to('in')).toNumber(), 1), 'in');
-  const rainIn = unit(round((rainAccu.to('in')).toNumber(), 1), 'in');
+  const snowAccu = math.unit(snow?.['1h'] ?? 0, 'cm');
+  const rainAccu = math.unit(rain?.['1h'] ?? 0, 'cm');
+  const snowIn = math.unit(math.round((snowAccu.to('in')).toNumber(), 1), 'in');
+  const rainIn = math.unit(math.round((rainAccu.to('in')).toNumber(), 1), 'in');
 
   return `${description}
   🌡${fTemp}°F(${cTemp}°C)
@@ -108,8 +108,8 @@ const stringifyDay = (json) => {
   const { temp, humidity, weather, pop, snow, rain, wind_speed } = json;
   const { description, /*main, icon*/ } = weather[0];
   const { min, max, /*day, night, min, max, eve, morn*/ } = temp;
-  const highK = unit(max, 'degF');
-  const lowK = unit(min, 'degF');
+  const highK = math.unit(max, 'degF');
+  const lowK = math.unit(min, 'degF');
   const highC = Math.round(highK.to('degC').toNumber());
   const highF = Math.round(highK.to('degF').toNumber());
   const lowC = Math.round(lowK.to('degC').toNumber());
@@ -117,13 +117,13 @@ const stringifyDay = (json) => {
 
   const hiString = `🌡Hi:${highF}°F (${highC}°C)`;
   const loString = `🌡Lo:${lowF}°F (${lowC}°C)`;
-  const windSpeed = `🌬${unit(wind_speed, 'mi/h')}`;
+  const windSpeed = `🌬${math.unit(wind_speed, 'mi/h')}`;
   const humidityString = `💧Humidity:${Math.round(humidity)}%`;
   const chanceOfPre = `🌂Chance of precip: ${Math.round(pop*100)}%`;
-  const snowAccu = unit(snow ?? 0, 'mm');
-  const rainAccu = unit(rain ?? 0, 'mm');
-  const snowIn = unit(round((snowAccu.to('in')).toNumber(), 1), 'in');
-  const rainIn = unit(round((rainAccu.to('in')).toNumber(), 1), 'in');
+  const snowAccu = math.unit(snow ?? 0, 'mm');
+  const rainAccu = math.unit(rain ?? 0, 'mm');
+  const snowIn = math.unit(math.round((snowAccu.to('in')).toNumber(), 1), 'in');
+  const rainIn = math.unit(math.round((rainAccu.to('in')).toNumber(), 1), 'in');
 
   return `${description}
   ${hiString}\n${loString}\n${windSpeed}\n${humidityString}\n${chanceOfPre}
@@ -134,7 +134,7 @@ const stringifyDay = (json) => {
 const getLocation = async (locationName) => {
   // https://api.mapbox.com/geocoding/v5/mapbox.places/1058KJ.json?types=place%2Cpostcode%2Caddress&access_token=pk.eyJ1IjoibGljaGlnMCIsImEiOiJja3o4ZGZyNzAxam0wMnZvZmttdWdrZmpqIn0.TAgbeSANbbkKvXHLJkg4aw
   console.log(`finding ${locationName}`);
-  const requestUrl = parse(format({
+  const requestUrl = url.parse(url.format({
     protocol: 'https',
     hostname: 'api.mapbox.com',
     pathname: `/geocoding/v5/mapbox.places/${locationName}.json`,
@@ -145,7 +145,7 @@ const getLocation = async (locationName) => {
     }
   }));
   return new Promise((resolve, reject) => {
-    get({
+    https.get({
       hostname: requestUrl.hostname,
       path: requestUrl.path
     }, (res) => {
@@ -178,7 +178,7 @@ const getWeatherOneCall = function(lat, lon){
   /*
     https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&exclude={part}&appid={API key}
   */
-  const requestUrl = parse(format({
+  const requestUrl = url.parse(url.format({
     protocol: 'https',
     hostname: 'api.openweathermap.org',
     pathname: '/data/2.5/onecall',
@@ -191,7 +191,7 @@ const getWeatherOneCall = function(lat, lon){
     }
   }));
   return new Promise((resolve, reject) => {
-    get({
+    https.get({
       hostname: requestUrl.hostname,
       path: requestUrl.path,
     }, (res) => {
@@ -215,11 +215,11 @@ const getWeatherOneCall = function(lat, lon){
 
 const saveLocation = async (memberId, locationName, lon, lat) => {
   return new Promise((resolve, reject) => {
-    add(memberId, locationName, lon, lat, [], async (e) => {
+    weatherTable.add(memberId, locationName, lon, lat, [], async (e) => {
       if(e){
         return reject(e);
       }
-      const DbLocation = await asyncGet(memberId).catch(console.error);
+      const DbLocation = await weatherTable.asyncGet(memberId).catch(console.error);
       if (DbLocation.name == locationName) {
         resolve(locationName);
       } else {
@@ -321,7 +321,7 @@ export async function execute(client, interaction) {
   await interaction.deferReply().catch(console.warn);
   const { id, member } = interaction;
 
-  const savedLocation = await asyncGet(member.id).catch(console.error) ?? false;
+  const savedLocation = await weatherTable.asyncGet(member.id).catch(console.error) ?? false;
   const location = interaction.options.get(OPTIONS.LOCATION)?.value ?? false;
   const remember = interaction.options.get(OPTIONS.REMEMBER)?.value ?? false;
 
