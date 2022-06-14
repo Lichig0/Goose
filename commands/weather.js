@@ -292,7 +292,7 @@ const reportWeather = async (interaction, codedLocation) => {
   });
 };
 
-export function getCommandData() {
+module.exports.getCommandData = () => {
   const options = [
     {
       name: OPTIONS.LOCATION,
@@ -315,9 +315,9 @@ export function getCommandData() {
     default_permission: true,
     options,
   };
-}
+};
 
-export async function execute(client, interaction) {
+module.exports.execute = async (client, interaction) => {
   await interaction.deferReply().catch(console.warn);
   const { id, member } = interaction;
 
@@ -390,6 +390,6 @@ export async function execute(client, interaction) {
     interaction.editReply('Location wasn\'t found.');
     return;
   }
-}
+};
 
-export const dev = false;
+module.exports.dev = false;
