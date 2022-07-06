@@ -117,7 +117,7 @@ const stringifyDay = (json) => {
 
   const hiString = `🌡Hi:${highF}°F (${highC}°C)`;
   const loString = `🌡Lo:${lowF}°F (${lowC}°C)`;
-  const windSpeed = `🌬${math.unit(wind_speed, 'mi/h')}`;
+  const windSpeed = `🌬${math.unit(Math.round(wind_speed), 'mi/h')}`;
   const humidityString = `💧Humidity:${Math.round(humidity)}%`;
   const chanceOfPre = `🌂Chance of precip: ${Math.round(pop*100)}%`;
   const snowAccu = math.unit(snow ?? 0, 'mm');
