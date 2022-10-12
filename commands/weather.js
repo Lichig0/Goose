@@ -49,8 +49,8 @@ const stringifyCurrent = (json) => {
   const kTemp = math.unit(temp, 'degF');
   const cTemp = Math.round(kTemp.to('degC').toNumber());
   const fTemp = Math.round(kTemp.to('degF').toNumber());
-  const snowAccu = math.unit(snow?.['1h'] ?? 0, 'cm');
-  const rainAccu = math.unit(rain?.['1h'] ?? 0, 'cm');
+  const snowAccu = math.unit(snow?.['1h'] ?? 0, 'mm');
+  const rainAccu = math.unit(rain?.['1h'] ?? 0, 'mm');
   const snowIn = math.unit(math.round((snowAccu.to('in')).toNumber(), 1), 'in');
   const rainIn = math.unit(math.round((rainAccu.to('in')).toNumber(), 1), 'in');
 
@@ -114,10 +114,11 @@ const stringifyDay = (json) => {
   const highF = Math.round(highK.to('degF').toNumber());
   const lowC = Math.round(lowK.to('degC').toNumber());
   const lowF = Math.round(lowK.to('degF').toNumber());
+  const windSpeedMph = `${Math.round(wind_speed)}mph`;
 
   const hiString = `🌡Hi:${highF}°F (${highC}°C)`;
   const loString = `🌡Lo:${lowF}°F (${lowC}°C)`;
-  const windSpeed = `🌬${math.unit(Math.round(wind_speed), 'mi/h')}`;
+  const windSpeed = `🌬${windSpeedMph}`;
   const humidityString = `💧Humidity:${Math.round(humidity)}%`;
   const chanceOfPre = `🌂Chance of precip: ${Math.round(pop*100)}%`;
   const snowAccu = math.unit(snow ?? 0, 'mm');
