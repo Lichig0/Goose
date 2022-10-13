@@ -13,6 +13,7 @@ const OPTIONS = {
 };
 const BUTTON_IDS = {
   CURRENT: 'weatherCurrent',
+  TODAY: 'weatherToday',
   FORECAST: 'weatherForecast',
   ALERTS: 'weatherAlerts',
   LOCATION: 'weatherLocation',
@@ -21,6 +22,12 @@ const BUTTON_IDS = {
 const currentButton = new MessageButton({
   label: 'Current',
   customId: BUTTON_IDS.CURRENT,
+  style: 'SECONDARY',
+  disabled: false,
+});
+const todayButton = new MessageButton({
+  label: 'Today',
+  customId: BUTTON_IDS.TODAY,
   style: 'SUCCESS',
   disabled: false,
 });
@@ -57,8 +64,8 @@ const stringifyCurrent = (json) => {
   return `${description}
   🌡${fTemp}°F(${cTemp}°C)
   💧Humidity:${Math.round(humidity)}%
-  ${rainAccu ? `🌧️Rain past 1h: ${rainIn}(${rainAccu})` : ''}
-  ${snowAccu ? `🌨Snow past 1h: ${snowIn}(${snowAccu})` : ''}`;
+  ${rain ? `🌧️Rain past 1h: ${rainIn}(${rainAccu})` : ''}
+  ${snow ? `🌨Snow past 1h: ${snowIn}(${snowAccu})` : ''}`;
 };
 
 const stringifyDay = (json) => {
@@ -128,8 +135,8 @@ const stringifyDay = (json) => {
 
   return `${description}
   ${hiString}\n${loString}\n${windSpeed}\n${humidityString}\n${chanceOfPre}
-  ${rainAccu ? `🌧️Rain: ${rainIn}(${rainAccu})` : ''}
-  ${snowAccu ? `🌨Snow: ${snowIn}(${snowAccu})` : ''}`;
+  ${rain ? `🌧️Rain: ${rainIn}(${rainAccu})` : ''}
+  ${snow ? `🌨Snow: ${snowIn}(${snowAccu})` : ''}`;
 };
 
 const getLocation = async (locationName) => {
@@ -241,16 +248,23 @@ const reportWeather = async (interaction, codedLocation) => {
     // const alertEmbeds = [];
     const alertEmbed = new MessageEmbed();
     const currentEmbed = new MessageEmbed();
+    const todayEmbed = new MessageEmbed();
     const {current, daily, alerts} = data;
 
     row.addComponents(currentButton.setCustomId(`${BUTTON_IDS.CURRENT}_${id}`))
+      .addComponents(todayButton.setCustomId(`${BUTTON_IDS.TODAY}_${id}`))
       .addComponents(forecastButton.setCustomId(`${BUTTON_IDS.FORECAST}_${id}`))
       .addComponents(alertsButton.setCustomId(`${BUTTON_IDS.ALERTS}_${id}`).setDisabled(!alerts));
     components.push(row);
 
     currentEmbed.setTitle('Current Conditions')
       .setColor('GREEN')
-      .addField('Right Now', stringifyCurrent(current),true)
+      .setDescription(stringifyCurrent(current))
+      .setFooter(`Location: ${name}`);
+
+    todayEmbed.setTitle('Today')
+      .setColor('BLUE')
+      .addField('Current', stringifyCurrent(current),true)
       .addField('Today', stringifyDay(daily[0]),true)
       .setFooter(`Location: ${name}`);
 
@@ -264,6 +278,7 @@ const reportWeather = async (interaction, codedLocation) => {
     if(alerts) {
       forecastEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
       currentEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
+      todayEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
       alertEmbed.setTitle('Alerts')
         .setColor('RED')
         .setFooter(`Location: ${name}`);
@@ -281,6 +296,8 @@ const reportWeather = async (interaction, codedLocation) => {
         await buttonInteract.update({ embeds: [alertEmbed] }).catch(console.error);
       } else if (buttonInteract.customId === `${BUTTON_IDS.FORECAST}_${id}`) {
         await buttonInteract.update({ embeds: [forecastEmbed] }).catch(console.error);
+      } else if (buttonInteract.customId === `${BUTTON_IDS.TODAY}_${id}`) {
+        await buttonInteract.update({ embeds: [todayEmbed] }).catch(console.error);
       } else if (buttonInteract.customId === `${BUTTON_IDS.CURRENT}_${id}`) {
         await buttonInteract.update({ embeds: [currentEmbed] }).catch(console.error);
       }
