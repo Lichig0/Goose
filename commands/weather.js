@@ -5,6 +5,7 @@ const https = require('https');
 const url = require('url');
 const math = require('mathjs');
 
+
 const COMMAND_NAME = path.basename(__filename, '.js');
 const OPTIONS = {
   LOCATION: 'location',
@@ -12,6 +13,7 @@ const OPTIONS = {
 };
 const BUTTON_IDS = {
   CURRENT: 'weatherCurrent',
+  TODAY: 'weatherToday',
   FORECAST: 'weatherForecast',
   ALERTS: 'weatherAlerts',
   LOCATION: 'weatherLocation',
@@ -20,6 +22,12 @@ const BUTTON_IDS = {
 const currentButton = new MessageButton({
   label: 'Current',
   customId: BUTTON_IDS.CURRENT,
+  style: 'SECONDARY',
+  disabled: false,
+});
+const todayButton = new MessageButton({
+  label: 'Today',
+  customId: BUTTON_IDS.TODAY,
   style: 'SUCCESS',
   disabled: false,
 });
@@ -48,20 +56,63 @@ const stringifyCurrent = (json) => {
   const kTemp = math.unit(temp, 'degF');
   const cTemp = Math.round(kTemp.to('degC').toNumber());
   const fTemp = Math.round(kTemp.to('degF').toNumber());
-  const snowAccu = math.unit(snow?.['1h'] ?? 0, 'cm');
-  const rainAccu = math.unit(rain?.['1h'] ?? 0, 'cm');
+  const snowAccu = math.unit(snow?.['1h'] ?? 0, 'mm');
+  const rainAccu = math.unit(rain?.['1h'] ?? 0, 'mm');
   const snowIn = math.unit(math.round((snowAccu.to('in')).toNumber(), 1), 'in');
   const rainIn = math.unit(math.round((rainAccu.to('in')).toNumber(), 1), 'in');
 
   return `${description}
   🌡${fTemp}°F(${cTemp}°C)
   💧Humidity:${Math.round(humidity)}%
-  ${rainAccu ? `🌧️Rain past 1h: ${rainIn}(${rainAccu})` : ''}
-  ${snowAccu ? `🌨Snow past 1h: ${snowIn}(${snowAccu})` : ''}`;
+  ${rain ? `🌧️Rain past 1h: ${rainIn}(${rainAccu})` : ''}
+  ${snow ? `🌨Snow past 1h: ${snowIn}(${snowAccu})` : ''}`;
 };
 
 const stringifyDay = (json) => {
-  const { temp, humidity, weather, pop, snow, rain } = json;
+
+  /*
+    {
+      "dt": 1618308000, time of forcast UTC
+      "sunrise": 1618282134, UTC
+      "sunset": 1618333901, UTC
+      "moonrise": 1618284960, UTC
+      "moonset": 1618339740, UTC
+      "moon_phase": 0.04, 0-1, new moon, .25 first quarter, .5 full, etc.
+      "temp": { kelven
+        "day": 279.79,
+        "min": 275.09,
+        "max": 284.07,
+        "night": 275.09,
+        "eve": 279.21,
+        "morn": 278.49
+      },
+      "feels_like": { kelven | C | F
+        "day": 277.59,
+        "night": 276.27,
+        "eve": 276.49,
+        "morn": 276.27
+      },
+      "pressure": 1020, hPa
+      "humidity": 81, %
+      "dew_point": 276.77, kelvin
+      "wind_speed": 3.06, meter/sec | meter/sec | mile/secmat
+      "wind_deg": 294, meterological deg
+      "weather": [
+        {
+          "id": 500, code
+          "main": "Rain",
+          "description": "light rain",
+          "icon": "10d" icon
+        }
+      ],
+      "clouds": 56, %
+      "pop": 0.2, probability %
+      "rain": 0.62, mm (or snow in mm)
+      "uvi": 1.93 mx UV index
+    }
+*/
+
+  const { temp, humidity, weather, pop, snow, rain, wind_speed } = json;
   const { description, /*main, icon*/ } = weather[0];
   const { min, max, /*day, night, min, max, eve, morn*/ } = temp;
   const highK = math.unit(max, 'degF');
@@ -70,20 +121,22 @@ const stringifyDay = (json) => {
   const highF = Math.round(highK.to('degF').toNumber());
   const lowC = Math.round(lowK.to('degC').toNumber());
   const lowF = Math.round(lowK.to('degF').toNumber());
+  const windSpeedMph = `${Math.round(wind_speed)}mph`;
 
   const hiString = `🌡Hi:${highF}°F (${highC}°C)`;
   const loString = `🌡Lo:${lowF}°F (${lowC}°C)`;
+  const windSpeed = `🌬${windSpeedMph}`;
   const humidityString = `💧Humidity:${Math.round(humidity)}%`;
   const chanceOfPre = `🌂Chance of precip: ${Math.round(pop*100)}%`;
-  const snowAccu = math.unit(snow ?? 0, 'cm');
-  const rainAccu = math.unit(rain ?? 0, 'cm');
+  const snowAccu = math.unit(snow ?? 0, 'mm');
+  const rainAccu = math.unit(rain ?? 0, 'mm');
   const snowIn = math.unit(math.round((snowAccu.to('in')).toNumber(), 1), 'in');
   const rainIn = math.unit(math.round((rainAccu.to('in')).toNumber(), 1), 'in');
 
   return `${description}
-  ${hiString}\n${loString}\n${humidityString}\n${chanceOfPre}
-  ${rainAccu ? `🌧️Rain: ${rainIn}(${rainAccu})` : ''}
-  ${snowAccu ? `🌨Snow: ${snowIn}(${snowAccu})` : ''}`;
+  ${hiString}\n${loString}\n${windSpeed}\n${humidityString}\n${chanceOfPre}
+  ${rain ? `🌧️Rain: ${rainIn}(${rainAccu})` : ''}
+  ${snow ? `🌨Snow: ${snowIn}(${snowAccu})` : ''}`;
 };
 
 const getLocation = async (locationName) => {
@@ -195,16 +248,23 @@ const reportWeather = async (interaction, codedLocation) => {
     // const alertEmbeds = [];
     const alertEmbed = new MessageEmbed();
     const currentEmbed = new MessageEmbed();
+    const todayEmbed = new MessageEmbed();
     const {current, daily, alerts} = data;
 
     row.addComponents(currentButton.setCustomId(`${BUTTON_IDS.CURRENT}_${id}`))
+      .addComponents(todayButton.setCustomId(`${BUTTON_IDS.TODAY}_${id}`))
       .addComponents(forecastButton.setCustomId(`${BUTTON_IDS.FORECAST}_${id}`))
       .addComponents(alertsButton.setCustomId(`${BUTTON_IDS.ALERTS}_${id}`).setDisabled(!alerts));
     components.push(row);
 
     currentEmbed.setTitle('Current Conditions')
       .setColor('GREEN')
-      .addField('Right Now', stringifyCurrent(current),true)
+      .setDescription(stringifyCurrent(current))
+      .setFooter(`Location: ${name}`);
+
+    todayEmbed.setTitle('Today')
+      .setColor('BLUE')
+      .addField('Current', stringifyCurrent(current),true)
       .addField('Today', stringifyDay(daily[0]),true)
       .setFooter(`Location: ${name}`);
 
@@ -218,6 +278,7 @@ const reportWeather = async (interaction, codedLocation) => {
     if(alerts) {
       forecastEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
       currentEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
+      todayEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
       alertEmbed.setTitle('Alerts')
         .setColor('RED')
         .setFooter(`Location: ${name}`);
@@ -235,6 +296,8 @@ const reportWeather = async (interaction, codedLocation) => {
         await buttonInteract.update({ embeds: [alertEmbed] }).catch(console.error);
       } else if (buttonInteract.customId === `${BUTTON_IDS.FORECAST}_${id}`) {
         await buttonInteract.update({ embeds: [forecastEmbed] }).catch(console.error);
+      } else if (buttonInteract.customId === `${BUTTON_IDS.TODAY}_${id}`) {
+        await buttonInteract.update({ embeds: [todayEmbed] }).catch(console.error);
       } else if (buttonInteract.customId === `${BUTTON_IDS.CURRENT}_${id}`) {
         await buttonInteract.update({ embeds: [currentEmbed] }).catch(console.error);
       }
@@ -275,7 +338,7 @@ module.exports.getCommandData = () => {
 module.exports.execute = async (client, interaction) => {
   await interaction.deferReply().catch(console.warn);
   const { id, member } = interaction;
-  
+
   const savedLocation = await weatherTable.asyncGet(member.id).catch(console.error) ?? false;
   const location = interaction.options.get(OPTIONS.LOCATION)?.value ?? false;
   const remember = interaction.options.get(OPTIONS.REMEMBER)?.value ?? false;
