@@ -52,13 +52,18 @@ const queriesCatalog = [
   'Fun fact:'
 ];
 
+// https://developer.twitter.com/en/docs/twitter-api/annotations/overview
 const filtersCatalog = [
-  // 'context:94.*', // Journalist
-  'context:79.*',
-  'context:3.*',
-  'conext:139.*',
+  'context:3.*', // TV Shows
+  'context:29.*', // Events
   // 'context:35.*', // Political figures
-  'context:136.*'
+  'context:79.*', // Video Game Hardware
+  // 'context:94.*', // Journalist
+  'context:109.*', // Reoccurring Trends
+  'context:136.*', // Video Game Personality
+  // 'conext:139.*', // Fan Community
+  'context:152.*', // Food
+  'context:165.*' // Technology
 ];
 const queryFilter = '(-has:links -has:mentions -is:retweet lang:en)';
 
