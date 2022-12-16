@@ -5,6 +5,7 @@ const insult = require('../commands/insult');
 const game = require('../commands/game');
 const Chance = require('chance');
 const eyes = require('./birdEyes');
+const wikiRead = require('./wikireader');
 const {Brain} = require('./brain');
 const zalgo = require('zalgo-js');
 
@@ -19,6 +20,9 @@ const deadChatIntervals = {};
 
 eyes.fetch().catch(console.error);
 eyes.stream().catch(console.error);
+
+wikiRead.addDailyWiki();
+wikiRead.addRandomWiki();
 
 const sendChatter = (channel, text, options) => {
   const a = audit;
@@ -221,6 +225,16 @@ const sendMarkovString = async (channel, message) => {
         return await eyes.generateTweet().catch(console.error).finally(() => {
           eyes.fetch(guildBrains[guildId].getRandomWord()).catch(console.error);
           eyes.stream().catch(console.error);
+        });
+      }
+    },
+    {
+      name: 'Wiki Corpus',
+      weight: weights[1],
+      task: async () => {
+        console.log('[Wikipedia Used]');
+        return await wikiRead.generateWikiSentence().catch(console.error).finally(() => {
+          wikiRead.addRandomWiki().catch(console.error);
         });
       }
     },
