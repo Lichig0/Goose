@@ -187,28 +187,40 @@ const sendSourString = (channel, message) => {
 };
 
 const sendMarkovString = async (channel, message) => {
-  const contentSize = Object.values(guildBrains[channel.guildId].corpus.data).length;
+  const contentSize = Object.values(guildBrains[channel.guildId].corpus.chain).length;
   console.log('[Generating String]', contentSize);
 
   const config = settings.settings.chatter;
   const { id, content } = message;
   const { guildId } = channel;
-  const { maxTries = 10, disableImage = false, mentions = true, weights = [100, 25, 25, 1] } = config;
+  const { retries = 10, disableImage = false, mentions = true, weights = [100, 25, 25, 1] } = config;
   const chance = new Chance(id);
+
+  const timeoutPromise = new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        refs: ['None'],
+        text: 'I made a mess of my nest.',
+        string: 'I made a mess of my nest.',
+      });
+    }, 180000);
+  });
 
   const sentenceGenerationTypes =  [
     {
       name: 'Guild Corpus',
       weight: weights[0],
       task: async () => {
-        console.log('[Guild used]');
+        const input = content?.split ? chance.pickone(content?.split(' ')) : undefined;
+        console.log('[Guild used]', input);
         const options = {
-          maxTries, // Give up if I don't have a sentence after N tries (default is 10)
+          input,
+          retries, // Give up if I don't have a sentence after N tries (default is 10)
           // prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
-          prng: guildBrains[guildId].generateWordSeakingRandom(content),
           filter: Brain.generateFilter(content, channel)
         };
-        return await guildBrains[guildId].createSentence(options).catch((e) => {
+        const generateSentence = guildBrains[guildId].createSentence(options);
+        return await Promise.race([generateSentence, generateSentence, timeoutPromise]).catch((e) => {
           console.warn(e);
           return {
             string: guildBrains[guildId].getRandomWord(),
@@ -248,7 +260,7 @@ const sendMarkovString = async (channel, message) => {
     },
     {
       name: 'Core',
-      weight: weights[2],
+      weight: weights[3],
       task: async () => {
         console.debug('<CORE>');
         return { string: chance.pickone(coreThoughts.raw) };
@@ -270,7 +282,6 @@ const sendMarkovString = async (channel, message) => {
       refs: []
     };
   });
-  console.log(string);
   let attachments = [];
   let files = [];
   if (!disableImage) refs.forEach(ref => attachments = attachments.concat(ref.attachments));

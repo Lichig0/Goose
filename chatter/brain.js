@@ -1,7 +1,8 @@
 const { coreThoughts } = require('./coreThoughts');
 const Chance = require('chance');
 const settings = require('../settings');
-const Markov = require('markov-strings').default;
+// const Markov = require('markov-strings').default;
+const Markov = require('markov-flexible');
 const chatterUtil = require('./util');
 
 class Brain {
@@ -21,14 +22,20 @@ class Brain {
   constructor(guild) {
     this.#guild = guild;
     this.#client = guild.client;
-    this.#corpus = new Markov({stateSize: 2});
+    // this.#corpus = new Markov({stateSize: 2});
+    this.#corpus = new Markov.MarkovChain();
     this.#data = [];
     this.#processedMessages = new Set();
     this.splitRegex = new RegExp(/[\n.?!;()"]/);
-    coreThoughts(ct => this.#corpus.addData(Object.values(ct)));
+    // coreThoughts(ct => this.#corpus.addData(Object.values(ct)));
+    coreThoughts(ct => {
+      Object.values(ct).forEach(obj => {
+        this.#corpus.addString(obj.string, obj);
+      });
+    });
   }
 
-  static generateFilter(content, channel) {
+  static oldGenerateFilter(content, channel) {
     const { channelInfluence = 2, minimumScore = 2 } = settings.settings.chatter;
     const refsScore = (refs) => { // this may be too agressive.
       let score = 0;
@@ -46,6 +53,28 @@ class Brain {
       const hasNSFWRef = result.refs.reduce(chatterUtil.nsfwCheck , false);
       const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true;
 
+      return metScoreConstraints && metPairsConstraints && metNSFWConstraints && metUniqueConstraint;
+    };
+    return filter;
+  }
+
+  static generateFilter(content, channel) {
+    const { minimumScore = 2 } = settings.settings.chatter;
+    // const refsScore = (refs) => { // this may be too agressive.
+    //   let score = 0;
+    //   refs.forEach(ref => {
+    //     score += ref.channel === channel.id ? channelInfluence : -channelInfluence;
+    //   });
+    //   return score;
+    // };
+
+    const filter = (result) => {
+      const refs = Object.values(result.refs) ?? [];
+      const metScoreConstraints = chatterUtil.wordScore(result.text, content) >= minimumScore;
+      const metUniqueConstraint = refs.length >= 2 ;
+      const metPairsConstraints = chatterUtil.hasPairs(result.text);
+      const hasNSFWRef = refs.reduce(chatterUtil.nsfwCheck , false);
+      const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true;
       return metScoreConstraints && metPairsConstraints && metNSFWConstraints && metUniqueConstraint;
     };
     return filter;
@@ -106,11 +135,13 @@ class Brain {
   }
 
   async createSentence(options = {}) {
+    const result = await this.corpus.generateSentence(options);
     return new Promise((resolve, reject) => {
       try {
-        const result = this.corpus.generate(options);
-        const chatter = result.string.replace(Brain.brokenUserIDRegex, '<@$2>');
+        const chatter = result.text.replace(Brain.brokenUserIDRegex, '<@$2>');
         result.string = chatter;
+        result.text = chatter;
+        result.refs = Object.values(result.refs);
         resolve(result);
       } catch (e) {
         reject(`Bad Sentence ${e}`);
@@ -122,24 +153,24 @@ class Brain {
     return this.#chance.pickone(Object.values(this.#singleWords)).word;
   }
 
-  generateWordSeakingRandom = (content) => {
-    const pRandomStartSelect = () => {
-      this.#corpus.startWords = this.#chance.shuffle(this.#corpus.startWords);
-      const word = this.#corpus.startWords.findIndex(startWord => {
-        const words = startWord.words.toLowerCase();
-        const contentWord = this.#chance.pickone(content.split(' ')).toLowerCase();
-        return words !== '' && words.includes(contentWord);
-      });
+  // generateWordSeakingRandom = (content) => {
+  //   const pRandomStartSelect = () => {
+  //     this.#corpus.startWords = this.#chance.shuffle(this.#corpus.startWords);
+  //     const word = this.#corpus.startWords.findIndex(startWord => {
+  //       const words = startWord.words.toLowerCase();
+  //       const contentWord = this.#chance.pickone(content.split(' ')).toLowerCase();
+  //       return words !== '' && words.includes(contentWord);
+  //     });
 
-      if(word > 0){
-        const notSoRandom = (word/this.#corpus.startWords.length);
-        return notSoRandom;
-      }
-      const random = Math.random();
-      return random;
-    };
-    return pRandomStartSelect;
-  };
+  //     if(word > 0){
+  //       const notSoRandom = (word/this.#corpus.startWords.length);
+  //       return notSoRandom;
+  //     }
+  //     const random = Math.random();
+  //     return random;
+  //   };
+  //   return pRandomStartSelect;
+  // };
 
   async scrapeGuildHistory(textChannels, readRetry = 0) {
     return new Promise( (resolve, reject) => {
@@ -182,8 +213,8 @@ class Brain {
           recentFetch = split[0].last();
         }
       }
-    } while(fetched && fetched.size === 100 && this.#corpus.data.length <= 225000);
-    console.log('[Channel End]', channel.name, fullHistory.length, this.#corpus.data.length, Object.values(this.#data).length, Object.keys(this.#singleWords).length, (process.memoryUsage().heapTotal / 1024));
+    } while(fetched && fetched.size === 100 && Object.keys(this.#corpus.chain).length <= 225000);
+    console.log('[Channel End]', channel.name, fullHistory.length, Object.keys(this.#corpus.chain).length, Object.values(this.#data).length, Object.keys(this.#singleWords).length, (process.memoryUsage().heapTotal / 1024));
     return fullHistory;
   }
   addMessage(message, splitter = this.splitRegex) {
@@ -213,7 +244,8 @@ class Brain {
             return;
           } else {
             this.#data[`${id}.${i}`] = cache;
-            this.#corpus.addData([cache]);
+            // this.#corpus.addData([cache]);
+            this.#corpus.addString(cache.string, cache);
           }
         } else if (cache.attachments.size > 0 && this.#data[`${id}.${0}`] === undefined && channel.messages.cache.last(2)[1]) {
 
@@ -222,7 +254,8 @@ class Brain {
             ...cache,
             trimmedString: substituteString
           };
-          this.#corpus.addData([tCache]);
+          // this.#corpus.addData([tCache]);
+          this.#corpus.addString(cache.string, tCache);
         }
       });
       return cache;
