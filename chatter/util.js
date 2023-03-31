@@ -26,12 +26,17 @@ module.exports.nsfwCheck = (accumulator, value) => {
 
 module.exports.hasPairs = (str) => {
   const needsPairs = ['"', '||' , '`'];
+  // eslint-disable-next-line no-unused-vars
+  const reg = new RegExp(/"[^"]*|'[^']*'|`[^`]*`|\([^)]*\)|\|\|[^||]*\|\|/gm);
+  let  isPaired = true;
+
   needsPairs.forEach(char => {
-    if (str.split(char).length % 2 === 1) {
-      return false;
+    const splits = str.split(char).length;
+    if (splits > 1 && splits % 2 === 0) {
+      isPaired = false;
     }
   });
-  return true;
+  return isPaired;
 };
 
 module.exports.normalizeSentence = (sentence = '') => {
