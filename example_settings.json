@@ -14,7 +14,7 @@
     "useHonk": false,
     "minimumScore": 2,
     "channelInfluence": 0.5,
-    "maxTries": 30,
+    "retries": 30,
     "mentions": false,
     "disableImage": false,
     "disabledChannels": [
