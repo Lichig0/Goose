@@ -56,10 +56,10 @@ const stringifyCurrent = (json) => {
   const kTemp = math.unit(temp, 'degF');
   const cTemp = Math.round(kTemp.to('degC').toNumber());
   const fTemp = Math.round(kTemp.to('degF').toNumber());
-  const snowAccu = math.unit(snow?.['1h'] ?? 0, 'mm');
-  const rainAccu = math.unit(rain?.['1h'] ?? 0, 'mm');
-  const snowIn = math.unit(math.round((snowAccu.to('in')).toNumber(), 1), 'in');
-  const rainIn = math.unit(math.round((rainAccu.to('in')).toNumber(), 1), 'in');
+  const snowAccu = math.unit(snow?.['1h'] ?? 0, 'mm/h');
+  const rainAccu = math.unit(rain?.['1h'] ?? 0, 'mm/h');
+  const snowIn = math.unit(math.round((snowAccu.to('in/h')).toNumber(), 1), 'in/h');
+  const rainIn = math.unit(math.round((rainAccu.to('in/h')).toNumber(), 1), 'in/h');
 
   return `${description}
   🌡${fTemp}°F(${cTemp}°C)
