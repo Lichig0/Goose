@@ -4,7 +4,6 @@ const coreThoughts = require('./coreThoughts');
 const insult = require('../commands/insult');
 const game = require('../commands/game');
 const Chance = require('chance');
-const eyes = require('./birdEyes');
 const wikiRead = require('./wikireader');
 const {Brain} = require('./brain');
 const zalgo = require('zalgo-js');
@@ -17,9 +16,6 @@ let audit = {
 
 let messagesSince = 0;
 const deadChatIntervals = {};
-
-eyes.fetch().catch(console.error);
-eyes.stream().catch(console.error);
 
 wikiRead.addDailyWiki();
 wikiRead.addRandomWiki();
@@ -161,7 +157,7 @@ const sendSourString = (channel, message) => {
     },
     {
       name: 'coreThought',
-      weight: 1.2,
+      weight: 2,
       task: () => {
         console.debug('<CORE THOGUHT>');
         const ct = coreThoughts.raw || [];
@@ -170,7 +166,7 @@ const sendSourString = (channel, message) => {
     },
     {
       name: 'react',
-      weight: 4,
+      weight: 100,
       task: () => {
         console.debug('<REACT>');
         message.react(message.guild.emojis.cache.random().id).catch(console.error);
@@ -219,25 +215,10 @@ const sendMarkovString = async (channel, message) => {
           // prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
           filter: Brain.generateFilter(content, channel)
         };
-        const generateSentence = guildBrains[guildId].createSentence(options);
-        return await Promise.race([generateSentence, generateSentence, timeoutPromise]).catch((e) => {
-          console.warn(e);
-          return {
-            string: guildBrains[guildId].getRandomWord(),
-            refs: []
-          };
-        });
-      }
-    },
-    {
-      name: 'Twitter Corpus',
-      weight: weights[1],
-      task: async () => {
-        console.log('[Twitter used]');
-        return await eyes.generateTweet().catch(console.error).finally(() => {
-          eyes.fetch(guildBrains[guildId].getRandomWord()).catch(console.error);
-          eyes.stream().catch(console.error);
-        });
+        return await Promise.race([
+          guildBrains[guildId].createSentence(options),
+          guildBrains[guildId].createSentence({...options, input: undefined}),
+          timeoutPromise]);
       }
     },
     {
@@ -245,7 +226,7 @@ const sendMarkovString = async (channel, message) => {
       weight: weights[1],
       task: async () => {
         console.log('[Wikipedia Used]');
-        return await wikiRead.generateWikiSentence().catch(console.error).finally(() => {
+        return await wikiRead.generateWikiSentence().finally(() => {
           wikiRead.addRandomWiki().catch(console.error);
         });
       }
@@ -275,10 +256,10 @@ const sendMarkovString = async (channel, message) => {
   });
   const picked = chance.weighted(tsks, ws);
   audit.source = picked.name;
-  const { string = chance.sentence(), refs = [] } = await picked.task().catch((error) => {
+  const { string = guildBrains[guildId].getRandomWord(), refs = [] } = await picked.task().catch((error) => {
     console.error(error);
     return {
-      string: chance.sentence(),
+      string: guildBrains[guildId].getRandomWord(),
       refs: []
     };
   });
