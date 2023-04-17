@@ -1,4 +1,4 @@
-const { coreThoughts } = require('./coreThoughts');
+// const { coreThoughts } = require('./coreThoughts');
 const Chance = require('chance');
 const settings = require('../settings');
 // const Markov = require('markov-strings').default;
@@ -23,16 +23,16 @@ class Brain {
     this.#guild = guild;
     this.#client = guild.client;
     // this.#corpus = new Markov({stateSize: 2});
-    this.#corpus = new Markov.MarkovChain();
+    this.#corpus = new Markov.MarkovChain(2);
     this.#data = [];
     this.#processedMessages = new Set();
     this.splitRegex = new RegExp(/[\n.?!;()"]/);
     // coreThoughts(ct => this.#corpus.addData(Object.values(ct)));
-    coreThoughts(ct => {
-      Object.values(ct).forEach(obj => {
-        this.#corpus.addString(obj.string, obj);
-      });
-    });
+    // coreThoughts(ct => {
+    //   Object.values(ct).forEach(obj => {
+    //     this.#corpus.addString(obj.string, obj);
+    //   });
+    // });
   }
 
   static oldGenerateFilter(content, channel) {
