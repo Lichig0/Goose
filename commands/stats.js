@@ -11,14 +11,8 @@ const DISCORD_INVITE = new MessageButton({
   url: 'https://discord.gg/HJynKRTEU4'
 });
 
-const DONATE_BUTTON = new MessageButton({
-  label:'Feed Me',
-  style: 'LINK',
-  disabled: false,
-  url: 'https://www.paypal.com/donate/?business=DEY2DJJ8WZ2SL&no_recurring=0&currency_code=USD&item_name=GOOSE+BOT'
-});
 
-const ACTION_ROW = new MessageActionRow().addComponents(DISCORD_INVITE).addComponents(DONATE_BUTTON);
+const ACTION_ROW = new MessageActionRow().addComponents(DISCORD_INVITE);
 
 module.exports.getCommandData = () => {
   const slashCommand = new SlashCommandBuilder().setName(COMMAND_NAME).setDescription('Return Stats on this bot instance.');
@@ -39,6 +33,7 @@ module.exports.execute = async (client, interaction) => {
     In ${guilds.cache.size} servers
     Seen ${users.cache.size} different users
     `, true);
+  embed.addField('Heap', `${process.memoryUsage().heapUsed} / ${process.memoryUsage().heapTotal}`, true);
   embed.addField('Process', JSON.stringify(usage, null, 2), true);
   await interaction.reply({
     embeds: [embed],
