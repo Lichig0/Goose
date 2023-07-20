@@ -17,24 +17,8 @@ let audit = {
 let messagesSince = 0;
 const deadChatIntervals = {};
 
-wikiRead.addDailyWiki();
-wikiRead.addRandomWiki();
-
-const sendChatter = (channel, text, options) => {
-  const a = audit;
-  channel.send(text, options).then((sentMessage) => {
-    const chance = new Chance(sentMessage.id);
-    options = {
-      ...options,
-      tts: chance.bool({likelihood: 1}),
-    };
-    if(chance.bool({likelihood: 1})) {
-      sentMessage.edit(zalgo.default(sentMessage.content)).catch(console.error);
-    }
-    a.timestamp = Date.now();
-    auditHistory[sentMessage.id] = a;
-  }).catch(console.error);
-};
+// wikiRead.addDailyWiki();
+// wikiRead.addRandomWiki();
 
 module.exports.audit = (params) => {
   if (auditHistory[params] !== undefined) {
@@ -71,20 +55,20 @@ module.exports.addGuildBrain = async (guild) => {
 };
 
 module.exports.run = async (message, client) => {
-  if(!message) return console.error('message is required: message was ', message);
+  if(!message) throw('Message is required: ', message);
   const { author, channel, content, guild, mentions } = message;
   const chance = new Chance(message.id);
   const optedOutIds = client.optedOutUsers.map(({userId}) => userId);
   audit = {};
   if(optedOutIds.includes(author.id)) return;
   const config = settings.settings.chatter;
-  const {triggerWords = [], ignoredChannels = [], frequency = 60, useHonk, randomChat } = config;
+  const { ignoredChannels = [], frequency = 60, useHonk, randomChat, wobble = 2 } = config;
   const noiseFrequency = (frequency * 60000);
   const isMentioned = mentions.has(client.user.id);
   const honkChannel = (isMentioned && useHonk) ? theHonk : channel;
   const isHonk = channel.name === 'honk';
   const theHonk = guild.channels.cache.find(ch => ch.name.includes('honk')) || channel;
-  const thursdayMultiplier = new Date().getDay() === 4 ? 2 : 1;
+  const thursdayMultiplier = new Date().getDay() === 4 ? 1.5 : 1;
   const chatFrequency = randomChat * thursdayMultiplier;
   const roll = chance.bool({ likelihood: (chatFrequency)}); console.log('[Chatter]', roll, `${(messagesSince/(chatFrequency*100)).toFixed(3)}`, guild.name, channel.name, author.tag);
   audit.likelihood = messagesSince/(chatFrequency*100);
@@ -104,16 +88,10 @@ module.exports.run = async (message, client) => {
 
   if(deadChatIntervals[guild]) clearInterval(deadChatIntervals[guild]);
   deadChatIntervals[guild] = setInterval((message, client) => {
-    console.log('[Chatter]', 'Dead chat LOL', noiseFrequency);
     exports.run(message, client).catch(console.error);
   }, noiseFrequency, message, client);
 
   guildBrains[guild.id].addMessage(message);
-
-  const hasTriggerWord = (m) => {
-    return !(triggerWords.findIndex(tw => m.toLowerCase().includes(tw)) < 0);
-  };
-
 
   if ((isHonk || isMentioned || roll || hasTriggerWord(content)) && !author.bot && !ignoredChannels.includes(channel.name)) {
     const member = await guild.members.fetch(author).catch(console.warn);
@@ -139,7 +117,19 @@ module.exports.run = async (message, client) => {
       return accumulate = 0;
     }
   }, false);
-  if(microTrend == 3) channel.send(message.content).catch(console.warn);
+  if(microTrend > 2 && microTrend == (4 + _wobble(wobble))) {
+    await channel.send(message.content).catch(console.warn);
+  }
+};
+
+const _wobble = (range = 2) => {
+  return Math.floor(range) - Math.floor(Math.random() * (2*(range+1)));
+};
+
+
+const hasTriggerWord = (m) => {
+  const { triggerWords } = settings.settings.chatter;
+  return !(triggerWords.findIndex(tw => m.toLowerCase().includes(tw)) < 0);
 };
 
 const sendSourString = (channel, message) => {
@@ -159,7 +149,7 @@ const sendSourString = (channel, message) => {
       name: 'coreThought',
       weight: 2,
       task: () => {
-        console.debug('<CORE THOGUHT>');
+        console.debug('<CORE THOUGHT>');
         const ct = coreThoughts.raw || [];
         sendChatter(channel, chance.pickone(ct));
       }
@@ -275,6 +265,22 @@ const sendMarkovString = async (channel, message) => {
       embeds: files
     });
 
+};
+
+const sendChatter = (channel, text, options) => {
+  const a = audit;
+  channel.send(text, options).then((sentMessage) => {
+    const chance = new Chance(sentMessage.id);
+    options = {
+      ...options,
+      tts: chance.bool({likelihood: 1}),
+    };
+    if(chance.bool({likelihood: 1})) {
+      sentMessage.edit(zalgo.default(sentMessage.content)).catch(console.error);
+    }
+    a.timestamp = Date.now();
+    auditHistory[sentMessage.id] = a;
+  }).catch(console.error);
 };
 
 settings.loadConfig();
