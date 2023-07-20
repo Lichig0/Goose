@@ -23,16 +23,10 @@ class Brain {
     this.#guild = guild;
     this.#client = guild.client;
     // this.#corpus = new Markov({stateSize: 2});
-    this.#corpus = new Markov.MarkovChain(2);
+    this.#corpus = new Markov.MarkovChain(1);
     this.#data = [];
     this.#processedMessages = new Set();
     this.splitRegex = new RegExp(/[\n.?!;()"]/);
-    // coreThoughts(ct => this.#corpus.addData(Object.values(ct)));
-    // coreThoughts(ct => {
-    //   Object.values(ct).forEach(obj => {
-    //     this.#corpus.addString(obj.string, obj);
-    //   });
-    // });
   }
 
   static oldGenerateFilter(content, channel) {
@@ -60,13 +54,6 @@ class Brain {
 
   static generateFilter(content, channel) {
     const { minimumScore = 2 } = settings.settings.chatter;
-    // const refsScore = (refs) => { // this may be too agressive.
-    //   let score = 0;
-    //   refs.forEach(ref => {
-    //     score += ref.channel === channel.id ? channelInfluence : -channelInfluence;
-    //   });
-    //   return score;
-    // };
 
     const filter = (result) => {
       const refs = Object.values(result.refs) ?? [];
@@ -117,9 +104,14 @@ class Brain {
   }
 
   async #processMessages(channelMessages = []) {
-    channelMessages.forEach(nonEmptyMessage => {
+    channelMessages.forEach((nonEmptyMessage, index, array) => {
       if(nonEmptyMessage.author.bot) return;
-      this.#processedMessages.add(this.addMessage(nonEmptyMessage));
+      const pMemUsed = (process.memoryUsage.rss() / 1024 / 1024) / 3840;
+      if( pMemUsed < 0.90 ) {
+        this.#processedMessages.add(this.addMessage(nonEmptyMessage, array.entries().next().value[1].content));
+      } else {
+        console.warn('High memory usage!', pMemUsed, process.memoryUsage());
+      }
     });
   }
 
@@ -153,25 +145,6 @@ class Brain {
     return this.#chance.pickone(Object.values(this.#singleWords)).word;
   }
 
-  // generateWordSeakingRandom = (content) => {
-  //   const pRandomStartSelect = () => {
-  //     this.#corpus.startWords = this.#chance.shuffle(this.#corpus.startWords);
-  //     const word = this.#corpus.startWords.findIndex(startWord => {
-  //       const words = startWord.words.toLowerCase();
-  //       const contentWord = this.#chance.pickone(content.split(' ')).toLowerCase();
-  //       return words !== '' && words.includes(contentWord);
-  //     });
-
-  //     if(word > 0){
-  //       const notSoRandom = (word/this.#corpus.startWords.length);
-  //       return notSoRandom;
-  //     }
-  //     const random = Math.random();
-  //     return random;
-  //   };
-  //   return pRandomStartSelect;
-  // };
-
   async scrapeGuildHistory(textChannels, readRetry = 0) {
     return new Promise( (resolve, reject) => {
       const {client} = this.#guild;
@@ -201,6 +174,11 @@ class Brain {
     let recentFetch = {};
     let fetched = [];
     do {
+      const pMemUsed = (process.memoryUsage.rss() / 1024 / 1024) / 3840;
+      if( pMemUsed > 0.99 ) {
+        console.warn('High memory usage!', pMemUsed, process.memoryUsage());
+        continue;
+      }
       fetched = await this.#fetchMessages(channel, recentFetch).catch(console.error);
       const split = fetched.partition(() => this.#chance.bool({likelihood: hisotryCoverage})); // Reduce total size to save on memory for now
       if(split[0] && split[0].size > 0) {
@@ -217,7 +195,7 @@ class Brain {
     console.log('[Channel End]', channel.name, fullHistory.length, Object.keys(this.#corpus.chain).length, Object.values(this.#data).length, Object.keys(this.#singleWords).length, (process.memoryUsage().heapTotal / 1024));
     return fullHistory;
   }
-  addMessage(message, splitter = this.splitRegex) {
+  addMessage(message, nextMessage = '', splitter = this.splitRegex) {
     try {
       const { id, guild, channel, attachments, author } = message;
       const optedOutIds = this.#guild.client.optedOutUsers.map(({userId}) => userId);
@@ -234,7 +212,8 @@ class Brain {
       const wordCount = resolvedUserNameContent.split(' ').length;
       if(wordCount > 0 && wordCount <= 2) return this.#addSingleWord(resolvedUserNameContent);
       const subMessage = resolvedUserNameContent.match(Brain.urlRegex) ? [resolvedUserNameContent] : resolvedUserNameContent.split(splitter);
-      const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw };
+      // const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw};
+      const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw, afterWords: nextMessage.split(' ') };
       subMessage.forEach((str, i) => {
         const trimmedString = str.trim();
 
