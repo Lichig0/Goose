@@ -10,7 +10,7 @@ const PUNCTUATION = new RegExp('[^.!?]*[.!?]', 'g');
 
 const chance = new Chance();
 const minimumScore = 2; // TODO: grab from config
-const markov = new Markov.MarkovChain(2);
+const markov = new Markov.MarkovChain(1);
 const wikiGenOptions = {
   retries: 750,
   filter: (r) => {
