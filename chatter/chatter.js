@@ -17,8 +17,8 @@ let audit = {
 let messagesSince = 0;
 const deadChatIntervals = {};
 
-// wikiRead.addDailyWiki();
-// wikiRead.addRandomWiki();
+wikiRead.addDailyWiki();
+wikiRead.addRandomWiki();
 
 module.exports.audit = (params) => {
   if (auditHistory[params] !== undefined) {
@@ -116,8 +116,9 @@ module.exports.run = async (message, client) => {
     } else {
       return accumulate = 0;
     }
-  }, false);
-  if(microTrend > 2 && microTrend == (4 + _wobble(wobble))) {
+  }, 0);
+
+  if(microTrend > 2 && microTrend >= (4 + _wobble(wobble))) {
     await channel.send(message.content).catch(console.warn);
   }
 };
@@ -173,7 +174,7 @@ const sendSourString = (channel, message) => {
 };
 
 const sendMarkovString = async (channel, message) => {
-  const contentSize = Object.values(guildBrains[channel.guildId].corpus.chain).length;
+  const contentSize = guildBrains[channel.guildId].corpus.chain.size;
   console.log('[Generating String]', contentSize);
 
   const config = settings.settings.chatter;
@@ -187,9 +188,9 @@ const sendMarkovString = async (channel, message) => {
       resolve({
         refs: ['None'],
         text: 'I made a mess of my nest.',
-        string: 'I made a mess of my nest.',
+        string: channel.guild.emojis.cache.random().toString(),
       });
-    }, 180000);
+    }, 90000);
   });
 
   const sentenceGenerationTypes =  [
@@ -205,6 +206,7 @@ const sendMarkovString = async (channel, message) => {
           // prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
           filter: Brain.generateFilter(content, channel)
         };
+        
         return await Promise.race([
           guildBrains[guildId].createSentence(options),
           guildBrains[guildId].createSentence({...options, input: undefined}),

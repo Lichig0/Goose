@@ -22,34 +22,10 @@ class Brain {
   constructor(guild) {
     this.#guild = guild;
     this.#client = guild.client;
-    // this.#corpus = new Markov({stateSize: 2});
     this.#corpus = new Markov.MarkovChain(1);
     this.#data = [];
     this.#processedMessages = new Set();
     this.splitRegex = new RegExp(/[\n.?!;()"]/);
-  }
-
-  static oldGenerateFilter(content, channel) {
-    const { channelInfluence = 2, minimumScore = 2 } = settings.settings.chatter;
-    const refsScore = (refs) => { // this may be too agressive.
-      let score = 0;
-      refs.forEach(ref => {
-        score += ref.channel === channel.id ? channelInfluence : -channelInfluence;
-      });
-      return score;
-    };
-    const filter = (result) => {
-      const metScoreConstraints = chatterUtil.wordScore(result.string, content) + refsScore(result.refs) >= minimumScore;
-      console.debug('Channel Ref score:', refsScore(result.refs));
-      // const metScoreConstraints = chatterUtil.wordScore(result.string, content) >= minimumScore;
-      const metUniqueConstraint = result.refs.length >= 2 && !result.refs.includes(result.string);
-      const metPairsConstraints = chatterUtil.hasPairs(result.string);
-      const hasNSFWRef = result.refs.reduce(chatterUtil.nsfwCheck , false);
-      const metNSFWConstraints = hasNSFWRef.nsfw ? channel.nsfw : true;
-
-      return metScoreConstraints && metPairsConstraints && metNSFWConstraints && metUniqueConstraint;
-    };
-    return filter;
   }
 
   static generateFilter(content, channel) {
@@ -107,10 +83,10 @@ class Brain {
     channelMessages.forEach((nonEmptyMessage, index, array) => {
       if(nonEmptyMessage.author.bot) return;
       const pMemUsed = (process.memoryUsage.rss() / 1024 / 1024) / 3840;
-      if( pMemUsed < 0.90 ) {
+      if( pMemUsed < 0.99 ) {
         this.#processedMessages.add(this.addMessage(nonEmptyMessage, array.entries().next().value[1].content));
       } else {
-        console.warn('High memory usage!', pMemUsed, process.memoryUsage());
+        // console.warn('High memory usage!', pMemUsed, process.memoryUsage());
       }
     });
   }
@@ -175,10 +151,10 @@ class Brain {
     let fetched = [];
     do {
       const pMemUsed = (process.memoryUsage.rss() / 1024 / 1024) / 3840;
-      if( pMemUsed > 0.99 ) {
-        console.warn('High memory usage!', pMemUsed, process.memoryUsage());
-        continue;
-      }
+      // if( pMemUsed > 0.99 ) {
+      //   console.warn('High memory usage!', pMemUsed, process.memoryUsage());
+      //   continue;
+      // }
       fetched = await this.#fetchMessages(channel, recentFetch).catch(console.error);
       const split = fetched.partition(() => this.#chance.bool({likelihood: hisotryCoverage})); // Reduce total size to save on memory for now
       if(split[0] && split[0].size > 0) {
@@ -191,8 +167,8 @@ class Brain {
           recentFetch = split[0].last();
         }
       }
-    } while(fetched && fetched.size === 100 && Object.keys(this.#corpus.chain).length <= 225000);
-    console.log('[Channel End]', channel.name, fullHistory.length, Object.keys(this.#corpus.chain).length, Object.values(this.#data).length, Object.keys(this.#singleWords).length, (process.memoryUsage().heapTotal / 1024));
+    } while(fetched && fetched.size === 100 && this.#corpus.chain.size <= 225000);
+    console.log('[Channel End]', channel.name, fullHistory.length, this.#corpus.chain.size, Object.values(this.#data).length, Object.keys(this.#singleWords).length, (process.memoryUsage().heapTotal / 1024));
     return fullHistory;
   }
   addMessage(message, nextMessage = '', splitter = this.splitRegex) {
