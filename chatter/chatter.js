@@ -97,6 +97,7 @@ module.exports.run = async (message, client) => {
     const member = await guild.members.fetch(author).catch(console.warn);
     const hasRole = member.roles.cache.find(r => r.name == 'Bot Abuser');
     if (!hasRole) {
+      await channel.sendTyping();
       audit.sentOn = content;
       // Roll for critical
       const critRoll = chance.bool({likelihood: 2 * thursdayMultiplier});
@@ -217,10 +218,15 @@ const sendMarkovString = async (channel, message) => {
       name: 'Wiki Corpus',
       weight: weights[1],
       task: async () => {
-        console.log('[Wikipedia Used]');
-        return await wikiRead.generateWikiSentence().finally(() => {
-          wikiRead.addRandomWiki().catch(console.error);
-        });
+        const input = content?.split ? chance.pickone(content?.split(' ')) : undefined;
+        console.log('[Wikipedia Used]', input);
+        const options = {
+          input,
+          ...wikiRead.defaultWikiGenerateOptions,
+        };
+
+        input ? await wikiRead.addSearchedWiki(input).catch(console.error) : wikiRead.addRandomWiki().catch(console.error);
+        return await wiki/Read.generateWikiSentence(options).catch(console.error)
       }
     },
     {
