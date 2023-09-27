@@ -150,11 +150,6 @@ class Brain {
     let recentFetch = {};
     let fetched = [];
     do {
-      const pMemUsed = (process.memoryUsage.rss() / 1024 / 1024) / 3840;
-      // if( pMemUsed > 0.99 ) {
-      //   console.warn('High memory usage!', pMemUsed, process.memoryUsage());
-      //   continue;
-      // }
       fetched = await this.#fetchMessages(channel, recentFetch).catch(console.error);
       const split = fetched.partition(() => this.#chance.bool({likelihood: hisotryCoverage})); // Reduce total size to save on memory for now
       if(split[0] && split[0].size > 0) {
@@ -167,7 +162,7 @@ class Brain {
           recentFetch = split[0].last();
         }
       }
-    } while(fetched && fetched.size === 100 && this.#corpus.chain.size <= 225000);
+    } while(fetched && fetched.size === 100 && this.#corpus.chain.size <= 5000);
     console.log('[Channel End]', channel.name, fullHistory.length, this.#corpus.chain.size, Object.values(this.#data).length, Object.keys(this.#singleWords).length, (process.memoryUsage().heapTotal / 1024));
     return fullHistory;
   }
