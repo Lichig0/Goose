@@ -47,6 +47,36 @@ const getRandomWiki = async (times = 1) => {
   }
 };
 
+const searchWiki = async (searchText) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const contentRequests = [];
+      const pageRequests = [];
+      wiki.search(searchText).then(response => {
+        //Slice to limit requests.
+        response.results.slice(0,2).forEach(result => { 
+          pageRequests.push(wiki.page(result.title));
+        });
+        pageRequests.push(new Promise(resolve => setTimeout(resolve, 250))) // Add a 250ms wait (not sure that this works the way I hope)
+        Promise.allSettled(pageRequests).then(pages => {
+          pages.forEach(page => {
+            if(page.value) {
+              contentRequests.push(page.value.content());
+            }
+          })
+          contentRequests.push(new Promise(resolve => setTimeout(resolve, 250))) // Add a 250ms wait (not sure that this works the way I hope)
+          Promise.allSettled(contentRequests).then(contentArray => {
+            resolve(contentArray.map(ca => ca.value).filter(c=> c !== undefined));
+          });
+        })
+      });
+    } catch (error){
+      reject(error);
+    }
+  });
+  
+}
+
 const trimContentToStringArray = function (wikiContent) {
   const trimmed = wikiContent.split(TRIMMER).filter(blocks => blocks !== '');
   const sentences = trimmed.flatMap(block => block.match(PUNCTUATION)).filter(s => s !== null);
@@ -65,6 +95,15 @@ module.exports.addRandomWiki = async () => {
   markov.addString(sentences);
 };
 
+module.exports.addSearchedWiki = async (input) => {
+  const contentArray = await searchWiki(input).catch(console.error);
+  const sentences = [];
+  contentArray.forEach(content => {
+    sentences.push(...trimContentToStringArray(content));
+  });
+  markov.addString(sentences.filter(s=>typeof s === 'string'), {source: 'Wiki', nsfw: true});
+};
+
 module.exports.generateWikiSentence = async (options = wikiGenOptions) => {
   const result = await markov.generateSentence(options);
   return new Promise((resolve, reject) => {
@@ -77,3 +116,5 @@ module.exports.generateWikiSentence = async (options = wikiGenOptions) => {
     }
   });
 };
+
+module.exports.defaultWikiGenerateOptions = wikiGenOptions;
