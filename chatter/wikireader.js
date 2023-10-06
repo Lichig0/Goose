@@ -54,17 +54,17 @@ const searchWiki = async (searchText) => {
       const pageRequests = [];
       wiki.search(searchText).then(response => {
         //Slice to limit requests.
-        response.results.slice(0,2).forEach(result => { 
+        response.results.slice(0,-6).forEach(result => { 
           pageRequests.push(wiki.page(result.title));
         });
-        pageRequests.push(new Promise(resolve => setTimeout(resolve, 250))) // Add a 250ms wait (not sure that this works the way I hope)
+
         Promise.allSettled(pageRequests).then(pages => {
           pages.forEach(page => {
             if(page.value) {
               contentRequests.push(page.value.content());
             }
-          })
-          contentRequests.push(new Promise(resolve => setTimeout(resolve, 250))) // Add a 250ms wait (not sure that this works the way I hope)
+          });
+
           Promise.allSettled(contentRequests).then(contentArray => {
             resolve(contentArray.map(ca => ca.value).filter(c=> c !== undefined));
           });
