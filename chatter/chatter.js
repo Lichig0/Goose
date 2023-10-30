@@ -226,7 +226,7 @@ const sendMarkovString = async (channel, message) => {
         };
 
         input ? await wikiRead.addSearchedWiki(input).catch(console.error) : wikiRead.addRandomWiki().catch(console.error);
-        return await wiki/Read.generateWikiSentence(options).catch(console.error)
+        return await wikiRead.generateWikiSentence(options).catch(console.error)
       }
     },
     {
