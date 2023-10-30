@@ -162,7 +162,7 @@ class Brain {
           recentFetch = split[0].last();
         }
       }
-    } while(fetched && fetched.size === 100 && this.#corpus.chain.size <= 5000);
+    } while(fetched && fetched.size === 100 && this.#corpus.chain.size <= 10000);
     console.log('[Channel End]', channel.name, fullHistory.length, this.#corpus.chain.size, Object.values(this.#data).length, Object.keys(this.#singleWords).length, (process.memoryUsage().heapTotal / 1024));
     return fullHistory;
   }
