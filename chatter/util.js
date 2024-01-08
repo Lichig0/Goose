@@ -10,13 +10,13 @@ module.exports.wordScore = (markovString, content = '') => {
   let score = 0;
 
   // Word Count
-  const words = markovString.split(/[ ,.!?;()"/]/);
+  const words = markovString.split(/http\S*\s|[ ,.!?;()"/]/);
   words.forEach(word => {
     if(!word == '' && !word == ' ') {
       if(content.includes(word)) score++;
     }
   });
-  score = score + (-0.03*(words.length-12)^(2)+3);
+  score = score + (-0.03*Math.pow(words.length-12, 2)+3);
   return score;
 };
 
