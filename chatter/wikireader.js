@@ -1,6 +1,6 @@
 const Chance = require('chance');
 // const Markov = require('markov-strings').default;
-const Markov = require('markov-flexible');
+const Markov = require('word-chains');
 const wiki =  require('wikipedia');
 const chatterUtil = require('./util');
 

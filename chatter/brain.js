@@ -2,7 +2,7 @@
 const Chance = require('chance');
 const settings = require('../settings');
 // const Markov = require('markov-strings').default;
-const Markov = require('markov-flexible');
+const Markov = require('word-chains');
 const chatterUtil = require('./util');
 
 class Brain {
@@ -46,8 +46,9 @@ class Brain {
   static normalizeSentence (sentence = '') {
     if (sentence.match(Brain.urlRegex)) return sentence;
     let resolvedUserNameContent = sentence.replace(Brain.brokenUserIDRegex, '<@$2>');
-    const capitalized = `${resolvedUserNameContent.replace(resolvedUserNameContent[0], resolvedUserNameContent[0].toUpperCase())}`;
-    return (capitalized.endsWith('.') || capitalized.endsWith('?') || capitalized.endsWith('!')) ? capitalized : `${capitalized}.`;
+    return resolvedUserNameContent;
+    // const capitalized = `${resolvedUserNameContent.replace(resolvedUserNameContent[0], resolvedUserNameContent[0].toUpperCase())}`;
+    // return (capitalized.endsWith('.') || capitalized.endsWith('?') || capitalized.endsWith('!')) ? capitalized : `${capitalized}.`;
   }
 
   get corpus() {
@@ -181,7 +182,7 @@ class Brain {
         }
       }
       const wordCount = resolvedUserNameContent.split(' ').length;
-      if(wordCount > 0 && wordCount <= 2) return this.#addSingleWord(resolvedUserNameContent);
+      if(wordCount > 0 && wordCount <= 1) this.#addSingleWord(resolvedUserNameContent);
       const subMessage = resolvedUserNameContent.match(Brain.urlRegex) ? [resolvedUserNameContent] : resolvedUserNameContent.split(splitter);
       // const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw};
       const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw, afterWords: nextMessage.split(' ') };

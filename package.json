@@ -13,7 +13,6 @@
     "entities": "^3.0.1",
     "giant-bomb": "^2.0.1",
     "grawlix-racism": "^1.0.2",
-    "markov-flexible": "github:Lichig0/markov#multi-thread",
     "markov-strings": "^3.0.1",
     "mathjs": "^7.6.0",
     "nodemon": "^2.0.12",
@@ -21,6 +20,7 @@
     "twitter-v2": "^1.1.0",
     "utf-8-validate": "^5.0.5",
     "wikipedia": "^1.1.9",
+    "word-chains": "github:Lichig0/word-chains#multi-thread",
     "zalgo-js": "^1.0.0",
     "zlib-sync": "^0.1.7"
   },
@@ -33,7 +33,7 @@
     "sortct": "node ./util/sortCt.js",
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "npm run jest"
+    "test": "npx jest"
   },
   "nodemonConfig": {
     "ignore": [
