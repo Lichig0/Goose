@@ -48,13 +48,10 @@ For the sake of privacy, everything that can sensibliy be held in memory, ~~shou
         - See `package.json` for additional deps
 - API Keys (*TODO: add links to sign up for tokens/keys*)
     - Discord Bot API Token
-    - Twitter API key
     - Your Discord User Snowflake **(Optional)**
     - Giant Bomb Token **(Optional)**
     - OpenWeather API Token **(Optional)**
         - MapBox Token **(Required if OpenWeather is provided)**
-    <!-- - Twitter Access Token -->
-    <!-- - Twitter Bearer Token -->
 ### Install & Setup
 Ceck versions match requirements above
 ```
@@ -83,9 +80,7 @@ You may run into issues with `sqlite3` in which case refer to their [documentati
     OWNER=123456789012345678
     GIANT_BOMB_KEY=GIANTBOMBTOKEN
     OPEN_WEATHER_TOKEN=t0k3n
-    TWITTER_API_KEY=asdfASDFqwertQWERTYwasd
-    TWITTER_BEARER_TOKEN=AAAAAAAAAAAAAAAAAAAAA
-    TWITTER_ACCESS_TOKEN=987wasd654asdf321
+    MAPBOX_TOKEN=MAP.BOX.TOKEN
     NODE_OPTIONS=--max-old-space-size=3840
     ```
 - Copy `example_settings.json` to `settings.json`
