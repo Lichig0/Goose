@@ -1,12 +1,12 @@
 const path = require('path');
-const { MessageEmbed, Constants: {ApplicationCommandTypes, ApplicationCommandOptionTypes} } = require('discord.js');
+const { EmbedBuilder, ApplicationCommandType, ApplicationCommandOptionType } = require('discord.js');
 const GiantBomb = require('giant-bomb');
 const gb = new GiantBomb(process.env.GIANT_BOMB_KEY, 'Goose bot game search for Bounty Board. Retrieve game info for bounties.');
 
 const COMMAND_NAME = path.basename(__filename, '.js');
 const SUB_COMMAND = {
   SEARCH: 'search',
-  GET: 'get',
+  ID: 'id',
   RANDOM: 'random'
 };
 const OPTIONS = {
@@ -28,7 +28,7 @@ const searchGame = (searchString, callback) => {
     const j = JSON.parse(response);
     const games = j.results;
     const game = games[0];
-    const embed = new MessageEmbed();
+    const embed = new EmbedBuilder();
     if(game === undefined) return callback(embed.setTitle('No Results.'));
     const { name, guid, image, aliases, deck,
       original_release_date, site_detail_url,
@@ -46,14 +46,15 @@ const searchGame = (searchString, callback) => {
     });
 
     embed.setTitle(name).setDescription(deck).setURL(site_detail_url);
-    embed.setFooter(guid);
+    embed.setFooter({text: guid});
     embed.setThumbnail(image.original_url);
-    embed.addField('Platforms', `${plats}`, true);
-    if(aliases) embed.addField('Alias(es)', aliases);
-    if(original_release_date) embed.addField('Released', original_release_date, true);
-    if (!original_release_date) embed.addField('Expected release', `${expected_release_year || '????'} - ${expected_release_month || '??' } - ${expected_release_day || '??'} Q${expected_release_quarter || '?'}`);
-    if (otherGames.toString() !== '')embed.addField('More results', otherGames.toString(), true);
-    // interaction.editReply({embeds: [embed]}).catch(console.warn);
+    embed.setColor('Random');
+    const fields = [];
+    fields.push({name: 'Platforms', value: `${plats}`, inline: true});
+    if(aliases) fields.push({ name: 'Alias(es)', value: aliases});
+    if(original_release_date) fields.push({ name: 'Released', value: original_release_date, inline: true });
+    if (!original_release_date) fields.push({ name: 'Expected release', value: `${expected_release_year || '????'} - ${expected_release_month || '??' } - ${expected_release_day || '??'} Q${expected_release_quarter || '?'}` });
+    if (otherGames.toString() !== '') fields.push({ name: 'More results', value: otherGames.toString(), inline: true });
     return callback(embed);
   }).catch(console.error);
 };
@@ -69,7 +70,7 @@ const getGame = (id, callback) => {
     ]
   };
   gb.getGame(options).then( response => {
-    const embed = new MessageEmbed();
+    const embed = new EmbedBuilder();
     if(response === null) { return callback(embed.setTitle('Not found.')); }
     const json = JSON.parse(response);
     if (json.status_code !== 1) { return callback(embed.setTitle('Error').setDescription(json.error)); }
@@ -90,11 +91,11 @@ const getGame = (id, callback) => {
     genres ? genres.forEach(g => genre.push(g.name)) : genre.push('No data.');
 
     embed.setTitle(name).setDescription(deck).setURL(site_detail_url);
-    embed.setFooter(guid);
+    embed.setFooter({ text: guid});
     embed.setThumbnail(image.original_url);
-    if (original_release_date) embed.addField('Released', original_release_date, true);
-    if (!original_release_date) embed.addField('Expected release', `${expected_release_year || '????'} - ${expected_release_month || '??'} - ${expected_release_day || '??'} Q${expected_release_quarter || '?'}`);
-    if (aliases) embed.addField('Alias(es)', aliases);
+    if (original_release_date) embed.addFields([{ name: 'Released', value: original_release_date, inline: true }]);
+    if (!original_release_date) embed.addFields([{ name: 'Expected release', value: `${expected_release_year || '????'} - ${expected_release_month || '??'} - ${expected_release_day || '??'} Q${expected_release_quarter || '?'}` }]);
+    if (aliases) embed.addFields([{ name: 'Alias(es)', value: aliases }]);
     embed.addFields([
       { name: 'Similar Games', value: `${similarGames}`, inline: true },
       { name: 'Platforms', value: `${plats}`, inline: true},
@@ -128,32 +129,32 @@ module.exports.getGame = (id, callback) => {
 
 module.exports.getCommandData = () => {
   return {
-    type: ApplicationCommandTypes.CHAT_INPUT,
     name: COMMAND_NAME,
     description: 'Look up a video game; brought to you by Giant Bomb (Not a sponsor)',
     default_permission: true,
+    type: ApplicationCommandType.ChatInput,
     options: [
       {
         name: SUB_COMMAND.SEARCH,
-        type: ApplicationCommandOptionTypes.SUB_COMMAND,
+        type: ApplicationCommandOptionType.Subcommand,
         description: 'Search for a game',
         options: [
           {
             name: OPTIONS.NAME,
-            type: ApplicationCommandOptionTypes.STRING,
+            type: ApplicationCommandOptionType.String,
             description: 'Game name to search for',
             required: true
           },
         ]
       },
       {
-        name: SUB_COMMAND.GET,
-        type: ApplicationCommandOptionTypes.SUB_COMMAND,
-        description: 'Get a specific game',
+        name: SUB_COMMAND.ID,
+        type: ApplicationCommandOptionType.Subcommand,
+        description: 'Get Game via GiantBomb Game ID',
         options: [
           {
             name: OPTIONS.ID,
-            type: ApplicationCommandOptionTypes.STRING,
+            type: ApplicationCommandOptionType.String,
             description: 'GiantBomb Game ID to get. (Default: Random)',
             required: false,
           }
@@ -161,7 +162,7 @@ module.exports.getCommandData = () => {
       },
       {
         name: SUB_COMMAND.RANDOM,
-        type: ApplicationCommandOptionTypes.SUB_COMMAND,
+        type: ApplicationCommandOptionType.Subcommand,
         description: 'Get a random Game'
       }
     ]

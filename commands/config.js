@@ -1,7 +1,7 @@
 const path = require('path');
 const settings = require('../settings');
 const fs = require('fs');
-const { Permissions } = require('discord.js');
+const { PermissionsBitField } = require('discord.js');
 
 const COMMAND_NAME = path.basename(__filename, '.js');
 
@@ -9,7 +9,7 @@ exports.help = () => 'Configuration Utility for Admins.\n';
 
 exports.run = (message, epeen) => {
   const { content, channel } = message;
-  const admin_perm = epeen.has(Permissions.FLAGS.ADMINISTRATOR) || (message.member.user.id === '341338359807082506');
+  const admin_perm = epeen.has(PermissionsBitField.Flags.Administrator) || (message.member.user.id === '341338359807082506');
   if (admin_perm) {
     settings.loadConfig();
 

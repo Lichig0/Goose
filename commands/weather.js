@@ -1,5 +1,5 @@
 const path = require('path');
-const { MessageEmbed, Constants: {ApplicationCommandTypes, ApplicationCommandOptionTypes}, MessageButton, MessageActionRow, Util } = require('discord.js');
+const { EmbedBuilder, ApplicationCommandType, ApplicationCommandOptionType, ButtonStyle, ButtonBuilder, ActionRowBuilder, Colors } = require('discord.js');
 const weatherTable = require('../dbactions/weatherTable');
 const https = require('https');
 const url = require('url');
@@ -19,34 +19,34 @@ const BUTTON_IDS = {
   LOCATION: 'weatherLocation',
 };
 
-const currentButton = new MessageButton({
+const currentButton = new ButtonBuilder({
   label: 'Current',
   customId: BUTTON_IDS.CURRENT,
-  style: 'SECONDARY',
+  style: ButtonStyle.Secondary,
   disabled: false,
 });
-const todayButton = new MessageButton({
+const todayButton = new ButtonBuilder({
   label: 'Today',
   customId: BUTTON_IDS.TODAY,
-  style: 'SUCCESS',
+  style: ButtonStyle.Success,
   disabled: false,
 });
-const alertsButton = new MessageButton({
+const alertsButton = new ButtonBuilder({
   label: 'Alerts',
   customId: BUTTON_IDS.ALERTS,
-  style: 'DANGER',
+  style: ButtonStyle.Danger,
   disabled: true,
 });
-const forecastButton = new MessageButton({
+const forecastButton = new ButtonBuilder({
   label: 'Forecast',
   customId: BUTTON_IDS.FORECAST,
-  style: 'PRIMARY',
+  style: ButtonStyle.Primary,
   disabled: false,
 });
-const locationButton = new MessageButton({
+const locationButton = new ButtonBuilder({
   label: 'LOCATION_',
   customId: BUTTON_IDS.LOCATION,
-  style: 'SECONDARY',
+  style: ButtonStyle.Secondary,
   disabled: false
 });
 
@@ -239,16 +239,16 @@ const saveLocation = async (memberId, locationName, lon, lat) => {
 
 const reportWeather = async (interaction, codedLocation) => {
   const components = [];
-  const row = new MessageActionRow();
+  const row = new ActionRowBuilder();
   const { id, member } = interaction;
   console.log(codedLocation);
   getWeatherOneCall(codedLocation.lat, codedLocation.lon).then(data => {
     const { name } = codedLocation;
-    const forecastEmbed = new MessageEmbed();
+    const forecastEmbed = new EmbedBuilder();
     // const alertEmbeds = [];
-    const alertEmbed = new MessageEmbed();
-    const currentEmbed = new MessageEmbed();
-    const todayEmbed = new MessageEmbed();
+    const alertEmbed = new EmbedBuilder();
+    const currentEmbed = new EmbedBuilder();
+    const todayEmbed = new EmbedBuilder();
     const {current, daily, alerts} = data;
 
     row.addComponents(currentButton.setCustomId(`${BUTTON_IDS.CURRENT}_${id}`))
@@ -258,32 +258,36 @@ const reportWeather = async (interaction, codedLocation) => {
     components.push(row);
 
     currentEmbed.setTitle('Current Conditions')
-      .setColor('GREEN')
+      .setColor(Colors.Grey)
       .setDescription(stringifyCurrent(current))
-      .setFooter(`Location: ${name}`);
+      .setFooter({ text: `Location: ${name}`});
 
     todayEmbed.setTitle('Today')
-      .setColor('BLUE')
-      .addField('Current', stringifyCurrent(current),true)
-      .addField('Today', stringifyDay(daily[0]),true)
-      .setFooter(`Location: ${name}`);
+      .setColor(Colors.Green)
+      .addFields([
+        {name: 'Current', value: stringifyCurrent(current), inline: true},
+        {name: 'Today', value: stringifyDay(daily[0]), inline: true}
+      ])
+      .setFooter({ text: `Location: ${name}`});
 
     forecastEmbed.setTitle('Weather Forecast')
-      .setColor('BLURPLE')
-      .addField('Today', stringifyDay(daily[0]),true)
-      .addField('Tomorrow', stringifyDay(daily[1]),true)
-      .addField('The Day After', stringifyDay(daily[2]),true)
-      .setFooter(`Location: ${name}`);
+      .setColor(Colors.Blurple)
+      .addFields([
+        { name: 'Today', value: stringifyDay(daily[0]), inline: true},
+        { name: 'Tomorrow', value: stringifyDay(daily[1]), inline: true},
+        { name: 'The Day After', value: stringifyDay(daily[2]), inline: true},
+      ])
+      .setFooter({ text: `Location: ${name}`});
 
     if(alerts) {
-      forecastEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
-      currentEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
-      todayEmbed.addField('Alerts', `${alerts.map(alert=>`${alert.event}`)}`);
+      forecastEmbed.addFields([{name: 'Alerts', value: `${alerts.map(alert=>`${alert.event}`)}`}]);
+      currentEmbed.addFields([{name: 'Alerts', value: `${alerts.map(alert=>`${alert.event}`)}`}]);
+      todayEmbed.addFields([{name: 'Alerts', value: `${alerts.map(alert=>`${alert.event}`)}`}]);
       alertEmbed.setTitle('Alerts')
-        .setColor('RED')
-        .setFooter(`Location: ${name}`);
+        .setColor(Colors.Red)
+        .setFooter({ text: `Location: ${name}`});
       alerts.map(alert => {
-        alertEmbed.addField(alert.event, Util.splitMessage(alert.description, {maxLength: 1000})[0], true);
+        alertEmbed.addFields([{ name: alert.event, value: alert.description.substring(0, 1000), inline: true}]);
       });
     }
 
@@ -314,23 +318,23 @@ module.exports.getCommandData = () => {
   const options = [
     {
       name: OPTIONS.LOCATION,
-      type: ApplicationCommandOptionTypes.STRING,
+      type: ApplicationCommandOptionType.String,
       description: 'Location',
       required: false
     },
     {
       name: OPTIONS.REMEMBER,
-      type: ApplicationCommandOptionTypes.BOOLEAN,
+      type: ApplicationCommandOptionType.Boolean,
       description: 'Remember this location for you?',
       required: false,
     }
 
   ];
   return {
-    type: ApplicationCommandTypes.CHAT_INPUT,
     name: COMMAND_NAME,
     description: '(Beta) Sky is wet?',
     default_permission: true,
+    type: ApplicationCommandType.ChatInput,
     options,
   };
 };
@@ -348,7 +352,7 @@ module.exports.execute = async (client, interaction) => {
 
   if (codedLocations.length > 1 && codedLocations[0].name) {
     const locations = codedLocations.map(({name})=>`"${name}" `);
-    const locationsRow = new MessageActionRow();
+    const locationsRow = new ActionRowBuilder();
     const locationButtonMap = {};
 
     codedLocations.map((location, index) => {

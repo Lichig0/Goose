@@ -1,4 +1,4 @@
-const Discord = require('discord.js');
+const { EmbedBuilder } = require('discord.js');
 const Chance = require('chance');
 
 const chance = new Chance();
@@ -44,25 +44,25 @@ module.exports = (client, messageDelete) => {
     var Attachment = [...(messageDelete.attachments).values()];
 
     Attachment.forEach(function (attachment) {
-      const logembed = new Discord.MessageEmbed()
+      const logembed = new EmbedBuilder()
 
-        .setAuthor(messageDelete.author.tag, messageDelete.author.displayAvatarURL)
+        .setAuthor({ name: messageDelete.author.tag, iconURL: messageDelete.author.displayAvatarURL()})
         .setDescription(`**Image sent by ${messageDelete.author.tag} deleted in <#${messageDelete.channel.id}>**`)
         .setImage(attachment.proxyURL)
-        .setFooter('Deleted Image')
+        .setFooter({ text: 'Deleted Image'})
         .setTimestamp();
 
-      deleteChannel.send(logembed).catch(sendSawThat);
+      deleteChannel.send({embeds: [logembed]}).catch(sendSawThat);
     });
   } else {
-    const logembed = new Discord.MessageEmbed()
-      //.setTitle('Message Deleted')
-      .setAuthor(messageDelete.author.tag, messageDelete.author.displayAvatarURL)
+    const logembed = new EmbedBuilder()
+      .setTitle('Message Deleted')
+      .setAuthor({ name: messageDelete.author.tag, iconURL: messageDelete.author.displayAvatarURL()})
       .setDescription(`**Message sent by ${messageDelete.author.tag} deleted in <#${messageDelete.channel.id}>**`)
-      .setFooter('Deleted Message')
+      .setFooter({ text: 'Deleted Message'})
       .setTimestamp();
-    if(messageDelete.content) logembed.addField('Message Content', `${messageDelete.content}`);
-    deleteChannel.send(logembed).catch(sendSawThat);
+    if(messageDelete.content) logembed.addFields([{name: 'Message Content', value: `${messageDelete.content}`}]);
+    deleteChannel.send({embeds: [logembed]}).catch(sendSawThat);
 
   }
 };

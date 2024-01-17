@@ -1,4 +1,4 @@
-const { Permissions, Constants: {ApplicationCommandOptionTypes} } = require('discord.js');
+const { PermissionsBitField, ApplicationCommandOptionType } = require('discord.js');
 exports.help = () => 'Accuse a memeber of being a Bot Abuser. (User needs role permission)\n';
 const path = require('path');
 const COMMAND_NAME = path.basename(__filename, '.js');
@@ -15,20 +15,20 @@ module.exports.getCommandData = () => {
       {
         name: PARAMETERS.MEMBER,
         description: 'Member to accuse',
-        type: ApplicationCommandOptionTypes.MENTIONABLE,
+        type: ApplicationCommandOptionType.Mentionable,
         required: true
       },
       {
         name: PARAMETERS.LIFT,
         description: 'Lift the accusation',
-        type: ApplicationCommandOptionTypes.BOOLEAN,
+        type: ApplicationCommandOptionType.Boolean,
         required: false
       }
     ]
   };
 };
 module.exports.execute = async (client, interaction, epeen) => {
-  const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
+  const role_perm = epeen.has(PermissionsBitField.Flags.ManageRoles);
   const mentionable = interaction.options.get(PARAMETERS.MEMBER);
   const lift = interaction.options.get(PARAMETERS.LIFT)?.value;
   const guild = interaction.guild;

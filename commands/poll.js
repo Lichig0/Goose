@@ -1,4 +1,4 @@
-const Discord = require('discord.js');
+const {ApplicationCommandOptionType, EmbedBuilder} = require('discord.js');
 const Chance = require('chance');
 const path = require('path');
 const COMMAND_NAME = path.basename(__filename, '.js');
@@ -33,7 +33,7 @@ exports.execute = async (client, interaction) => {
   const choiceMaps = choices.map((choice, i) => {
     return {'c': choice.value, 'e': emojis[i], s: `${emojis[i]}: ${choice.value}`};
   });
-  const embed = new Discord.MessageEmbed();
+  const embed = new EmbedBuilder();
   embed.setTitle(question.value);
   embed.setDescription(choiceMaps.reduce((b, choice) => {
     return b += `${choice.s}\n`;
@@ -56,7 +56,7 @@ exports.getCommandData = () => {
         name: PARAMS.QUESTION,
         description: 'Question?',
         required: true,
-        type: Discord.Constants.ApplicationCommandOptionTypes.STRING
+        type: ApplicationCommandOptionType.String
       }
     ]
   };
@@ -64,7 +64,7 @@ exports.getCommandData = () => {
     data.options.push({
       name:`${PARAMS.OPTION}_${i}`,
       description: `Voting option ${i}`,
-      type: Discord.Constants.ApplicationCommandOptionTypes.STRING,
+      type: ApplicationCommandOptionType.String,
       required: false
     });
   }

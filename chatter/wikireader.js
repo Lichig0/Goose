@@ -68,14 +68,14 @@ const searchWiki = async (searchText) => {
           Promise.allSettled(contentRequests).then(contentArray => {
             resolve(contentArray.map(ca => ca.value).filter(c=> c !== undefined));
           });
-        })
+        });
       });
     } catch (error){
       reject(error);
     }
   });
   
-}
+};
 
 const trimContentToStringArray = function (wikiContent) {
   const trimmed = wikiContent.split(TRIMMER).filter(blocks => blocks !== '');

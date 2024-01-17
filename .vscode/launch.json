@@ -5,6 +5,16 @@
   "version": "0.2.0",
   "configurations": [
     {
+      "name": "Launch Duce",
+      "program": "${workspaceFolder}/index.js",
+      "request": "launch",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "type": "node"
+    },
+    
+    {
       "command": "npm start",
       "name": "Run npm start",
       "request": "launch",

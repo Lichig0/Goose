@@ -1,4 +1,4 @@
-const { Permissions } = require('discord.js');
+const { PermissionsBitField } = require('discord.js');
 
 module.exports = async (client, interaction) => {
   console.log('[Interaction]');
@@ -6,7 +6,7 @@ module.exports = async (client, interaction) => {
   if(!interaction.guild) {
     return await interaction.reply('Not here').catch(console.error);
   }
-  const epeen = guild && member ? member.permissions : new Permissions(Permissions.DEFAULT);
+  const epeen = guild && member ? member.permissions : new PermissionsBitField(PermissionsBitField.Default);
   if(interaction.isCommand()) {
     const command = client.commands.get(interaction.commandName);
     console.log(`>command: ${interaction.commandName}
@@ -14,9 +14,9 @@ module.exports = async (client, interaction) => {
         guild: ${guild}
         channel: ${interaction.channel}
         author: ${interaction.user}`);
-    const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
-    const kick_perm = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
-    const kp = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
+    const role_perm = epeen.has(PermissionsBitField.Flags.ManageRoles);
+    const kick_perm = epeen.has(PermissionsBitField.Flags.KickMembers);
+    const kp = epeen.has(PermissionsBitField.Flags.Administrator);
     console.log(`    test: ${kp}\n    Role: ${role_perm}\n    Kick: ${kick_perm}`);
 
     try {
@@ -33,6 +33,6 @@ module.exports = async (client, interaction) => {
   } else if(interaction.isButton()) {
     console.log(`>button: ${interaction.customId}`);
     // interaction.deferUpdate().then(console.log).catch(console.error);
-    interaction.fetchReply({content: 'Oops. Didn\'t finish that yet.'}).catch(console.error);
+    // interaction.fetchReply({content: 'Oops. Didn\'t finish that yet.'}).catch(console.error);
   }
 };

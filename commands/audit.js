@@ -1,5 +1,5 @@
 const path = require('path');
-const {Constants: { ApplicationCommandTypes, ApplicationCommandOptionTypes}} = require('discord.js');
+const {ApplicationCommandType, ApplicationCommandOptionType} = require('discord.js');
 const COMMAND_NAME = path.basename(__filename, '.js');
 const chatter = require('../chatter/chatter');
 const commands = {};
@@ -10,12 +10,12 @@ exports.getCommandData = () => {
     description: 'Audit this bot\'s activity',
     options: [{
       name: 'id',
-      type: ApplicationCommandOptionTypes.STRING,
+      type: ApplicationCommandOptionType.String,
       description: 'ID to audit',
       required: true,
     },{
       name: 'activity',
-      type: ApplicationCommandOptionTypes.STRING,
+      type: ApplicationCommandOptionType.String,
       description: 'What activity to audit(chatter, or a command name). Defaults to chatter.',
       required: false,
     }]
@@ -25,7 +25,7 @@ exports.getCommandData = () => {
 exports.getMessageCommandData = () => {
   return {
     name: COMMAND_NAME,
-    type: ApplicationCommandTypes.MESSAGE
+    type: ApplicationCommandType.Message
   };
 };
 

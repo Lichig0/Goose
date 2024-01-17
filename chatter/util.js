@@ -45,6 +45,16 @@ module.exports.normalizeSentence = (sentence = '') => {
   return (capitalized.endsWith('.') || capitalized.endsWith('?') || capitalized.endsWith('!')) ? capitalized : `${capitalized}.`;
 };
 
+module.exports.splitMessage = (message = '', trimSize = 1000, callback = (substring) => substring.trim() ) => {
+  const splitMessageArray = [];
+
+  for(let i = 0; i <= message.length; i+=trimSize) {
+    splitMessageArray.push(callback(message.slice(i, i+trimSize)));
+  }
+
+  return splitMessageArray;
+};
+
 module.exports.playGame = (client) => {
   const playGame = chance.bool({likelihoood: 0.4});
   if (playGame) {
