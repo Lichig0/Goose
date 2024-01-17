@@ -1,4 +1,4 @@
-const { Permissions, Constants: {ApplicationCommandTypes, ApplicationCommandOptionTypes} } = require('discord.js');
+const { PermissionsBitField, ApplicationCommandType, ApplicationCommandOptionType } = require('discord.js');
 const settings = require('../settings');
 const path = require('path');
 const COMMAND_NAME = path.basename(__filename, '.js');
@@ -11,20 +11,20 @@ const DEFAULTS = {
 
 exports.getCommandData = () => {
   return {
-    type: ApplicationCommandTypes.CHAT_INPUT,
     name: COMMAND_NAME,
     description: 'Kick a member. Taking your votes now!',
     default_permission: true,
+    type: ApplicationCommandType.ChatInput,
     options: [
       {
         name: 'member',
-        type: ApplicationCommandOptionTypes.MENTIONABLE,
+        type: ApplicationCommandOptionType.Mentionable,
         description: 'Member to kick',
         required: true,
       },
       {
         name: 'reason',
-        type: ApplicationCommandOptionTypes.STRING,
+        type: ApplicationCommandOptionType.String,
         description: 'Reson for kick',
         required: false
       }
@@ -40,7 +40,7 @@ exports.execute = async (client, interaction, epeen) => {
   const member_id = mentionableOption.value;
   const member = guild.members.cache.get(member_id);
   const userPermission = interaction.member.permissions;
-  const canKick = epeen.has(Permissions.FLAGS.KICK_MEMBERS);
+  const canKick = epeen.has(PermissionsBitField.Flags.KickMembers);
   const config = settings.settings.kick || DEFAULTS;
   const enabled = config.enabled;
 

@@ -1,4 +1,4 @@
-const Discord = require('discord.js');
+const { ChannelType, AllowedMentionsTypes } = require('discord.js');
 const settings = require('../settings');
 const coreThoughts = require('./coreThoughts');
 const insult = require('../commands/insult');
@@ -33,7 +33,7 @@ module.exports.init = async (client) => {
   const learningTasks = [];
 
   client.guilds.cache.each(guild => {
-    const channelsToScrape = guild.channels.cache.filter(ch => ch.isText() && ch.viewable && !disabled.includes(ch.name));
+    const channelsToScrape = guild.channels.cache.filter(ch => ch.type === ChannelType.GuildText && ch.viewable && !disabled.includes(ch.name));
     const brain = guildBrains[guild.id] = new Brain(guild);
     learningTasks.push(brain.scrapeGuildHistory(channelsToScrape).catch(console.error));
   });
@@ -49,7 +49,7 @@ module.exports.init = async (client) => {
 
 module.exports.addGuildBrain = async (guild) => {
   // TODO: must fetch channel list, a new server would have no cache
-  const channelsToScrape = guild.channels.cache.filter(ch => ch.isText() && ch.viewable && !ch.nsfw);
+  const channelsToScrape = guild.channels.cache.filter(ch => ch.type === ChannelType.GuildText && ch.viewable && !ch.nsfw);
   const brain = guildBrains[guild.id] = new Brain(guild);
   return brain.scrapeChannelHistory(channelsToScrape).catch(console.warn);
 };
@@ -226,7 +226,7 @@ const sendMarkovString = async (channel, message) => {
         };
 
         input ? await wikiRead.addSearchedWiki(input).catch(console.error) : wikiRead.addRandomWiki().catch(console.error);
-        return await wikiRead.generateWikiSentence(options).catch(console.error)
+        return await wikiRead.generateWikiSentence(options).catch(console.error);
       }
     },
     {
@@ -268,9 +268,10 @@ const sendMarkovString = async (channel, message) => {
   files = attachments.size > 0 ? [attachments.random()] : [];
 
   return sendChatter(channel,
-    !mentions ? Discord.Util.cleanContent(string, channel.lastMessage) : string,
+    string,
     {
-      embeds: files
+      embeds: files,
+      allowedMentions: mentions ? [AllowedMentionsTypes.Everyone, AllowedMentionsTypes.Role, AllowedMentionsTypes.User] : []
     });
 
 };
@@ -281,6 +282,7 @@ const sendChatter = (channel, text, options) => {
     const chance = new Chance(sentMessage.id);
     options = {
       ...options,
+      allowedMentions: !settings.settings.chatter.mentions ? [] : [AllowedMentionsTypes.Everyone, AllowedMentionsTypes.Role, AllowedMentionsTypes.User],
       tts: chance.bool({likelihood: 1}),
     };
     if(chance.bool({likelihood: 1})) {

@@ -1,6 +1,5 @@
 const insultTable = require('../dbactions/insultTable');
-const Discord = require('discord.js');
-const settings = require('../settings');
+const {ApplicationCommandOptionType} = require('discord.js');
 const Chance = require('chance');
 const path = require('path');
 const COMMAND_NAME = path.basename(__filename, '.js');
@@ -37,8 +36,6 @@ const auditHisotry = {};
 let audit = {};
 
 const getInsult = function (callback, message, mentioned) {
-  const config = settings.settings;
-  const mentions = config.mentions || false;
 
   const replaceMember = (match, offset, string) => {
     if (mentioned && string.indexOf(match) === offset) {
@@ -52,7 +49,6 @@ const getInsult = function (callback, message, mentioned) {
     rows.forEach(item => fullInsults.push(item.insult));
     let chat = chance.pickone(fullInsults).replace(/\{member\}/gi, replaceMember);
     // let chat = fullInsults[Math.floor(Math.random() * fullInsults.length)].replace(/\{member\}/gi, replaceMember);
-    if (!mentions) chat = Discord.Util.cleanContent(chat, message);
     callback(chat);
   });
 };
@@ -104,12 +100,12 @@ exports.getCommandData = () => {
       {
         name: SUBCOMMANDS.ADD,
         description: 'Add an insult.',
-        type: Discord.Constants.ApplicationCommandOptionTypes.SUB_COMMAND,
+        type: ApplicationCommandOptionType.Subcommand,
         options: [
           {
             name: PARAMETERS.INSULT,
             description: 'Come up with an insult. Try using `{member}` in place of someone\'s name',
-            type: Discord.Constants.ApplicationCommandOptionTypes.STRING,
+            type: ApplicationCommandOptionType.String,
             required: true
           }
         ]
@@ -117,12 +113,12 @@ exports.getCommandData = () => {
       {
         name: SUBCOMMANDS.GET,
         description: 'Say an insult.',
-        type: Discord.Constants.ApplicationCommandOptionTypes.SUB_COMMAND,
+        type: ApplicationCommandOptionType.Subcommand,
         options: [
           {
             name: PARAMETERS.MENTION,
             description: 'Insult who now?',
-            type: Discord.Constants.ApplicationCommandOptionTypes.MENTIONABLE,
+            type: ApplicationCommandOptionType.Mentionable,
             required: false,
           }
         ]

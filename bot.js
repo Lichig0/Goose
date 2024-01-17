@@ -1,5 +1,5 @@
 require('dotenv').config();
-const {Client, Intents, Collection} = require('discord.js');
+const { Client, GatewayIntentBits, Partials, Collection } = require('discord.js');
 const fs = require('fs');
 
 const COMMANDS_DIR = './commands/';
@@ -7,15 +7,24 @@ const initTables = require('./dbactions/initTables');
 const settings = require('./settings');
 const client = new Client({
   intents: [
-    Intents.FLAGS.GUILDS,
-    Intents.FLAGS.GUILD_MESSAGES,
-    Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
-    Intents.FLAGS.GUILD_MEMBERS,
-    Intents.FLAGS.GUILD_INVITES
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMessageReactions,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildInvites
   ],
-  retryLimit: 3,
-  presence: { activity:{name:'👀', type:'WATCHING'}
-  }
+  presence: {
+    activities: [
+      {name:'👀', type:'WATCHING'}
+    ]
+  },
+  partials: [
+    Partials.Channel,
+    // Partials.User,
+    // Partials.Message,
+    // Partials.Reaction,
+  ]
 });
 
 settings.loadConfig();
@@ -50,8 +59,9 @@ client.once('ready', () => {
         commandDataList.push(command.getCommandData());
       }
     }
-  });
+  }); 
   client.application.commands.set(devCommandDataList, '637314469894160405').then(commands => console.log('[Dev Commands]',commands.map(c=>c.name))).catch(console.error);
+  client.application.commands.set(devCommandDataList, '879911779055058974').then(commands => console.log('[Dev Commands]',commands.map(c=>c.name))).catch(console.error);
   client.application.commands.set(commandDataList).then(commands => console.log(`[Commands] ${commands.map(c=>c.name)}`)).catch(console.error);
 });
 

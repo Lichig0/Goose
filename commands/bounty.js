@@ -32,7 +32,7 @@ Bounty {
 
 
 const path = require('path');
-const { MessageEmbed, MessageActionRow, MessageButton, Constants: {ApplicationCommandOptionTypes}, Constants } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ApplicationCommandOptionType } = require('discord.js');
 const GiantBomb = require('giant-bomb');
 const bbt = require('../dbactions/bountyBoardTable');
 const settings = require('../settings');
@@ -123,11 +123,11 @@ exports.run = (message) => {
   } else if (content.startsWith(LIST, 1)){
     bbt.list((e, rows) => {
       if(rows.length < 1) channel.send('There are no bounties.').catch(console.warn);
-      const embed = new MessageEmbed();
+      const embed = new EmbedBuilder();
       rows.forEach(row => {
         const { id, gameName, reward, optReward, assigneeId } = row;
         const b = new Bounty(row);
-        embed.addField(`#${id}:${gameName}`, `${b.STATUS[b.status]}  |  ${reward}  |  ${optReward || 'None'} ${assigneeId ? '  |  '+assigneeId : ''} `);
+        embed.addFields([{name: `#${id}:${gameName}`, value: `${b.STATUS[b.status]}  |  ${reward}  |  ${optReward || 'None'} ${assigneeId ? '  |  '+assigneeId : ''} `}]);
       });
       channel.send({embeds: [embed]}).catch(console.warn);
     });
@@ -194,12 +194,12 @@ exports.getCommandData = () => {
       {
         name: SUBCOMMANDS.FIND,
         description: 'Find a specific bounty',
-        type: Constants.ApplicationCommandOptionTypes.SUB_COMMAND,
+        type: ApplicationCommandOptionType.Subcommand,
         options: [
           {
             name: PARAMETERS.LIKE,
             description: 'Name of the game that has a bounty',
-            type: ApplicationCommandOptionTypes.STRING,
+            type: ApplicationCommandOptionType.String,
             required: true
           }
         ]
@@ -207,7 +207,7 @@ exports.getCommandData = () => {
       {
         name: SUBCOMMANDS.LIST,
         description: 'List the bounties',
-        type: ApplicationCommandOptionTypes.SUB_COMMAND
+        type: ApplicationCommandOptionType.Subcommand
       }
     ]
   };
@@ -222,7 +222,7 @@ exports.execute = async (client, interaction) => {
     if(data.length > 0) {
       const bounty = new Bounty(data[0]);
       const embed = bounty.generateEmbed();
-      const row = new MessageActionRow().addComponents(new MessageButton().setCustomId('claim').setLabel('Claim').setStyle('PRIMARY').setDisabled(true));
+      const row = new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId('claim').setLabel('Claim').setStyle('PRIMARY').setDisabled(true));
       return await interaction.editReply({embeds: [embed], components: [row]}).catch(console.warn);
     }
   };
@@ -238,11 +238,11 @@ exports.execute = async (client, interaction) => {
   default:
     bbt.list(async (e, rows) => {
       if(rows.length < 1) return await interaction.editReply('There are no bounties.').catch(console.warn);
-      const embed = new MessageEmbed();
+      const embed = new EmbedBuilder();
       rows.forEach(row => {
         const { id, gameName, reward, optReward, assigneeId } = row;
         const b = new Bounty(row);
-        embed.addField(`#${id}:${gameName}`, `${b.STATUS[b.status]}  |  ${reward}  |  ${optReward || 'None'} ${assigneeId ? '  |  '+assigneeId : ''} `);
+        embed.addFields([{name:`#${id}:${gameName}`, value: `${b.STATUS[b.status]}  |  ${reward}  |  ${optReward || 'None'} ${assigneeId ? '  |  '+assigneeId : ''} `}]);
       });
       return await interaction.editReply({embeds: [embed]}).catch(console.warn);
     });
@@ -274,19 +274,21 @@ class Bounty { // This whole thing is messy
     this.guild = bo.guild;
   }
   generateEmbed() {
-    const embed = new MessageEmbed();
+    const embed = new EmbedBuilder();
     embed.setColor(this.statusColor());
     embed.setTitle(`Bounty #${this.id}: ${this.name}`);
     if (this.thumb_url) embed.setThumbnail(this.thumb_url);
-    embed.setFooter(this.guid);
-    embed.addField('Condition:', this.condition);
-    embed.addField('Reward', this.reward);
-    if (this.optionalCondition) embed.addField('*Optional* Condition', this.optionalCondition);
-    if (this.optionalReward) embed.addField('*Optional* Reward', this.optionalReward);
-    embed.addField('Status', this.STATUS[this.status]);
-    if (this.expireDate)embed.addField('Expires', new Date(this.expireDate));
-    if (this.assignee) embed.addField('Taken by: ', this.assignee);
-    embed.addField('Posted by: ', this.author);
+    embed.setFooter({ text: this.guid});
+    embed.addFields([
+      { name: 'Condition:', value: this.condition },
+      { name: 'Reward', value: this.reward},
+      { name: 'Status', value: this.STATUS[this.status]},
+      { name: 'Posted by: ', value: this.author},
+    ]);
+    if (this.optionalCondition) embed.addFields([{ name: '*Optional* Condition', value: this.optionalCondition}]);
+    if (this.optionalReward) embed.addFields([{ name: '*Optional* Reward', value: this.optionalReward}]);
+    if (this.expireDate)embed.addFields([{ name: 'Expires', value: new Date(this.expireDate)}]);
+    if (this.assignee) embed.addFields([{ name: 'Taken by: ', value: this.assignee}]);
     embed.setTimestamp(Date(this.postedDate));
     return embed;
   }

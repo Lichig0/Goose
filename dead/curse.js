@@ -1,4 +1,4 @@
-const { Permissions, Constants: {ApplicationCommandOptionTypes} } = require('discord.js');
+const { PermissionsBitField, ApplicationCommandOptionType } = require('discord.js');
 const settings = require('../settings');
 const path = require('path');
 const COMMADN_NAME = path.basename(__filename, '.js');
@@ -17,7 +17,7 @@ const DEFAULTS = {
 exports.execute = async (client, interaction, epeen) => {
   const config = settings.settings.curse || DEFAULTS;
   const enabled = config.enabled || DEFAULTS.enabled;
-  const role_perm = epeen.has(Permissions.FLAGS.MANAGE_ROLES);
+  const role_perm = epeen.has(PermissionsBitField.Flags.ManageRoles);
   const guild = interaction.guild;
   const mentionable = interaction.options.get(PARAMS.MEMBER);
   const lift = interaction.options.get(PARAMS.LIFT)?.value;
@@ -33,7 +33,8 @@ exports.execute = async (client, interaction, epeen) => {
         name: 'cursed',
         color: '#2B2B2B',
         position: 10,
-        permissions: new Permissions(BigInt(327744)),
+        // eslint-disable-next-line no-undef
+        permissions: new PermissionsBitField(BigInt(327744)),
         reason: 'Sometimes you need to silence the people.',
       }
     }).then((r) => {
@@ -118,13 +119,13 @@ exports.getCommandData = () => {
       {
         name: PARAMS.MEMBER,
         description: 'Member to curse',
-        type: ApplicationCommandOptionTypes.MENTIONABLE,
+        type: ApplicationCommandOptionType.Mentionable,
         required: true
       },
       {
         name: PARAMS.LIFT,
         description: 'Lift the curse',
-        type: ApplicationCommandOptionTypes.BOOLEAN,
+        type: ApplicationCommandOptionType.Boolean,
         required: false
       }
     ]

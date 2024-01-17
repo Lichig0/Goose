@@ -56,7 +56,7 @@ class Brain {
   }
 
   async #fetchMessages(channel, beforeMessage) {
-    return beforeMessage.channel?.id === channel.id ? channel.messages.fetch({ limit: 100, before: beforeMessage.id }, {cache: false, force: true}) : channel.messages.fetch({ limit:100 }, {cache: false, force: true});
+    return beforeMessage.channel?.id === channel.id ? channel.messages.fetch({ limit: 100, before: beforeMessage.id, cache: false, force: true}) : channel.messages.fetch({ limit:100, cache: false, force: true});
     // return beforeMessage.channel?.id === channel.id ? this.#testFetch(channel, { limit: 100, before: beforeMessage.id }) : this.#testFetch(channel, { limit:100 });
   }
 
@@ -65,7 +65,7 @@ class Brain {
     this.#data = [];
   }
 
-  async #testFetch(channel, {before = -1}) {
+  #testFetch = async (channel, {before = -1}) => {
     return new Promise((resolve, reject) => {
       const fakeMessages = [];
       const id = before+1;
@@ -80,7 +80,7 @@ class Brain {
     });
   }
 
-  async #processMessages(channelMessages = []) {
+  #processMessages = async(channelMessages = []) => {
     channelMessages.forEach((nonEmptyMessage, index, array) => {
       if(nonEmptyMessage.author.bot) return;
       const pMemUsed = (process.memoryUsage.rss() / 1024 / 1024) / 3840;
@@ -92,7 +92,7 @@ class Brain {
     });
   }
 
-  #addSingleWord(word) {
+  #addSingleWord = (word) => {
     if(word === '') return;
     // const normalized = Brain.normalizeSentence(word);
     if(this.#singleWords[word]) {

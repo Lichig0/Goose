@@ -1,8 +1,8 @@
 const path = require('path');
 const math = require('mathjs');
-const {Constants: {ApplicationCommandOptionTypes}} = require('discord.js');
+const { ApplicationCommandOptionType } = require('discord.js');
 
-const COMMAND_NAME = `${path.basename(__filename, '.js')} `;
+const COMMAND_NAME = path.basename(__filename, '.js');
 const parser = math.parser();
 
 exports.getCommandData = () => {
@@ -13,7 +13,7 @@ exports.getCommandData = () => {
       {
         name: 'input',
         description: 'Equation here',
-        type: ApplicationCommandOptionTypes.STRING,
+        type: ApplicationCommandOptionType.String,
         required: true
       }
     ],

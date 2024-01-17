@@ -1,4 +1,4 @@
-const { Permissions } = require('discord.js');
+const { PermissionsBitField } = require('discord.js');
 const userRolesTable = require('../dbactions/userRolesTable');
 const path = require('path');
 const COMMAND_NAME = path.basename(__filename, '.js');
@@ -13,7 +13,7 @@ module.exports.getCommandData = () => {
 };
 
 module.exports.execute = async (client, interaction, epeen) => {
-  const admin_perm = epeen.has(Permissions.FLAGS.ADMINISTRATOR);
+  const admin_perm = epeen.has(PermissionsBitField.Flags.Administrator);
   const {guild} = interaction;
   await interaction.deferReply().catch(console.warn);
   if (admin_perm) {

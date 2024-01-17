@@ -1,7 +1,8 @@
 const path = require('path');
-const { MessageEmbed, MessageAttachment, Util } = require('discord.js');
+const { EmbedBuilder, AttachmentBuilder } = require('discord.js');
 const settings = require('../settings');
 const qdb = require('../dbactions/qdbTable');
+const util = require('../chatter/util');
 const COMMAND_NAME = path.basename(__filename, '.js');
 const SUBCOMMANDS = {
   FIND: 'find',
@@ -102,32 +103,33 @@ exports.getCommandData = () => {
 exports.execute = async (client, interaction) => {
   await interaction.deferReply().catch(console.warn);
   const {guild} = interaction;
-  const sendCallback = (e, body) => {
+  const sendCallback = (e, qbody) => {
     if (e) {
       interaction.editReply('I threw up a little.').catch(console.warn);
       return console.error(e);
     }
-    const quote = body[Math.floor(Math.random() * body.length)];
+    const quote = qbody[Math.floor(Math.random() * qbody.length)];
     if (quote) {
-      const embed = new MessageEmbed();
+      const embed = new EmbedBuilder();
       const { id, body, author_id, notes, tags, created, score, votes, attachment, attachmentUrl } = quote;
       if (attachmentUrl) {
         embed.setImage(attachmentUrl);
       } else if(attachment) {
         const buf = Buffer.from(attachment, 'base64');
-        embed.attachFiles(new MessageAttachment(buf));
+        embed.attachFiles(new AttachmentBuilder(buf));
       }
       embed.setTitle(`Quote #${id}`);
       embed.setDescription(body);
-      if (notes) embed.addField('Notes:', notes);
-      console.log(score, votes);
-      if (score) embed.addField('Score', score, true);
-      if (votes) embed.addField('Votes', votes, true);
-      embed.addField('Added by', (author_id || 'Anonymous'), true);
-      if (tags) embed.setFooter(tags);
+      const fields = [];
+      if (notes) fields.push({name: 'Notes:', value: notes});
+      if (score) fields.push({name: 'Score', value: score, inline: true});
+      if (votes) fields.push({name: 'Votes', value: votes, inline: true});
+      fields.push({name: 'Added by', value: (author_id || 'Anonymous'), inline: true});
+      embed.addFields(fields);
+      if (tags) embed.setFooter({ text: tags});
       if (created) embed.setTimestamp(new Date(created));
       const embeds = [];
-      Util.splitMessage(body).forEach(splitBody => {
+      util.splitMessage(body).forEach(splitBody => {
         embed.setDescription(splitBody);
         embeds.length < 9 ? embeds.push(embed) : console.warn(`Embeds is large: ${embeds.length}`);
       });
