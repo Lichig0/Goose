@@ -15,7 +15,6 @@
     "mathjs": "^7.6.0",
     "nodemon": "^2.0.12",
     "sqlite3": "^5.0.2",
-    "twitter-v2": "^1.1.0",
     "utf-8-validate": "^5.0.5",
     "wikipedia": "^1.1.9",
     "word-chains": "github:Lichig0/word-chains#multi-thread",
