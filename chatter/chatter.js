@@ -107,23 +107,24 @@ module.exports.run = async (message, client) => {
 
       critRoll ? sendSourString(honkChannel, message) : sendMarkovString(honkChannel, message).catch(e=>console.error('Failed sending Markov', e));
     }
-  }
-
-  const chanCache = message.channel.messages.cache.last(10).reverse().slice(0,10);
-  const microTrend = chanCache.reduce((accumulate, currentVal) => {
-    if((currentVal.content === message.content|| currentVal.stickers.firstKey() === message.stickers.firstKey()) 
-      && currentVal.author.id !== message.author.id) {
-      return accumulate += 1;
-    } else if (accumulate == 3) {
-      return accumulate;
-    } else {
-      return accumulate = 0;
+  } else if(ignoredChannels.includes(channel.name)) {
+    const chanCache = message.channel.messages.cache.last(10).reverse().slice(0,10);
+    const microTrend = chanCache.reduce((accumulate, currentVal) => {
+      if((currentVal.content === message.content|| currentVal.stickers.firstKey() === message.stickers.firstKey()) 
+        && currentVal.author.id !== message.author.id) {
+        return accumulate += 1;
+      } else if (accumulate == 3) {
+        return accumulate;
+      } else {
+        return accumulate = 0;
+      }
+    }, 0);
+  
+    if(microTrend > 2 && microTrend >= (4 + util.wobble(wobble))) {
+      await channel.send(message).catch(console.warn);
     }
-  }, 0);
-
-  if(microTrend > 2 && microTrend >= (4 + util.wobble(wobble))) {
-    await channel.send(message).catch(console.warn);
   }
+
 };
 
 const hasTriggerWord = (m) => {
