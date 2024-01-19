@@ -1,5 +1,6 @@
-const { ChannelType, AllowedMentionsTypes } = require('discord.js');
+const { ChannelType, AllowedMentionsTypes, MessagePayload } = require('discord.js');
 const settings = require('../settings');
+const util = require('./util');
 const coreThoughts = require('./coreThoughts');
 const insult = require('../commands/insult');
 const game = require('../commands/game');
@@ -110,7 +111,8 @@ module.exports.run = async (message, client) => {
 
   const chanCache = message.channel.messages.cache.last(10).reverse().slice(0,10);
   const microTrend = chanCache.reduce((accumulate, currentVal) => {
-    if(currentVal.content === message.content && currentVal.author.id !== message.author.id) {
+    if((currentVal.content === message.content|| currentVal.stickers.firstKey() === message.stickers.firstKey()) 
+      && currentVal.author.id !== message.author.id) {
       return accumulate += 1;
     } else if (accumulate == 3) {
       return accumulate;
@@ -119,15 +121,10 @@ module.exports.run = async (message, client) => {
     }
   }, 0);
 
-  if(microTrend > 2 && microTrend >= (4 + _wobble(wobble))) {
-    await channel.send(message.content).catch(console.warn);
+  if(microTrend > 2 && microTrend >= (4 + util.wobble(wobble))) {
+    await channel.send(message).catch(console.warn);
   }
 };
-
-const _wobble = (range = 2) => {
-  return Math.floor(range) - Math.floor(Math.random() * (2*(range+1)));
-};
-
 
 const hasTriggerWord = (m) => {
   const { triggerWords } = settings.settings.chatter;
@@ -189,7 +186,7 @@ const sendMarkovString = async (channel, message) => {
       resolve({
         refs: ['None'],
         text: 'I made a mess of my nest.',
-        string: channel.guild.emojis.cache.random().toString(),
+        string: channel.guild.emojis.cache.random()?.toString(),
       });
     }, 90000);
   });
@@ -238,6 +235,14 @@ const sendMarkovString = async (channel, message) => {
       }
     },
     {
+      name: 'Guild Sticker',
+      weight: weights[2],
+      task: async () => {
+        console.debug('<GUILD STICKER>');
+        return { string:'', refs: [{ sticker: [channel.guild.stickers.cache.random()] }]};
+      }
+    },
+    {
       name: 'Core',
       weight: weights[3],
       task: async () => {
@@ -261,9 +266,15 @@ const sendMarkovString = async (channel, message) => {
       refs: []
     };
   });
-  let attachments = [];
   let files = [];
-  if (!disableImage) refs.forEach(ref => attachments = attachments.concat(ref.attachments));
+  const { stickers, attachments } = refs.reduce((accumulator, current) => {
+    if (!disableImage) {
+      accumulator.attachments = current.attachments ? accumulator.attachments.concat(current.attachments) : accumulator.attachments;
+    }
+    accumulator.stickers = current.sticker ?  accumulator.stickers.concat(current.sticker) : accumulator.stickers;
+    return accumulator;
+
+  }, {attachments: [], stickers: []});
   audit.refs = refs.flatMap(r => r.string);
   files = attachments.size > 0 ? [attachments.random()] : [];
 
@@ -271,14 +282,18 @@ const sendMarkovString = async (channel, message) => {
     string,
     {
       embeds: files,
-      allowedMentions: mentions ? [AllowedMentionsTypes.Everyone, AllowedMentionsTypes.Role, AllowedMentionsTypes.User] : []
+      stickers: stickers.length > 0 ? [chance.pickone(stickers)] : [],
+      allowedMentions: {
+        parse: mentions ? [AllowedMentionsTypes.Everyone, AllowedMentionsTypes.Role, AllowedMentionsTypes.User] : []
+      }
     });
 
 };
 
-const sendChatter = (channel, text, options) => {
+const sendChatter = (channel, content, options) => {
   const a = audit;
-  channel.send(text, options).then((sentMessage) => {
+  const payload = MessagePayload.create(channel,{content, ...options});
+  channel.send(payload).then((sentMessage) => {
     const chance = new Chance(sentMessage.id);
     options = {
       ...options,

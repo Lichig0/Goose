@@ -169,7 +169,7 @@ class Brain {
   }
   addMessage(message, nextMessage = '', splitter = this.splitRegex) {
     try {
-      const { id, guild, channel, attachments, author } = message;
+      const { id, guild, channel, attachments, stickers, author } = message;
       const optedOutIds = this.#guild.client.optedOutUsers.map(({userId}) => userId);
       const content = optedOutIds.includes(author?.id) ? this.#chance.sentence() : message.content;
       let resolvedUserNameContent = content.replace(Brain.brokenUserIDRegex, '<@$2>');
@@ -184,8 +184,16 @@ class Brain {
       const wordCount = resolvedUserNameContent.split(' ').length;
       if(wordCount > 0 && wordCount <= 1) this.#addSingleWord(resolvedUserNameContent);
       const subMessage = resolvedUserNameContent.match(Brain.urlRegex) ? [resolvedUserNameContent] : resolvedUserNameContent.split(splitter);
-      // const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw};
-      const cache = { string: resolvedUserNameContent, id, guild: guild.id, channel: channel.id, attachments: attachments, nsfw: channel.nsfw, afterWords: nextMessage.split(' ') };
+      const cache = { 
+        string: resolvedUserNameContent, 
+        id,
+        guild: guild.id,
+        channel: channel.id,  
+        attachments: attachments,
+        sticker: stickers.first(),
+        nsfw: channel.nsfw, 
+        afterWords: nextMessage.split(' ')
+      };
       subMessage.forEach((str, i) => {
         const trimmedString = str.trim();
 
@@ -195,7 +203,6 @@ class Brain {
             return;
           } else {
             this.#data[`${id}.${i}`] = cache;
-            // this.#corpus.addData([cache]);
             this.#corpus.addString(cache.string, cache);
           }
         } else if (cache.attachments.size > 0 && this.#data[`${id}.${0}`] === undefined && channel.messages.cache.last(2)[1]) {
@@ -205,7 +212,6 @@ class Brain {
             ...cache,
             trimmedString: substituteString
           };
-          // this.#corpus.addData([tCache]);
           this.#corpus.addString(cache.string, tCache);
         }
       });

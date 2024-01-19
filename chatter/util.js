@@ -65,3 +65,7 @@ module.exports.playGame = (client) => {
     client.user.setActivity('👀', { type: 'WATCHING' });
   }
 };
+
+module.exports.wobble = (range = 2) => {
+  return Math.floor(range) - Math.floor(Math.random() * (2*(range+1)));
+};
