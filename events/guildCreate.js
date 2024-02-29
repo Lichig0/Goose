@@ -12,5 +12,5 @@ module.exports = (client, guild) => {
     chatter.addGuildBrain(guild).then((guildData) => {
       console.log('[Finished scraping.]', guildData.length);
     }).catch(console.error);
-  }, 60000);
+  }, ( 5 * 60000));
 };
