@@ -8,7 +8,9 @@ module.exports = (client, guild) => {
       dmChannel.send(`${client.user.tag} has joined ${guild.name}.`);
     }).catch(console.error);
   }).catch(console.error);
-  chatter.addGuildBrain(guild).then((guildData) => {
-    console.log('[Finished scraping.]', guildData.length);
-  }).catch(console.error);
+  setTimeout(() => {
+    chatter.addGuildBrain(guild).then((guildData) => {
+      console.log('[Finished scraping.]', guildData.length);
+    }).catch(console.error);
+  }, 60000);
 };
