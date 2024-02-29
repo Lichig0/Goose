@@ -43,12 +43,6 @@ const forecastButton = new ButtonBuilder({
   style: ButtonStyle.Primary,
   disabled: false,
 });
-const locationButton = new ButtonBuilder({
-  label: 'LOCATION_',
-  customId: BUTTON_IDS.LOCATION,
-  style: ButtonStyle.Secondary,
-  disabled: false
-});
 
 const stringifyCurrent = (json) => {
   const { temp, humidity, weather, rain, snow } = json;
@@ -358,7 +352,12 @@ module.exports.execute = async (client, interaction) => {
     codedLocations.map((location, index) => {
       const buttonId = `${id}_${index}`;
       locationButtonMap[buttonId] = location.name;
-      locationsRow.addComponents(locationButton.setCustomId(buttonId).setLabel(location.name));
+      locationsRow.addComponents(new ButtonBuilder({
+        label: location.name,
+        customId: buttonId,
+        style: ButtonStyle.Secondary,
+        disabled: false
+      }));
     });
 
     interaction.editReply({
