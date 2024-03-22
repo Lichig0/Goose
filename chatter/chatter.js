@@ -6,9 +6,11 @@ const insult = require('../commands/insult');
 const game = require('../commands/game');
 const Chance = require('chance');
 const wikiRead = require('./wikireader');
-const {Brain} = require('./brain');
+const { Brain } = require('./brain');
 const zalgo = require('zalgo-js');
+const Action = require('./Action').default;
 
+const chance = new Chance();
 const guildBrains = {};
 const auditHistory = {};
 let audit = {
@@ -58,7 +60,6 @@ module.exports.addGuildBrain = async (guild) => {
 module.exports.run = async (message, client) => {
   if(!message) throw('Message is required: ', message);
   const { author, channel, content, guild, mentions } = message;
-  const chance = new Chance(message.id);
   const optedOutIds = client.optedOutUsers.map(({userId}) => userId);
   audit = {};
   if(optedOutIds.includes(author.id)) return;
@@ -105,9 +106,9 @@ module.exports.run = async (message, client) => {
 
       if (critRoll) console.log('Critical roll!');
 
-      critRoll ? sendSourString(honkChannel, message) : sendMarkovString(honkChannel, message).catch(e=>console.error('Failed sending Markov', e));
+      critRoll ? rareAct(honkChannel, message) : act(honkChannel, message).catch(e=>console.error('Failed sending Markov', e));
     }
-  } else if(ignoredChannels.includes(channel.name)) {
+  } else if(!ignoredChannels.includes(channel.name)) {
     const chanCache = message.channel.messages.cache.last(10).reverse().slice(0,10);
     const microTrend = chanCache.reduce((accumulate, currentVal) => {
       if((currentVal.content === message.content|| currentVal.stickers.firstKey() === message.stickers.firstKey()) 
@@ -127,13 +128,108 @@ module.exports.run = async (message, client) => {
 
 };
 
+const insultAction = new Action('Insult', 1, async () => {
+  const thenable = {
+    then(resolve) {
+      insult.getInsult(resolve);
+    },
+  };
+  return await thenable();
+});
+const coreThoughtAction = new Action('Core Thought', 2, () => {
+  const ct = coreThoughts.raw || [];
+  return chance.pickone(ct);
+});
+const reactAction = new Action('React', 100, (message) => {
+  message.react(message.guild.emojis.cache.random().id).catch(console.error);
+});
+
+const guildCorpusAction = new Action('Guild Corpus', 100, ({
+  content,
+  channel
+}) => {
+  const timeoutPromise = new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        refs: ['None'],
+        text: 'I made a mess of my nest.',
+        string: channel.guild.emojis.cache.random()?.toString(),
+      });
+    }, 90000);
+  });
+
+  const input = content?.split ? chance.pickone(content.split(' ')) : undefined; 
+  const { retries } = settings.settings.chatter;
+  const options = {
+    input,
+    retries,
+    filter: Brain.generateFilter(content, channel)
+  };
+
+
+  return Promise.race([
+    guildBrains[channel.guildId].createSentence(options),
+    guildBrains[channel.guildId].createSentence({...options, input: undefined}),
+    timeoutPromise,
+  ]);
+});
+const wikiCorpusAction = new Action('Wiki Corpus', 25, async ({
+  content,
+}) => {
+
+  const input = content?.split ? chance.pickone(content?.split(' ')) : undefined;
+  const options = {
+    input,
+    ...wikiRead.defaultWikiGenerateOptions,
+  };
+
+  input ? await wikiRead.addSearchedWiki(input).catch(console.error) : wikiRead.addRandomWiki().catch(console.error);
+  return await wikiRead.generateWikiSentence(options).catch(console.error);
+});
+const guildEmojiAction = new Action('Guild Emoji', 25, ({ channel }) => {
+  const { emojis } = channel.guild;
+  if(!emojis.chache) {
+    emojis.fetch().then(fetchedEmojis => {
+      return { string: fetchedEmojis.random().toString() };
+    }).catch(console.error);
+  } else {
+    return { string: channel.guild.emojis.chache.random().toString() };
+  }
+});
+const guildStickerAction = new Action('Guild Sticker', 25, ({ channel }) => {
+  const { stickers } = channel.guild;
+  if(!stickers.cache) {
+    stickers.fetch().then(fetchedStickers => {
+      return { string: fetchedStickers.random().toString() };
+    }).catch(console.error);
+  } else {
+    return { string:'', refs: [{sticker: [channel.guild.stickers.chache.random()]}]};
+  }
+});
+const coreAction = new Action('Core', 1, () => {
+  return { string: chance.pickone(coreThoughts.raw) };
+});
+
+
+const Builtin = {
+  ACTIONS: [
+    guildCorpusAction,
+    wikiCorpusAction,
+    guildEmojiAction,
+    guildStickerAction,
+    coreThoughtAction,
+    insultAction,
+    reactAction,
+    coreAction
+  ]
+};
+
 const hasTriggerWord = (m) => {
   const { triggerWords } = settings.settings.chatter;
   return !(triggerWords.findIndex(tw => m.toLowerCase().includes(tw)) < 0);
 };
 
-const sendSourString = (channel, message) => {
-  const chance = new Chance(message.id);
+const rareAct = (channel, message) => {
   const sourString = [
     {
       name: 'insult',
@@ -172,101 +268,41 @@ const sendSourString = (channel, message) => {
   chance.weighted(tsks, ws)();
 };
 
-const sendMarkovString = async (channel, message) => {
+const act = async (channel, message) => {
   const contentSize = guildBrains[channel.guildId].corpus.chain.size;
   console.log('[Generating String]', contentSize);
 
   const config = settings.settings.chatter;
-  const { id, content } = message;
   const { guildId } = channel;
-  const { retries = 10, disableImage = false, mentions = true, weights = [100, 25, 25, 1] } = config;
-  const chance = new Chance(id);
+  const {disableImage = false, mentions = true, weights = [100, 25, 25, 1] } = config;
 
-  const timeoutPromise = new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        refs: ['None'],
-        text: 'I made a mess of my nest.',
-        string: channel.guild.emojis.cache.random()?.toString(),
-      });
-    }, 90000);
-  });
 
-  const sentenceGenerationTypes =  [
-    {
-      name: 'Guild Corpus',
-      weight: weights[0],
-      task: async () => {
-        const input = content?.split ? chance.pickone(content?.split(' ')) : undefined;
-        console.log('[Guild used]', input);
-        const options = {
-          input,
-          retries, // Give up if I don't have a sentence after N tries (default is 10)
-          // prng: Math.random, // An external Pseudo Random Number Generator if you want to get seeded results
-          filter: Brain.generateFilter(content, channel)
-        };
-        
-        return await Promise.race([
-          guildBrains[guildId].createSentence(options),
-          guildBrains[guildId].createSentence({...options, input: undefined}),
-          timeoutPromise]);
-      }
-    },
-    {
-      name: 'Wiki Corpus',
-      weight: weights[1],
-      task: async () => {
-        const input = content?.split ? chance.pickone(content?.split(' ')) : undefined;
-        console.log('[Wikipedia Used]', input);
-        const options = {
-          input,
-          ...wikiRead.defaultWikiGenerateOptions,
-        };
+  const taskWeights = [];
+  const tasks = [];
 
-        input ? await wikiRead.addSearchedWiki(input).catch(console.error) : wikiRead.addRandomWiki().catch(console.error);
-        return await wikiRead.generateWikiSentence(options).catch(console.error);
-      }
-    },
-    {
-      name: 'Guild Emoji',
-      weight: weights[2],
-      task: async () => {
-        console.debug('<GUILD EMOJI>');
-        return { string: channel.guild.emojis.cache.random().toString() };
-      }
-    },
-    {
-      name: 'Guild Sticker',
-      weight: weights[2],
-      task: async () => {
-        console.debug('<GUILD STICKER>');
-        return { string:'', refs: [{ sticker: [channel.guild.stickers.cache.random()] }]};
-      }
-    },
-    {
-      name: 'Core',
-      weight: weights[3],
-      task: async () => {
-        console.debug('<CORE>');
-        return { string: chance.pickone(coreThoughts.raw) };
-      }
+  Builtin.ACTIONS.forEach((actionable, index) => {
+    if(weights[index] !== undefined){
+      actionable.weight = weights[index];
     }
-  ];
-  const ws = [];
-  const tsks = [];
-  sentenceGenerationTypes.forEach((v) => {
-    ws.push(v.weight);
-    tsks.push(v);
+    taskWeights.push(actionable.weight);
+    tasks.push(actionable);
   });
-  const picked = chance.weighted(tsks, ws);
+  
+  const picked = chance.weighted(tasks, taskWeights);
   audit.source = picked.name;
-  const { string = guildBrains[guildId].getRandomWord(), refs = [] } = await picked.task().catch((error) => {
+  const actionResult = await picked.act(message).catch((error) => {
     console.error(error);
     return {
       string: guildBrains[guildId].getRandomWord(),
       refs: []
     };
   });
+  
+  if(!actionResult) {
+    return;
+  }
+
+  const { string = guildBrains[guildId].getRandomWord(), refs = [] } = actionResult;
   let files = [];
   const { stickers, attachments } = refs.reduce((accumulator, current) => {
     if (!disableImage) {
@@ -283,7 +319,7 @@ const sendMarkovString = async (channel, message) => {
     string,
     {
       embeds: files,
-      stickers: stickers.length > 0 ? [chance.pickone(stickers)] : [],
+      stickers: chance.bool({likelihood: (stickers.length / 10)}) ? [chance.pickone(stickers)] : [],
       allowedMentions: {
         parse: mentions ? [AllowedMentionsTypes.Everyone, AllowedMentionsTypes.Role, AllowedMentionsTypes.User] : []
       }
@@ -295,7 +331,6 @@ const sendChatter = (channel, content, options) => {
   const a = audit;
   const payload = MessagePayload.create(channel,{content, ...options});
   channel.send(payload).then((sentMessage) => {
-    const chance = new Chance(sentMessage.id);
     options = {
       ...options,
       allowedMentions: !settings.settings.chatter.mentions ? [] : [AllowedMentionsTypes.Everyone, AllowedMentionsTypes.Role, AllowedMentionsTypes.User],
