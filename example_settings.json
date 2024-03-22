@@ -1,20 +1,23 @@
 {
-  "insult": {
-     "mentions": false
-  },
   "chatter": {
-    "randomChat": 0.98,
+    "randomChat": 0.8943,
     "triggerWords": [
-      "goose",
-      "gooz"
+      ".w"
     ],
-    "weights": [1000, 750, 450, 1],
+    "weightsbackup": [1000, 250, 50, 1],
+    "weightsBruce": [1000, 500, 50, 1],
+    "weightsWikiOnly": [0, 1, 0, 0],
+    "weightsChatOnly": [1, 0, 0, 0],
+    "weightsEmojiOnly": [0, 0, 1, 0],
+    "weights": [1000, 500, 50, 1],
+    "wobble": 1,
     "hisotryCoverage": 100,
+    "historySizeCap": 100000,
     "frequency": 13,
     "useHonk": false,
-    "minimumScore": 2,
+    "minimumScore": 3,
     "channelInfluence": 0.5,
-    "retries": 30,
+    "retries": 300,
     "mentions": false,
     "disableImage": false,
     "disabledChannels": [
@@ -24,7 +27,7 @@
   "kick": {
     "requiredVotes": 5,
     "enabled": false,
-    "voteTime": 60
+    "voteTime": 45
   },
   "curse": {
     "requiredVotes": 5,
