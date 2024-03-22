@@ -142,7 +142,7 @@ class Brain {
     });
   }
   async scrapeChannelHistory(channel, retries = 0) {
-    const { hisotryCoverage = 100 } = settings.settings.chatter;
+    const { hisotryCoverage = 100, historySizeCap = 100000} = settings.settings.chatter;
     const fullHistory = [];
     if(retries >= 3) {
       return fullHistory;
@@ -163,7 +163,7 @@ class Brain {
           recentFetch = split[0].last();
         }
       }
-    } while(fetched && fetched.size === 100 && this.#corpus.chain.size <= 10000);
+    } while(fetched && fetched.size === 100 && this.#corpus.chain.size <= historySizeCap);
     console.log('[Channel End]', channel.name, fullHistory.length, this.#corpus.chain.size, Object.values(this.#data).length, Object.keys(this.#singleWords).length, (process.memoryUsage().heapTotal / 1024));
     return fullHistory;
   }
