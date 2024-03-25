@@ -326,7 +326,7 @@ const act = async (channel, message) => {
     string,
     {
       embeds: files,
-      stickers: chance.bool() ? [chance.pickone(stickers)] : [],
+      stickers: chance.bool() && stickers.size > 0 ? [chance.pickone(stickers)] : [],
       allowedMentions: {
         parse: mentions ? [AllowedMentionsTypes.Everyone, AllowedMentionsTypes.Role, AllowedMentionsTypes.User] : []
       }
