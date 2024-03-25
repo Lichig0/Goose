@@ -108,10 +108,16 @@ module.exports.run = async (message, client) => {
 
       critRoll ? rareAct(honkChannel, message) : act(honkChannel, message).catch(e=>console.error('Failed sending Markov', e));
     }
-  } else if(!ignoredChannels.includes(channel.name)) {
-    const chanCache = message.channel.messages.cache.last(10).reverse().slice(0,10);
-    const microTrend = chanCache.reduce((accumulate, currentVal) => {
-      if((currentVal.content === message.content|| currentVal.stickers.firstKey() === message.stickers.firstKey()) 
+  } else if(client.user.id !== message.author.id && !ignoredChannels.includes(channel.name)) {
+    const lastTenMessages = message.channel.messages.cache.last(10).map(message=> {
+      return {
+        content: message.sticker.size > 0 ? message.stickers.firstKey() : message.content,
+        author: message.author
+      };
+    }).reverse().slice(0,10);
+    const microTrend = lastTenMessages.reduce((accumulate, currentVal) => {
+      if((currentVal.content === message.content
+        || currentVal.content === message.stickers.firstKey()) 
         && currentVal.author.id !== message.author.id) {
         return accumulate += 1;
       } else if (accumulate == 3) {
@@ -122,6 +128,7 @@ module.exports.run = async (message, client) => {
     }, 0);
   
     if(microTrend > 2 && microTrend >= (4 + util.wobble(wobble))) {
+      console.debug('<MICRO TREND>');
       await channel.send(message).catch(console.warn);
     }
   }
