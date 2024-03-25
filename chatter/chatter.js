@@ -111,7 +111,7 @@ module.exports.run = async (message, client) => {
   } else if(client.user.id !== message.author.id && !ignoredChannels.includes(channel.name)) {
     const lastTenMessages = message.channel.messages.cache.last(10).map(message=> {
       return {
-        content: message.sticker.size > 0 ? message.stickers.firstKey() : message.content,
+        content: message.stickers.size > 0 ? message.stickers.firstKey() : message.content,
         author: message.author
       };
     }).reverse().slice(0,10);
