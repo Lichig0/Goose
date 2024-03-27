@@ -1,4 +1,4 @@
-const { ChannelType, AllowedMentionsTypes, MessagePayload } = require('discord.js');
+const { ChannelType, AllowedMentionsTypes, MessagePayload, AttachmentBuilder } = require('discord.js');
 const settings = require('../settings');
 const util = require('./util');
 const coreThoughts = require('./coreThoughts');
@@ -158,7 +158,7 @@ const guildCorpusAction = new Action('Guild Corpus', 100, ({
   const timeoutPromise = new Promise((resolve) => {
     setTimeout(() => {
       resolve({
-        refs: ['None'],
+        refs: [],
         text: 'I made a mess of my nest.',
         string: channel.guild.emojis.cache.random()?.toString(),
       });
@@ -193,24 +193,22 @@ const wikiCorpusAction = new Action('Wiki Corpus', 25, async ({
   input ? await wikiRead.addSearchedWiki(input).catch(console.error) : wikiRead.addRandomWiki().catch(console.error);
   return await wikiRead.generateWikiSentence(options).catch(console.error);
 });
-const guildEmojiAction = new Action('Guild Emoji', 25, ({ channel }) => {
+const guildEmojiAction = new Action('Guild Emoji', 25, async ({ channel }) => {
   const { emojis } = channel.guild;
   if(!emojis.chache) {
-    emojis.fetch().then(fetchedEmojis => {
-      return { string: fetchedEmojis.random().toString() };
-    }).catch(console.error);
+    const fetchedEmojis = await emojis.fetch().catch(console.error);
+    return { string: fetchedEmojis.random().toString() };
   } else {
     return { string: channel.guild.emojis.chache.random().toString() };
   }
 });
-const guildStickerAction = new Action('Guild Sticker', 25, ({ channel }) => {
+const guildStickerAction = new Action('Guild Sticker', 25, async ({ channel }) => {
   const { stickers } = channel.guild;
   if(!stickers.cache) {
-    stickers.fetch().then(fetchedStickers => {
-      return { string: fetchedStickers.random().toString() };
-    }).catch(console.error);
+    const fetchedStickers = await stickers.fetch().catch(console.error);
+    return { string:'', refs: [{sticker: [fetchedStickers.random()]}]};
   } else {
-    return { string:'', refs: [{sticker: [channel.guild.stickers.chache.random()]}]};
+    return { string:'', refs: [{sticker: [channel.guild.stickers.cache.random()]}]};
   }
 });
 const coreAction = new Action('Core', 1, () => {
@@ -281,7 +279,7 @@ const act = async (channel, message) => {
 
   const config = settings.settings.chatter;
   const { guildId } = channel;
-  const {disableImage = false, mentions = true, weights = [100, 25, 25, 1] } = config;
+  const {disableImage = false, mentions = true, weights = [100, 25, 25, 25, 10, 25, 1] } = config;
 
 
   const taskWeights = [];
@@ -313,20 +311,20 @@ const act = async (channel, message) => {
   let files = [];
   const { stickers, attachments } = refs.reduce((accumulator, current) => {
     if (!disableImage) {
-      accumulator.attachments = current.attachments ? accumulator.attachments.concat(current.attachments) : accumulator.attachments;
+      accumulator.attachments = current.attachments ? accumulator.attachments.concat([...current.attachments.values()]) : accumulator.attachments;
     }
     accumulator.stickers = current.sticker ?  accumulator.stickers.concat(current.sticker) : accumulator.stickers;
     return accumulator;
 
   }, {attachments: [], stickers: []});
   audit.refs = refs.flatMap(r => r.string);
-  files = attachments.size > 0 ? [attachments.random()] : [];
+  files = attachments.length > 0 ? [new AttachmentBuilder(chance.pickone(attachments).attachment)] : [];
 
   return sendChatter(channel,
     string,
     {
-      embeds: files,
-      stickers: chance.bool() && stickers.size > 0 ? [chance.pickone(stickers)] : [],
+      files,
+      stickers: chance.bool() && stickers.length > 0 ? [chance.pickone(stickers)] : [],
       allowedMentions: {
         parse: mentions ? [AllowedMentionsTypes.Everyone, AllowedMentionsTypes.Role, AllowedMentionsTypes.User] : []
       }
