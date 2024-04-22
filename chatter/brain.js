@@ -45,7 +45,7 @@ class Brain {
 
   static normalizeSentence (sentence = '') {
     if (sentence.match(Brain.urlRegex)) return sentence;
-    let resolvedUserNameContent = sentence.replace(Brain.brokenUserIDRegex, '<@$2>');
+    const resolvedUserNameContent = sentence.replace(Brain.brokenUserIDRegex, '<@$2>');
     return resolvedUserNameContent;
     // const capitalized = `${resolvedUserNameContent.replace(resolvedUserNameContent[0], resolvedUserNameContent[0].toUpperCase())}`;
     // return (capitalized.endsWith('.') || capitalized.endsWith('?') || capitalized.endsWith('!')) ? capitalized : `${capitalized}.`;
@@ -83,7 +83,7 @@ class Brain {
   #processMessages = async(channelMessages = []) => {
     channelMessages.forEach((nonEmptyMessage, index, array) => {
       if(nonEmptyMessage.author.bot) return;
-      const pMemUsed = (process.memoryUsage.rss() / 1024 / 1024) / 3840;
+      const pMemUsed = process.memoryUsage.rss() / 1024 / 1024 / 3840;
       if( pMemUsed < 0.99 ) {
         this.#processedMessages.add(this.addMessage(nonEmptyMessage, array.entries().next().value[1].content));
       } else {
@@ -164,13 +164,13 @@ class Brain {
         }
       }
     } while(fetched && fetched.size === 100 && this.#corpus.chain.size <= historySizeCap);
-    console.log('[Channel End]', channel.name, fullHistory.length, this.#corpus.chain.size, Object.values(this.#data).length, Object.keys(this.#singleWords).length, (process.memoryUsage().heapTotal / 1024));
+    console.log('[Channel End]', channel.name, fullHistory.length, this.#corpus.chain.size, Object.values(this.#data).length, Object.keys(this.#singleWords).length, process.memoryUsage().heapTotal / 1024);
     return fullHistory;
   }
   addMessage(message, nextMessage = '', splitter = this.splitRegex) {
     try {
       const { id, guild, channel, attachments, stickers, author } = message;
-      const optedOutIds = this.#guild.client.optedOutUsers.map(({userId}) => userId);
+      const optedOutIds = [this.#client.application.id, ...this.#guild.client.optedOutUsers.map(({userId}) => userId)];
       const content = optedOutIds.includes(author?.id) ? this.#chance.sentence() : message.content;
       let resolvedUserNameContent = content.replace(Brain.brokenUserIDRegex, '<@$2>');
 
@@ -208,7 +208,7 @@ class Brain {
         } else if (cache.attachments.size > 0 && this.#data[`${id}.${0}`] === undefined && channel.messages.cache.last(2)[1]) {
 
           const substituteString = channel.messages.cache.last(2)[1].content;
-          let tCache = this.#data[`${id}.${i}`] = {
+          const tCache = this.#data[`${id}.${i}`] = {
             ...cache,
             trimmedString: substituteString
           };
