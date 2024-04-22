@@ -58,21 +58,21 @@ module.exports.addGuildBrain = async (guild) => {
 };
 
 module.exports.run = async (message, client) => {
-  if(!message) throw('Message is required: ', message);
+  if(!message) throw new Error('Message is required: ', message);
   const { author, channel, content, guild, mentions } = message;
   const optedOutIds = client.optedOutUsers.map(({userId}) => userId);
   audit = {};
   if(optedOutIds.includes(author.id)) return;
   const config = settings.settings.chatter;
   const { ignoredChannels = [], frequency = 60, useHonk, randomChat, wobble = 2 } = config;
-  const noiseFrequency = (frequency * 60000);
+  const noiseFrequency = frequency * 60000;
   const isMentioned = mentions.has(client.user.id);
-  const honkChannel = (isMentioned && useHonk) ? theHonk : channel;
+  const honkChannel = isMentioned && useHonk ? theHonk : channel;
   const isHonk = channel.name === 'honk';
   const theHonk = guild.channels.cache.find(ch => ch.name.includes('honk')) || channel;
   const thursdayMultiplier = new Date().getDay() === 4 ? 1.5 : 1;
   const chatFrequency = randomChat * thursdayMultiplier;
-  const roll = chance.bool({ likelihood: (chatFrequency)}); console.log('[Chatter]', roll, `${(messagesSince/(chatFrequency*100)).toFixed(3)}`, guild.name, channel.name, author.tag);
+  const roll = chance.bool({ likelihood: chatFrequency}); console.log('[Chatter]', roll, `${(messagesSince/(chatFrequency*100)).toFixed(3)}`, guild.name, channel.name, author.tag);
   audit.likelihood = messagesSince/(chatFrequency*100);
 
   // TODO: move this into it's own file; loaded in as something that happens every message.
@@ -127,7 +127,7 @@ module.exports.run = async (message, client) => {
       }
     }, 0);
   
-    if(microTrend > 2 && microTrend >= (4 + util.wobble(wobble))) {
+    if(microTrend > 2 && microTrend >= 4 + util.wobble(wobble)) {
       console.debug('<MICRO TREND>');
       await channel.send(message).catch(console.warn);
     }
@@ -311,14 +311,14 @@ const act = async (channel, message) => {
   let files = [];
   const { stickers, attachments } = refs.reduce((accumulator, current) => {
     if (!disableImage) {
-      accumulator.attachments = current.attachments ? accumulator.attachments.concat([...current.attachments.values()]) : accumulator.attachments;
+      accumulator.attachments = current.attachments && chance.bool() ? accumulator.attachments.concat([...current.attachments.values()]) : accumulator.attachments;
     }
-    accumulator.stickers = current.sticker ?  accumulator.stickers.concat(current.sticker) : accumulator.stickers;
+    accumulator.stickers = current.sticker ? accumulator.stickers.concat(current.sticker) : accumulator.stickers;
     return accumulator;
 
   }, {attachments: [], stickers: []});
   audit.refs = refs.flatMap(r => r.string);
-  files = attachments.length > 0 ? [new AttachmentBuilder(chance.pickone(attachments).attachment)] : [];
+  files = chance.bool() && attachments.length > 0 ? [new AttachmentBuilder(chance.pickone(attachments).attachment)] : [];
 
   return sendChatter(channel,
     string,
