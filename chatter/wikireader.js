@@ -1,7 +1,7 @@
 const Chance = require('chance');
 // const Markov = require('markov-strings').default;
 const Markov = require('word-chains');
-const wiki =  require('wikipedia');
+const wiki = require('wikipedia');
 const chatterUtil = require('./util');
 
 // eslint-disable-next-line no-control-regex
@@ -10,7 +10,7 @@ const PUNCTUATION = new RegExp('[^.!?]*[.!?]', 'g');
 
 const chance = new Chance();
 const minimumScore = 2; // TODO: grab from config
-const markov = new Markov.MarkovChain(1);
+const markov = new Markov.MarkovChain(2);
 const wikiGenOptions = {
   retries: 750,
   filter: (r) => {
@@ -26,7 +26,7 @@ const getWikiDaily = async (times = 1) => {
       const pageSummary = chance.pickone(Object.values(events)[0].pages);
       const page = await wiki.page(pageSummary.title);
       const content = await page.content();
-      return(content);
+      return content;
     } catch (error) {
       console.log(error);
       break;

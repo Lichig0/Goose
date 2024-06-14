@@ -22,7 +22,7 @@ class Brain {
   constructor(guild) {
     this.#guild = guild;
     this.#client = guild.client;
-    this.#corpus = new Markov.MarkovChain(1);
+    this.#corpus = new Markov.MarkovChain(2);
     this.#data = [];
     this.#processedMessages = new Set();
     this.splitRegex = new RegExp(/[\n.?!;()"]/);

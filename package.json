@@ -17,7 +17,7 @@
     "sqlite3": "^5.0.2",
     "utf-8-validate": "^5.0.5",
     "wikipedia": "^1.1.9",
-    "word-chains": "github:Lichig0/word-chains#multi-thread",
+    "word-chains": "github:Lichig0/word-chains#tokenize-for-larger-states",
     "zalgo-js": "^1.0.0",
     "zlib-sync": "^0.1.7"
   },
