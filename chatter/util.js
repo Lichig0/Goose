@@ -21,14 +21,14 @@ module.exports.wordScore = (markovString, content = '') => {
 };
 
 module.exports.nsfwCheck = (accumulator, value) => {
-  return (accumulator || value.nsfw);
+  return accumulator ?? value.nsfw;
 };
 
 module.exports.hasPairs = (str) => {
   const needsPairs = ['"', '||' , '`'];
   // eslint-disable-next-line no-unused-vars
   const reg = new RegExp(/"[^"]*|'[^']*'|`[^`]*`|\([^)]*\)|\|\|[^||]*\|\|/gm);
-  let  isPaired = true;
+  let isPaired = true;
 
   needsPairs.forEach(char => {
     const splits = str.split(char).length;
@@ -40,9 +40,9 @@ module.exports.hasPairs = (str) => {
 };
 
 module.exports.normalizeSentence = (sentence = '') => {
-  let resolvedUserNameContent = sentence.replace(brokenUserIDRegex, '<@$2>');
+  const resolvedUserNameContent = sentence.replace(brokenUserIDRegex, '<@$2>');
   const capitalized = `${resolvedUserNameContent.replace(resolvedUserNameContent[0], resolvedUserNameContent[0].toUpperCase())}`;
-  return (capitalized.endsWith('.') || capitalized.endsWith('?') || capitalized.endsWith('!')) ? capitalized : `${capitalized}.`;
+  return capitalized.endsWith('.') || capitalized.endsWith('?') || capitalized.endsWith('!') ? capitalized : `${capitalized}.`;
 };
 
 module.exports.splitMessage = (message = '', trimSize = 1000, callback = (substring) => substring.trim() ) => {
