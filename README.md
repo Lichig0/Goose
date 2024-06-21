@@ -12,7 +12,7 @@
 Goose, Goose bot, Bruce, or Groose are all identities of this bot. This codebase has served bots with various identities which has left it with an identity crysis, but Goose is the OG.
 
 ### **Origin**
-Goose is originially written as a utility bot for Discord for my own administration, such as kicking, auto-sending invites, "cursing" to make people unable to speak, anncouncing departures from a server, alerting of someone deleting to gas light, etc.
+Goose is originially written as a utility bot for Discord for my own administration, such as kicking, auto-sending invites, "cursing" to make people unable to speak(before Discord added a Timeout feature), anncouncing departures from a server, alerting of someone deleting to gas light, etc.
 
 ### **Evolution**
 Goose has since evolved into a Markov chain chat bot, and functions mostly on RNG with some additions to add a little more personality and patterns of life. It has grown to have different behaviors as to what I feel like doing with it at any given time. Perhapse they can be enumerated sometime in the future.
