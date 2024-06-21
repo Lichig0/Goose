@@ -35,10 +35,10 @@ const searchGame = (searchString, callback) => {
       platforms, expected_release_day, expected_release_month,
       expected_release_year, expected_release_quarter } = game;
 
-    let plats = [];
+    const plats = [];
     platforms.forEach(platform => plats.push(platform.name));
 
-    let otherGames = [];
+    const otherGames = [];
     games.forEach( (g, i) => {
       if(i > 0 && i <= 10) {
         otherGames.push(g.name);
@@ -79,15 +79,15 @@ const getGame = (id, callback) => {
       expected_release_year, expected_release_month, expected_release_day, expected_release_quarter
     } = json.results;
 
-    let plats = [];
+    const plats = [];
     platforms ? platforms.forEach(platform => plats.push(platform.name)) : plats.push('No data.');
-    let similarGames = [];
+    const similarGames = [];
     similar_games ? similar_games.forEach(similar => similarGames.push(similar.name)) : similarGames.push('No data.');
-    let devs = [];
+    const devs = [];
     developers ? developers.forEach(dev => devs.push(dev.name)) : devs.push('No data.') ;
-    let frans = [];
+    const frans = [];
     franchises ? franchises.forEach(franchise => frans.push(franchise.name)) : frans.push('No data.');
-    let genre = [];
+    const genre = [];
     genres ? genres.forEach(g => genre.push(g.name)) : genre.push('No data.');
 
     embed.setTitle(name).setDescription(deck).setURL(site_detail_url);
@@ -147,24 +147,6 @@ module.exports.getCommandData = () => {
           },
         ]
       },
-      {
-        name: SUB_COMMAND.ID,
-        type: ApplicationCommandOptionType.Subcommand,
-        description: 'Get Game via GiantBomb Game ID',
-        options: [
-          {
-            name: OPTIONS.ID,
-            type: ApplicationCommandOptionType.String,
-            description: 'GiantBomb Game ID to get. (Default: Random)',
-            required: false,
-          }
-        ]
-      },
-      {
-        name: SUB_COMMAND.RANDOM,
-        type: ApplicationCommandOptionType.Subcommand,
-        description: 'Get a random Game'
-      }
     ]
   };
 };
