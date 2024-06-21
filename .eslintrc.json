@@ -26,6 +26,19 @@
         "semi": [
             "error",
             "always"
-        ]
+        ],
+        "no-delete-var": "error",
+        "no-unused-vars": "error",
+        "no-var": "error",
+        "no-self-assign": "error",
+        "no-dupe-args":"error",
+        "no-dupe-class-members":"error",
+        "no-dupe-keys":"error",
+        "no-duplicate-imports":"error",
+        "no-extra-parens":"error",
+        "no-extra-semi":"error",
+        "prefer-const":"error",
+        "no-floating-decimal":"error",
+        "no-multi-spaces":"error"
     }
 }
