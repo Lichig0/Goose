@@ -3,7 +3,6 @@ const settings = require('../settings');
 const util = require('./util');
 const coreThoughts = require('./coreThoughts');
 const insult = require('../commands/insult');
-const game = require('../commands/game');
 const Chance = require('chance');
 const wikiRead = require('./wikireader');
 const { Brain } = require('./brain');
@@ -77,23 +76,9 @@ module.exports.run = async (message, client) => {
 
   // TODO: move this into it's own file; loaded in as something that happens every message.
   if(Math.abs(1 - audit.likelihood) < 0.015) {
-    const playGame = chance.bool({likelihoood: 0.4});
-    if (playGame) {
-      game.getGame(undefined, (game) => {
-        client.user.setActivity(`🎮 ${game.name}`);
-      });
-    } else {
-      client.user.setActivity('👀', { type: 'WATCHING' });
-    }
+    util.playGame(client);
   }
   roll ? messagesSince = 0 : messagesSince++;
-
-  if(deadChatIntervals[guild]) clearInterval(deadChatIntervals[guild]);
-  deadChatIntervals[guild] = setInterval((message, client) => {
-    exports.run(message, client).catch(console.error);
-  }, noiseFrequency, message, client);
-
-  guildBrains[guild.id].addMessage(message);
 
   if ((isHonk || isMentioned || roll || hasTriggerWord(content)) && !author.bot && !ignoredChannels.includes(channel.name)) {
     const member = await guild.members.fetch(author).catch(console.warn);
@@ -129,29 +114,34 @@ module.exports.run = async (message, client) => {
   
     if(microTrend > 2 && microTrend >= 4 + util.wobble(wobble)) {
       console.debug('<MICRO TREND>');
-      await channel.send(message).catch(console.warn);
+      micoTrendAct(channel, message);
     }
+  } else {
+    if(deadChatIntervals[guild]) clearInterval(deadChatIntervals[guild]);
+    deadChatIntervals[guild] = setInterval((message, client) => {
+      exports.run(message, client).catch(console.error);
+    }, noiseFrequency, message, client);
   }
 
+  guildBrains[guild.id].addMessage(message);
 };
 
-const insultAction = new Action('Insult', 1, async () => {
+const insultAction = new Action('Insult', async () => {
   const thenable = {
     then(resolve) {
       insult.getInsult(resolve);
     },
   };
   return await thenable();
-});
-const coreThoughtAction = new Action('Core Thought', 2, () => {
+}, 1);
+const coreThoughtAction = new Action('Core Thought', () => {
   const ct = coreThoughts.raw || [];
   return chance.pickone(ct);
-});
-const reactAction = new Action('React', 100, (message) => {
+}, 2);
+const reactAction = new Action('React', (message) => {
   message.react(message.guild.emojis.cache.random().id).catch(console.error);
-});
-
-const guildCorpusAction = new Action('Guild Corpus', 100, ({
+}, 100);
+const guildCorpusAction = new Action('Guild Corpus', ({
   content,
   channel
 }) => {
@@ -165,7 +155,7 @@ const guildCorpusAction = new Action('Guild Corpus', 100, ({
     }, 90000);
   });
 
-  const input = content?.split ? chance.pickone(content.split(' ')) : undefined; 
+  const input = content ? content : undefined; 
   const { retries } = settings.settings.chatter;
   const options = {
     input,
@@ -179,8 +169,8 @@ const guildCorpusAction = new Action('Guild Corpus', 100, ({
     guildBrains[channel.guildId].createSentence({...options, input: undefined}),
     timeoutPromise,
   ]);
-});
-const wikiCorpusAction = new Action('Wiki Corpus', 25, async ({
+}, 100);
+const wikiCorpusAction = new Action('Wiki Corpus', async ({
   content,
 }) => {
 
@@ -192,8 +182,8 @@ const wikiCorpusAction = new Action('Wiki Corpus', 25, async ({
 
   input ? await wikiRead.addSearchedWiki(input).catch(console.error) : wikiRead.addRandomWiki().catch(console.error);
   return await wikiRead.generateWikiSentence(options).catch(console.error);
-});
-const guildEmojiAction = new Action('Guild Emoji', 25, async ({ channel }) => {
+}, 25);
+const guildEmojiAction = new Action('Guild Emoji', async ({ channel }) => {
   const { emojis } = channel.guild;
   if(!emojis.chache) {
     const fetchedEmojis = await emojis.fetch().catch(console.error);
@@ -201,8 +191,8 @@ const guildEmojiAction = new Action('Guild Emoji', 25, async ({ channel }) => {
   } else {
     return { string: channel.guild.emojis.chache.random().toString() };
   }
-});
-const guildStickerAction = new Action('Guild Sticker', 25, async ({ channel }) => {
+}, 25);
+const guildStickerAction = new Action('Guild Sticker', async ({ channel }) => {
   const { stickers } = channel.guild;
   if(!stickers.cache) {
     const fetchedStickers = await stickers.fetch().catch(console.error);
@@ -210,11 +200,10 @@ const guildStickerAction = new Action('Guild Sticker', 25, async ({ channel }) =
   } else {
     return { string:'', refs: [{sticker: [channel.guild.stickers.cache.random()]}]};
   }
-});
-const coreAction = new Action('Core', 1, () => {
+}, 25);
+const coreAction = new Action('Core', () => {
   return { string: chance.pickone(coreThoughts.raw) };
-});
-
+}, 1);
 
 const Builtin = {
   ACTIONS: [
@@ -307,7 +296,7 @@ const act = async (channel, message) => {
     return;
   }
 
-  const { string = guildBrains[guildId].getRandomWord(), refs = [] } = actionResult;
+  const { string = guildBrains[guildId].getRandomWord(), refs = ['<action did not return references>'] } = actionResult;
   let files = [];
   const { stickers, attachments } = refs.reduce((accumulator, current) => {
     if (!disableImage) {
@@ -317,7 +306,15 @@ const act = async (channel, message) => {
     return accumulator;
 
   }, {attachments: [], stickers: []});
-  audit.refs = refs.flatMap(r => r.string);
+
+  audit.refs = refs.flatMap(({guild, channel, id, string}) => {
+    if(guild && channel && id) {
+      return `https://discord.com/channels/${guild}/${channel}/${id}`;
+    } else {
+      return `${string}`;
+    }
+  });
+  
   files = chance.bool() && attachments.length > 0 ? [new AttachmentBuilder(chance.pickone(attachments).attachment)] : [];
 
   return sendChatter(channel,
@@ -330,6 +327,10 @@ const act = async (channel, message) => {
       }
     });
 
+};
+
+const micoTrendAct = (channel, message) => {
+  return sendChatter(channel, message);
 };
 
 const sendChatter = (channel, content, options) => {

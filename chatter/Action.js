@@ -5,7 +5,7 @@ class Action {
     reject('Task is not implemented.');
   });
   
-  constructor(name, weight, task) {
+  constructor(name, task, weight = 0) {
     this.#name = name;
     this.weight = weight;
     this.task = task;
