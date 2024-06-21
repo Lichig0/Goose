@@ -1,6 +1,6 @@
 const path = require('path');
-const { SlashCommandBuilder } = require('@discordjs/builders');
-const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle } = require('discord.js');
+const { ContextMenuCommandBuilder } = require('@discordjs/builders');
+const { EmbedBuilder, ButtonBuilder, ActionRowBuilder, ButtonStyle, ApplicationCommandType } = require('discord.js');
 const math = require('mathjs');
 const COMMAND_NAME = path.basename(__filename, '.js');
 
@@ -15,8 +15,10 @@ const DISCORD_INVITE = new ButtonBuilder({
 const ACTION_ROW = new ActionRowBuilder().addComponents(DISCORD_INVITE);
 
 module.exports.getCommandData = () => {
-  const slashCommand = new SlashCommandBuilder().setName(COMMAND_NAME).setDescription('Return Stats on this bot instance.');
-  return slashCommand.toJSON();
+  const contextCommand = new ContextMenuCommandBuilder()
+    .setName(COMMAND_NAME)
+    .setType(ApplicationCommandType.User);
+  return contextCommand.toJSON();
 };
 
 module.exports.execute = async (client, interaction) => {
