@@ -41,9 +41,8 @@ module.exports.init = async (client) => {
   });
 
   Promise.all(learningTasks).then(done => {
-    console.log('[Finished creating models.]', done.length);
-    console.log('[Finished scraping.]', done.map(guildData => guildData.length));
-    Object.values(guildBrains).map(gb=>gb.clearGuildCache());
+    console.log('[Finished creating models]', `${done.length} Guilds`);
+    console.log('[Finished scraping.]', done.map(guildData => `${guildData.length} channels`));
     client.user.setStatus('online');
     client.user.setActivity('👀', { type: 'WATCHING' });
   }).catch(console.warn);
@@ -72,6 +71,7 @@ module.exports.run = async (message, client) => {
   const thursdayMultiplier = new Date().getDay() === 4 ? 1.5 : 1;
   const chatFrequency = randomChat * thursdayMultiplier;
   const roll = chance.bool({ likelihood: chatFrequency}); console.log('[Chatter]', roll, `${(messagesSince/(chatFrequency*100)).toFixed(3)}`, guild.name, channel.name, author.tag);
+  audit.messagesSince = messagesSince;
   audit.likelihood = messagesSince/(chatFrequency*100);
 
   // TODO: move this into it's own file; loaded in as something that happens every message.
@@ -149,7 +149,7 @@ const reactAction = new Action('React', (message) => {
   message.react(message.guild.emojis.cache.random().id).catch(console.error);
 }, 100);
 const guildCorpusAction = new Action('Guild Corpus', ({
-  content,
+  content = 'The goose is loose!',
   channel
 }) => {
   const timeoutPromise = new Promise((resolve) => {
@@ -161,8 +161,8 @@ const guildCorpusAction = new Action('Guild Corpus', ({
       });
     }, 90000);
   });
-
-  const input = content ? content : undefined; 
+  const contextMessages = channel.messages.cache.last(5);
+  const input = contextMessages ? contextMessages.join('\n') : content; 
   const { retries } = settings.settings.chatter;
   const options = {
     input,
