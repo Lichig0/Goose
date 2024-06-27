@@ -62,8 +62,20 @@ class Brain {
   }
 
   clearGuildCache() {
-    console.log('[Brain] Clearing data cache');
+    const size = Object.values(this.#data).length;
+    const stats = [
+      this.#guild.name,
+      size,
+      process.memoryUsage().heapTotal / 1024,
+    ];
+    
     this.#data = [];
+    
+    stats.push(process.memoryUsage().heapTotal / 1024, Object.values(this.#data).length);
+    
+    console.log('[Brain] Clearing data cache', stats);
+
+    return size;
   }
 
   // TODO: Break this out into a JEST test
@@ -112,7 +124,7 @@ class Brain {
       return this.corpus.generateSentence({...options, input});
     }) : [this.corpus.generateSentence(options)];
 
-    const result = await Promise.race(generators);
+    const result = await Promise.any(generators);
     return new Promise((resolve, reject) => {
       try {
         const chatter = result.text.replace(Brain.brokenUserIDRegex, '<@$2>');
@@ -145,8 +157,16 @@ class Brain {
         readRetry++;
         this.scrapeChannelHistory(chan, readRetry);
       }));
-      const guildHistory = Promise.all(tasks);
-      readRetry <= 3 ? resolve(guildHistory) : reject('Failed to read history');
+      const guildHistory = Promise.allSettled(tasks);
+      if(readRetry <= 3) {
+        guildHistory.then(scrapedChannels => {
+          const stats = scrapedChannels.map(channelData=>channelData.value.length);
+          this.clearGuildCache();
+          resolve(stats);
+        });
+      } else {
+        reject('Failed to read history');
+      }
     });
   }
   async scrapeChannelHistory(channel, retries = 0) {
@@ -172,7 +192,15 @@ class Brain {
         }
       }
     } while(fetched && fetched.size === 100 && this.#corpus.chain.size <= historySizeCap);
-    console.log('[Channel End]', channel.name, fullHistory.length, this.#corpus.chain.size, Object.values(this.#data).length, Object.keys(this.#singleWords).length, process.memoryUsage().heapTotal / 1024);
+    const stats = {
+      NAME: channel.name,
+      CORPUS_SIZE: this.#corpus.chain.size,
+      HISOTRY_SIZE: fullHistory.length,
+      GUILD_SIZE: Object.values(this.#data).length,
+      SINGLE_TOKENS_SIZE: Object.keys(this.#singleWords).length,
+      HEAP_USAGE: process.memoryUsage().heapTotal / 1024
+    };
+    console.log('[Channel End]', JSON.stringify(stats, null ,' '));
     return fullHistory;
   }
   addMessage(message, nextMessage = '', splitter = this.splitRegex) {
