@@ -85,13 +85,20 @@ module.exports.run = async (message, client) => {
     const hasRole = member.roles.cache.find(r => r.name == 'Bot Abuser');
     if (!hasRole) {
       await channel.sendTyping();
+      if (isMentioned) {
+        message.content = content.replace(client.user.toString(), '').trim();
+      }
       audit.sentOn = content;
+      let action = act;
       // Roll for critical
       const critRoll = chance.bool({likelihood: 2 * thursdayMultiplier});
 
-      if (critRoll) console.log('Critical roll!');
+      if (critRoll) {
+        console.log('Critical roll!');
+        action = rareAct;
+      }
 
-      critRoll ? rareAct(honkChannel, message) : act(honkChannel, message).catch(e=>console.error('Failed sending Markov', e));
+      action(honkChannel, message).catch(e=>console.error('Failed sending Markov', e));
     }
   } else if(client.user.id !== message.author.id && !ignoredChannels.includes(channel.name)) {
     const lastTenMessages = message.channel.messages.cache.last(10).map(message=> {
@@ -166,7 +173,6 @@ const guildCorpusAction = new Action('Guild Corpus', ({
 
   return Promise.race([
     guildBrains[channel.guildId].createSentence(options),
-    guildBrains[channel.guildId].createSentence({...options, input: undefined}),
     timeoutPromise,
   ]);
 }, 100);
@@ -174,13 +180,12 @@ const wikiCorpusAction = new Action('Wiki Corpus', async ({
   content,
 }) => {
 
-  const input = content?.split ? chance.pickone(content?.split(' ')) : undefined;
   const options = {
-    input,
+    input: content,
     ...wikiRead.defaultWikiGenerateOptions,
   };
 
-  input ? await wikiRead.addSearchedWiki(input).catch(console.error) : wikiRead.addRandomWiki().catch(console.error);
+  content ? await wikiRead.addSearchedWiki(content).catch(console.error) : wikiRead.addRandomWiki().catch(console.error);
   return await wikiRead.generateWikiSentence(options).catch(console.error);
 }, 25);
 const guildEmojiAction = new Action('Guild Emoji', async ({ channel }) => {
@@ -307,13 +312,15 @@ const act = async (channel, message) => {
 
   }, {attachments: [], stickers: []});
 
-  audit.refs = refs.flatMap(({guild, channel, id, string}) => {
+  audit.refs = [...new Set(refs.flatMap(({guild, channel, id, string, source}) => {
     if(guild && channel && id) {
-      return `https://discord.com/channels/${guild}/${channel}/${id}`;
+      return ` https://discord.com/channels/${guild}/${channel}/${id} `;
+    } else if(source) {
+      return ` ${source} `;
     } else {
-      return `${string}`;
+      return ` ${string} `;
     }
-  });
+  }))];
   
   files = chance.bool() && attachments.length > 0 ? [new AttachmentBuilder(chance.pickone(attachments).attachment)] : [];
 
