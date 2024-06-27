@@ -14,6 +14,8 @@ const DISCORD_INVITE = new ButtonBuilder({
 
 const ACTION_ROW = new ActionRowBuilder().addComponents(DISCORD_INVITE);
 
+const formatMemoryUsage = (data) => `${Math.round(data / 1024 / 1024 * 100) / 100} MB`;
+
 module.exports.getCommandData = () => {
   const contextCommand = new ContextMenuCommandBuilder()
     .setName(COMMAND_NAME)
@@ -39,7 +41,7 @@ module.exports.execute = async (client, interaction) => {
     `,
       inline: true
     },
-    {name: 'Heap', value: `${process.memoryUsage().heapUsed} / ${process.memoryUsage().heapTotal}`, inline: true },
+    {name: 'Heap', value: `${formatMemoryUsage(process.memoryUsage().heapUsed)} / ${formatMemoryUsage(process.memoryUsage().heapTotal)}`, inline: true },
     {name: 'Process', value: JSON.stringify(usage, null, 2), inline: true},
   ]);
   await interaction.reply({

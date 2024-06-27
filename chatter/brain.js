@@ -15,7 +15,7 @@ class Brain {
   #chance = new Chance();
 
   static urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
-
+  
   // Some servers had old instances of this bot that has created a lot of broken user mentions.
   static userIDRegex = new RegExp(/^\s?(<@){1}([0-9]{18})>/i);
   static brokenUserIDRegex = new RegExp(/^\s?(<@){0}([0-9]{18})>/i);
@@ -60,18 +60,22 @@ class Brain {
     return beforeMessage.channel?.id === channel.id ? channel.messages.fetch({ limit: 100, before: beforeMessage.id, cache: false, force: true}) : channel.messages.fetch({ limit:100, cache: false, force: true});
     // return beforeMessage.channel?.id === channel.id ? this.#testFetch(channel, { limit: 100, before: beforeMessage.id }) : this.#testFetch(channel, { limit:100 });
   }
+  memoryUsage = () => {
+    const formatMemoryUsage = (data) => `${Math.round(data / 1024 / 1024 * 100) / 100} MB`;
+    return `${formatMemoryUsage(process.memoryUsage().heapUsed)}/${formatMemoryUsage(process.memoryUsage().heapTotal)}`;
+  }
 
   clearGuildCache() {
     const size = Object.values(this.#data).length;
     const stats = [
       this.#guild.name,
       size,
-      process.memoryUsage().heapTotal / 1024,
+      this.memoryUsage(),
     ];
     
     this.#data = [];
     
-    stats.push(process.memoryUsage().heapTotal / 1024, Object.values(this.#data).length);
+    stats.push(this.memoryUsage(), Object.values(this.#data).length);
     
     console.log('[Brain] Clearing data cache', stats);
 
@@ -198,7 +202,7 @@ class Brain {
       HISOTRY_SIZE: fullHistory.length,
       GUILD_SIZE: Object.values(this.#data).length,
       SINGLE_TOKENS_SIZE: Object.keys(this.#singleWords).length,
-      HEAP_USAGE: process.memoryUsage().heapTotal / 1024
+      HEAP: this.memoryUsage(),
     };
     console.log('[Channel End]', JSON.stringify(stats, null ,' '));
     return fullHistory;
