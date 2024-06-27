@@ -130,7 +130,7 @@ module.exports.generateWikiSentence = async (options = wikiGenOptions) => {
     return markov.generateSentence({...options, input});
   }) : [markov.generateSentence(options)];
 
-  const result = await Promise.race(generators);
+  const result = await Promise.any(generators);
   return new Promise((resolve, reject) => {
     try {
       result.string = result.text;
