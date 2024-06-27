@@ -1,8 +1,7 @@
 // const { coreThoughts } = require('./coreThoughts');
 const Chance = require('chance');
 const settings = require('../settings');
-// const Markov = require('markov-strings').default;
-const Markov = require('word-chains');
+const Markov = require('word-chains/Markov');
 const chatterUtil = require('./util');
 
 class Brain {
@@ -16,6 +15,8 @@ class Brain {
   #chance = new Chance();
 
   static urlRegex = new RegExp(/[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&//=]*)?/gi);
+
+  // Some servers had old instances of this bot that has created a lot of broken user mentions.
   static userIDRegex = new RegExp(/^\s?(<@){1}([0-9]{18})>/i);
   static brokenUserIDRegex = new RegExp(/^\s?(<@){0}([0-9]{18})>/i);
 
@@ -65,6 +66,7 @@ class Brain {
     this.#data = [];
   }
 
+  // TODO: Break this out into a JEST test
   #testFetch = async (channel, {before = -1}) => {
     return new Promise((resolve, reject) => {
       const fakeMessages = [];
@@ -80,7 +82,7 @@ class Brain {
     });
   }
 
-  #processMessages = async(channelMessages = []) => {
+  #processMessages = async (channelMessages = []) => {
     channelMessages.forEach((nonEmptyMessage, index, array) => {
       if(nonEmptyMessage.author.bot) return;
       const pMemUsed = process.memoryUsage.rss() / 1024 / 1024 / 3840;
@@ -104,7 +106,13 @@ class Brain {
   }
 
   async createSentence(options = {}) {
-    const result = await this.corpus.generateSentence(options);
+
+    const inputOptions = this.corpus.findInputs(options.input);
+    const generators = inputOptions ? inputOptions.map(input => {
+      return this.corpus.generateSentence({...options, input});
+    }) : [this.corpus.generateSentence(options)];
+
+    const result = await Promise.race(generators);
     return new Promise((resolve, reject) => {
       try {
         const chatter = result.text.replace(Brain.brokenUserIDRegex, '<@$2>');
@@ -182,7 +190,11 @@ class Brain {
         }
       }
       const wordCount = resolvedUserNameContent.split(' ').length;
-      if(wordCount > 0 && wordCount <= 1) this.#addSingleWord(resolvedUserNameContent);
+
+      if(wordCount > 0 && wordCount <= 1) {
+        this.#addSingleWord(resolvedUserNameContent);
+      }
+      
       const subMessage = resolvedUserNameContent.match(Brain.urlRegex) ? [resolvedUserNameContent] : resolvedUserNameContent.split(splitter);
       const cache = { 
         string: resolvedUserNameContent, 
