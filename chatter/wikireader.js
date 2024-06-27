@@ -1,21 +1,28 @@
 const Chance = require('chance');
-// const Markov = require('markov-strings').default;
-const Markov = require('word-chains');
+const Markov = require('word-chains/Markov');
 const wiki = require('wikipedia');
-const chatterUtil = require('./util');
+const grawlix = require('grawlix');
 
-// eslint-disable-next-line no-control-regex
-const TRIMMER = new RegExp('==.*==|\n|^$', 'g');
-const PUNCTUATION = new RegExp('[^.!?]*[.!?]', 'g');
+const TRIMMER = new RegExp('==.*==|\\n|^$', 'g');
+const SENTENCE = /(?<sentence>([^.!?]|\d\.\d*)*([.?!](\s+|$)))/gm;
 
+// const minimumScore = 2; // TODO: grab from config
 const chance = new Chance();
-const minimumScore = 2; // TODO: grab from config
-const markov = new Markov.MarkovChain(2);
+const markov = new Markov.MarkovChain(3);
+grawlix.setDefaults({
+  style: {
+    name: 'blank',
+    char: ''
+  }
+});
+grawlix.loadPlugin('grawlix-racism', {
+  style: 'blank'
+});
 const wikiGenOptions = {
-  retries: 750,
+  retries: 50,
   filter: (r) => {
-    const goodLength = chatterUtil.wordScore(r.string);
-    return goodLength >= minimumScore;
+    const length = markov.tokenizer.tokenize(r.string).length;
+    return 3 < length && length <= 50;
   }
 };
 
@@ -26,12 +33,17 @@ const getWikiDaily = async (times = 1) => {
       const pageSummary = chance.pickone(Object.values(events)[0].pages);
       const page = await wiki.page(pageSummary.title);
       const content = await page.content();
-      return content;
+      return Promise.resolve({
+        value: content,
+        source: page.canonicalurl,
+        toString: () => content,
+      });
     } catch (error) {
       console.log(error);
       break;
     }
   }
+  return Promise.reject('Failed to fetch daily');
 };
 
 const getRandomWiki = async (times = 1) => {
@@ -39,73 +51,86 @@ const getRandomWiki = async (times = 1) => {
     try {
       const pageSummary = await wiki.random();
       const page = await wiki.page(pageSummary.title);
-      return page.content();
+      const content = await page.content();
+      return Promise.resolve({
+        value: content,
+        source: page.canonicalurl,
+        toString: () => content,
+      });
     } catch (error) {
       console.error(error);
       break;
     }
   }
+  return Promise.reject('Failed to fetch random');
 };
 
 const searchWiki = async (searchText) => {
   return new Promise((resolve, reject) => {
-    try {
-      const contentRequests = [];
-      const pageRequests = [];
-      wiki.search(searchText).then(response => {
-        //Slice to limit requests.
-        response.results.slice(0,-6).forEach(result => { 
-          pageRequests.push(wiki.page(result.title));
-        });
-
-        Promise.allSettled(pageRequests).then(pages => {
-          pages.forEach(page => {
-            if(page.value) {
-              contentRequests.push(page.value.content());
-            }
-          });
-
-          Promise.allSettled(contentRequests).then(contentArray => {
-            resolve(contentArray.map(ca => ca.value).filter(c=> c !== undefined));
-          });
-        });
+    const contentRequests = [];
+    const pageRequests = [];
+    wiki.search(grawlix(searchText)).then(response => {
+      //Slice to limit requests.
+      response.results.slice(0,-6).forEach(result => { 
+        pageRequests.push(wiki.page(result.title));
       });
-    } catch (error){
-      reject(error);
-    }
+
+      Promise.allSettled(pageRequests).then(pages => {
+        pages.forEach(page => {
+          if(page.value) {
+            contentRequests.push(page.value.content());
+          }
+        });
+
+        Promise.allSettled(contentRequests).then(contentArray => {
+          const searchResults = contentArray.map((content, index) => {
+            return {
+              value: content.value,
+              source: pages[index]?.value?.canonicalurl,
+              toString: () => `${content.value}`,
+            };
+          });
+          resolve(searchResults.filter(c=> c.value !== undefined));
+        });
+      }).catch(reject);
+    }).catch(reject);
   });
   
 };
 
 const trimContentToStringArray = function (wikiContent) {
   const trimmed = wikiContent.split(TRIMMER).filter(blocks => blocks !== '');
-  const sentences = trimmed.flatMap(block => block.match(PUNCTUATION)).filter(s => s !== null);
+  const sentences = trimmed.flatMap(block => block.match(SENTENCE)).filter(s => s !== null);
   return sentences;
 };
 
 module.exports.addDailyWiki = async () => {
   const wikiContent = await getWikiDaily();
-  const sentences = trimContentToStringArray(wikiContent);
-  markov.addString(sentences);
+  const sentences = trimContentToStringArray(`${wikiContent.value}`);
+  markov.addString(sentences, {source: wikiContent.source, nsfw: false});
 };
 
 module.exports.addRandomWiki = async () => {
   const wikiContent = await getRandomWiki();
-  const sentences = trimContentToStringArray(wikiContent);
-  markov.addString(sentences);
+  const sentences = trimContentToStringArray(`${wikiContent.value}`);
+  markov.addString(sentences, {source: wikiContent.source, nsfw: false});
 };
 
 module.exports.addSearchedWiki = async (input) => {
-  const contentArray = await searchWiki(input).catch(console.error);
-  const sentences = [];
-  contentArray.forEach(content => {
-    sentences.push(...trimContentToStringArray(content));
+  const contentArray = await searchWiki(input).catch(console.error) ?? [];
+  const sentenceArray = contentArray.map(({value})=>trimContentToStringArray(value));
+  sentenceArray.forEach((sentences, i) => {
+    markov.addString(sentences, {source: contentArray[i].source, nsfw: true});
   });
-  markov.addString(sentences.filter(s=>typeof s === 'string'), {source: 'Wiki', nsfw: true});
 };
 
 module.exports.generateWikiSentence = async (options = wikiGenOptions) => {
-  const result = await markov.generateSentence(options);
+  const inputOptions = markov.findInputs(options.input);
+  const generators = inputOptions ? inputOptions.map(input => {
+    return markov.generateSentence({...options, input});
+  }) : [markov.generateSentence(options)];
+
+  const result = await Promise.race(generators);
   return new Promise((resolve, reject) => {
     try {
       result.string = result.text;
