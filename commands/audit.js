@@ -19,9 +19,15 @@ exports.getMessageCommandData = () => {
 exports.execute = async (client, interaction) => {
   const auditJSON = chatter.audit(interaction.targetId);
   const embed = new EmbedBuilder();
-  embed.setTitle('Chatter');
-  embed.setFields([{name: 'Audit:', value: `${JSON.stringify(auditJSON, null, 2)}`}]);
-  return interaction.reply({embeds: [embed], ephemeral: true}).catch(console.warn);
+  embed.setTitle('Chatter Audit:');
+  const fields = Object.entries(auditJSON).map(([name, value]) => {
+    return { 
+      name,
+      value: `${value}`.slice(0,1023),
+    };
+  });
+  embed.setFields(fields);
+  return interaction.reply({embeds: [embed], ephemeral: false}).catch(console.warn);
 };
 
 exports.dev = false;
