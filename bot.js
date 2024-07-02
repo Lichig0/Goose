@@ -49,6 +49,16 @@ client.commands = new Collection();
 
 
 client.once('ready', () => {
+
+  // Setup uncaught exception callback
+  process.setUncaughtExceptionCaptureCallback((err) => {
+    client.users.fetch(`${client.owner}`).then(user => {
+      user.createDM().then(dmChannel => {
+        dmChannel.send(`${client.user.tag} encountered ${err}`);
+      }).catch(console.error);
+    }).catch(console.error);
+  });
+
   const commandDataList = [];
   const devCommandDataList = [];
   client.commands.each((command) => {
@@ -60,7 +70,7 @@ client.once('ready', () => {
       }
     }
   }); 
-  client.application.commands.set(devCommandDataList, '637314469894160405').then(commands => console.log('[Dev Commands]',commands.map(c=>c.name))).catch(console.error);
+  // client.application.commands.set(devCommandDataList, '637314469894160405').then(commands => console.log('[Dev Commands]',commands.map(c=>c.name))).catch(console.error);
   client.application.commands.set(devCommandDataList, '879911779055058974').then(commands => console.log('[Dev Commands]',commands.map(c=>c.name))).catch(console.error);
   client.application.commands.set(commandDataList).then(commands => console.log(`[Commands] ${commands.map(c=>c.name)}`)).catch(console.error);
 });
