@@ -84,11 +84,11 @@ module.exports.run = async (message, client) => {
     const member = await guild.members.fetch(author).catch(console.warn);
     const hasRole = member.roles.cache.find(r => r.name == 'Bot Abuser');
     if (!hasRole) {
-      await channel.sendTyping();
+      channel.sendTyping().catch(console.warn);
       if (isMentioned) {
         message.content = content.replace(client.user.toString(), '').trim();
       }
-      audit.sentOn = content;
+      audit.sentOn = message.url;
       let action = act;
       // Roll for critical
       const critRoll = chance.bool({likelihood: 2 * thursdayMultiplier});
@@ -97,6 +97,8 @@ module.exports.run = async (message, client) => {
         console.log('Critical roll!');
         action = rareAct;
       }
+
+      await channel.messages.fetch({ limit: 5 }).catch(console.error);
 
       action(honkChannel, message).catch(e=>console.error('Failed sending Markov', e));
     }
@@ -167,11 +169,11 @@ const guildCorpusAction = new Action('Guild Corpus', ({
   const options = {
     input,
     retries,
-    filter: Brain.generateFilter(content, channel)
+    filter: Brain.generateFilter(input, channel)
   };
 
 
-  return Promise.race([
+  return Promise.any([
     guildBrains[channel.guildId].createSentence(options),
     timeoutPromise,
   ]);
@@ -270,6 +272,7 @@ const rareAct = (channel, message) => {
 const act = async (channel, message) => {
   const contentSize = guildBrains[channel.guildId].corpus.chain.size;
   console.log('[Generating String]', contentSize);
+  channel.sendTyping().catch(console.error);
 
   const config = settings.settings.chatter;
   const { guildId } = channel;
@@ -337,10 +340,11 @@ const act = async (channel, message) => {
 };
 
 const micoTrendAct = (channel, message) => {
-  return sendChatter(channel, message);
+  return sendChatter(channel, message.content);
 };
 
 const sendChatter = (channel, content, options) => {
+  channel.sendTyping().catch(console.error);
   const a = audit;
   const payload = MessagePayload.create(channel,{content, ...options});
   channel.send(payload).then((sentMessage) => {
