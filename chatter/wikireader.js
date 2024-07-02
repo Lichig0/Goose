@@ -69,7 +69,9 @@ const searchWiki = async (searchText) => {
   return new Promise((resolve, reject) => {
     const contentRequests = [];
     const pageRequests = [];
-    wiki.search(grawlix(searchText)).then(response => {
+    const cleanedSearchText = searchText.replace(/[^a-z0-9_-]/gi, ' ').toLowerCase().split(/\s/).slice(0,5).join(' ');
+    console.log(`[WIKI] Searching: ${cleanedSearchText}`);
+    wiki.search(grawlix(cleanedSearchText)).then(response => {
       //Slice to limit requests.
       response.results.slice(0,-6).forEach(result => { 
         pageRequests.push(wiki.page(result.title));
@@ -93,7 +95,9 @@ const searchWiki = async (searchText) => {
           resolve(searchResults.filter(c=> c.value !== undefined));
         });
       }).catch(reject);
-    }).catch(reject);
+    }).catch((error) => {
+      reject(`Failed to search "${searchText}": ${error}`);
+    });
   });
   
 };
