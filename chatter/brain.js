@@ -100,11 +100,10 @@ class Brain {
     channelMessages.forEach((nonEmptyMessage, index, array) => {
       if(nonEmptyMessage.author.bot) return;
       const pMemUsed = process.memoryUsage.rss() / getHeapStatistics().heap_size_limit;
-      console.log(`${pMemUsed}% Memory Used`);
       if( pMemUsed < 0.99 ) {
         this.#processedMessages.add(this.addMessage(nonEmptyMessage, array.entries().next().value[1].content));
       } else {
-        // console.warn('High memory usage!', pMemUsed, process.memoryUsage());
+        console.log(`!HIGH MEMORY USAGE! ${pMemUsed}% Memory Used`);
       }
     });
   }
