@@ -1,8 +1,8 @@
-// const { coreThoughts } = require('./coreThoughts');
 const Chance = require('chance');
 const settings = require('../settings');
 const Markov = require('word-chains/Markov');
 const chatterUtil = require('./util');
+const { getHeapStatistics } = require('v8');
 
 class Brain {
   #guild;
@@ -74,9 +74,7 @@ class Brain {
     ];
     
     this.#data = [];
-    
-    stats.push(this.memoryUsage(), Object.values(this.#data).length);
-    
+        
     console.log('[Brain] Clearing data cache', stats);
 
     return size;
@@ -101,7 +99,8 @@ class Brain {
   #processMessages = async (channelMessages = []) => {
     channelMessages.forEach((nonEmptyMessage, index, array) => {
       if(nonEmptyMessage.author.bot) return;
-      const pMemUsed = process.memoryUsage.rss() / 1024 / 1024 / 3840;
+      const pMemUsed = process.memoryUsage.rss() / getHeapStatistics().heap_size_limit;
+      console.log(`${pMemUsed}% Memory Used`);
       if( pMemUsed < 0.99 ) {
         this.#processedMessages.add(this.addMessage(nonEmptyMessage, array.entries().next().value[1].content));
       } else {
@@ -122,24 +121,36 @@ class Brain {
   }
 
   async createSentence(options = {}) {
+    const foundInputs = this.corpus.findInputs(options.input).reverse().slice(0,10);
+    const inputOptions = foundInputs 
+      ? foundInputs
+      : [options.input];
 
-    const inputOptions = this.corpus.findInputs(options.input);
-    const generators = inputOptions ? inputOptions.map(input => {
-      return this.corpus.generateSentence({...options, input});
-    }) : [this.corpus.generateSentence(options)];
-
-    const result = await Promise.any(generators);
-    return new Promise((resolve, reject) => {
-      try {
-        const chatter = result.text.replace(Brain.brokenUserIDRegex, '<@$2>');
-        result.string = chatter;
-        result.text = chatter;
-        result.refs = Object.values(result.refs);
-        resolve(result);
-      } catch (e) {
-        reject(`Bad Sentence ${e}`);
+    // Divide inputs and try parallelizing
+    const parallelInputs = [];
+    for(let i = 0; i < inputOptions.length; i+=2) {
+      parallelInputs.push([
+        inputOptions[i],
+        inputOptions[i+1]
+      ]);
+    } 
+    console.log(`[Guild Brain] ${inputOptions}`);
+    for(const inputArray of parallelInputs) {
+      const result = await Promise.race([
+        this.#corpus.generateSentence({...options, input: inputArray[0]}),
+        inputArray[1] ? this.#corpus.generateSentence({...options, input: inputArray[1]}) : Promise.reject('Empty second option')
+      ]).catch((e) => console.warn(inputArray[0], inputArray[1], 'could not complete.', e));
+      if(result) {
+        return new Promise((resolve) => {
+          const chatter = result.text.replace(Brain.brokenUserIDRegex, '<@$2>');
+          result.string = chatter;
+          result.text = chatter;
+          result.refs = Object.values(result.refs);
+          resolve(result);
+        });
       }
-    });
+    }
+    return Promise.reject(`Failed to create sentence on ${options.input}`);
   }
 
   getRandomWord() {
@@ -203,6 +214,7 @@ class Brain {
       GUILD_SIZE: Object.values(this.#data).length,
       SINGLE_TOKENS_SIZE: Object.keys(this.#singleWords).length,
       HEAP: this.memoryUsage(),
+      PERC_USED: `${Math.round(process.memoryUsage.rss() / getHeapStatistics().heap_size_limit)}%`,
     };
     console.log('[Channel End]', JSON.stringify(stats, null ,' '));
     return fullHistory;
