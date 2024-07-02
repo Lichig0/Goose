@@ -62,7 +62,7 @@ class Brain {
   }
   memoryUsage = () => {
     const formatMemoryUsage = (data) => `${Math.round(data / 1024 / 1024 * 100) / 100} MB`;
-    return `${formatMemoryUsage(process.memoryUsage().heapUsed)}/${formatMemoryUsage(process.memoryUsage().heapTotal)}`;
+    return `${formatMemoryUsage(process.memoryUsage().heapUsed)}/${formatMemoryUsage(getHeapStatistics().heap_size_limit)}`;
   }
 
   clearGuildCache() {
@@ -213,7 +213,7 @@ class Brain {
       GUILD_SIZE: Object.values(this.#data).length,
       SINGLE_TOKENS_SIZE: Object.keys(this.#singleWords).length,
       HEAP: this.memoryUsage(),
-      PERC_USED: `${Math.round(process.memoryUsage.rss() / getHeapStatistics().heap_size_limit)}%`,
+      PERC_USED: `${Math.round(process.memoryUsage().rss / getHeapStatistics().heap_size_limit)}%`,
     };
     console.log('[Channel End]', JSON.stringify(stats, null ,' '));
     return fullHistory;
