@@ -75,7 +75,7 @@ class Brain {
     
     this.#data = [];
         
-    console.log('[Brain] Clearing data cache', stats);
+    console.log('[Guild Brain]::Clearing data cache', stats);
 
     return size;
   }
@@ -97,13 +97,14 @@ class Brain {
   }
 
   #processMessages = async (channelMessages = []) => {
+    const { maxMemoryUse = 95 } = settings.settings;
     channelMessages.forEach((nonEmptyMessage, index, array) => {
       if(nonEmptyMessage.author.bot) return;
-      const pMemUsed = process.memoryUsage.rss() / getHeapStatistics().heap_size_limit;
-      if( pMemUsed < 0.99 ) {
+      const pMemUsed = process.memoryUsage().rss / getHeapStatistics().heap_size_limit;
+      if( pMemUsed < maxMemoryUse / 100 ) {
         this.#processedMessages.add(this.addMessage(nonEmptyMessage, array.entries().next().value[1].content));
       } else {
-        console.log(`!HIGH MEMORY USAGE! ${pMemUsed}% Memory Used`);
+        console.warn(`[Guild Brain]::!HIGH MEMORY USAGE! ${pMemUsed}% Memory Used; Not adding.`);
       }
     });
   }
@@ -133,12 +134,13 @@ class Brain {
         inputOptions[i+1]
       ]);
     } 
-    console.log(`[Guild Brain] ${inputOptions}`);
+    console.log('[Guild Brain]::Found states',`${inputOptions}`);
     for(const inputArray of parallelInputs) {
-      const result = await Promise.race([
+      console.log('[Guild Brain]::Checking state',`${inputArray} of ${parallelInputs}`);
+      const result = await Promise.any([
         this.#corpus.generateSentence({...options, input: inputArray[0]}),
         inputArray[1] ? this.#corpus.generateSentence({...options, input: inputArray[1]}) : Promise.reject('Empty second option')
-      ]).catch((e) => console.warn(inputArray[0], inputArray[1], 'could not complete.', e));
+      ]).catch((e) => console.warn('[Guild Brain]::No result', inputArray[0], inputArray[1], 'could not complete.', e));
       if(result) {
         return new Promise((resolve) => {
           const chatter = result.text.replace(Brain.brokenUserIDRegex, '<@$2>');
@@ -149,7 +151,7 @@ class Brain {
         });
       }
     }
-    return Promise.reject(`Failed to create sentence on ${options.input}`);
+    return Promise.reject('[Guild Brain]::Failed to create sentence ',`${options.input}`);
   }
 
   getRandomWord() {
@@ -164,7 +166,7 @@ class Brain {
       client.user.setStatus('dnd');
       client.user.setActivity('📖🔍🤔', { type: 'WATCHING' });
 
-      console.log(`[Scraping History]: ${guild.name} | Channels: ${textChannels.map(channel=>channel.name)}`);
+      console.log(`[Guild Brain]::[Scraping History]: ${guild.name} | Channels: ${textChannels.map(channel=>channel.name)}`);
 
       const tasks = textChannels.map(chan => this.scrapeChannelHistory(chan).catch((e) => {
         console.error(e);
@@ -193,19 +195,29 @@ class Brain {
     let recentFetch = {};
     let fetched = [];
     do {
+      const { maxMemoryUse = 95 } = settings.settings;
+      const pMemUsed = process.memoryUsage().rss / getHeapStatistics().heap_size_limit * 100;
+      if(pMemUsed >= maxMemoryUse) {
+        console.warn(`[Guild Brain]::!HIGH MEMORY USAGE! ${pMemUsed}% Memory Used. Not Fetching.`);
+        break;
+      }
+      
       fetched = await this.#fetchMessages(channel, recentFetch).catch(console.error);
-      const split = fetched.partition(() => this.#chance.bool({likelihood: hisotryCoverage})); // Reduce total size to save on memory for now
-      if(split[0] && split[0].size > 0) {
-        fullHistory.push(...split[0].values());
-        this.#processMessages(split[0]);
-        if(recentFetch.id === split[0].last().id) {
-          break;
-        }
-        else {
-          recentFetch = split[0].last();
+      if(fetched) {
+        const split = fetched.partition(() => this.#chance.bool({likelihood: hisotryCoverage})); // Reduce total size to save on memory for now
+        if(split[0] && split[0].size > 0) {
+          fullHistory.push(...split[0].values());
+          this.#processMessages(split[0]);
+          if(recentFetch.id === split[0].last().id) {
+            break;
+          }
+          else {
+            recentFetch = split[0].last();
+          }
         }
       }
     } while(fetched && fetched.size === 100 && this.#corpus.chain.size <= historySizeCap);
+
     const stats = {
       NAME: channel.name,
       CORPUS_SIZE: this.#corpus.chain.size,
@@ -215,7 +227,7 @@ class Brain {
       HEAP: this.memoryUsage(),
       PERC_USED: `${Math.round(process.memoryUsage().rss / getHeapStatistics().heap_size_limit * 100)}%`,
     };
-    console.log('[Channel End]', JSON.stringify(stats, null ,' '));
+    console.log('[Guild Brain]::[Channel End]', JSON.stringify(stats, null ,' '));
     return fullHistory;
   }
   addMessage(message, nextMessage = '', splitter = this.splitRegex) {
@@ -272,7 +284,7 @@ class Brain {
       });
       return cache;
     } catch (e) {
-      console.error('Error adding message', e);
+      console.error('[Guild Brain]::Error adding message', e);
     }
   }
 
