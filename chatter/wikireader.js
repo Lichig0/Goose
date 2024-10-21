@@ -8,7 +8,7 @@ const SENTENCE = /(?<sentence>([^.!?]|\d\.\d*)*([.?!](\s+|$)))/gm;
 
 // const minimumScore = 2; // TODO: grab from config
 const chance = new Chance();
-const markov = new Markov.MarkovChain(3);
+const markov = new Markov.MarkovChain(2);
 grawlix.setDefaults({
   style: {
     name: 'blank',

@@ -8,6 +8,7 @@ const wikiRead = require('./wikireader');
 const { Brain } = require('./brain');
 const zalgo = require('zalgo-js');
 const Action = require('./Action').default;
+const sampleChain = require('./sampleCorpus');
 
 const chance = new Chance();
 const guildBrains = {};
@@ -21,6 +22,7 @@ const deadChatIntervals = {};
 
 wikiRead.addDailyWiki();
 wikiRead.addRandomWiki();
+(async () => sampleChain.init())();
 
 module.exports.audit = (params) => {
   if (auditHistory[params] !== undefined) {
@@ -156,9 +158,9 @@ const guildCorpusAction = new Action('Guild Corpus', ({
 }) => {
   const timeoutPromise = new Promise((resolve) => {
     setTimeout(() => {
+      console.warn('[Chatter]::TIMEOUT', 'Picking random emoji...');
       resolve({
         refs: [],
-        text: 'I made a mess of my nest.',
         string: channel.guild.emojis.cache.random()?.toString(),
       });
     }, 90000);
@@ -168,7 +170,7 @@ const guildCorpusAction = new Action('Guild Corpus', ({
   const { retries } = settings.settings.chatter;
   const options = {
     input,
-    retries,
+    retries: Math.round(Math.min(retries, Math.max(2, guildBrains[channel.guildId].corpus.size / 10000))),
     filter: Brain.generateFilter(input, channel)
   };
 
@@ -176,7 +178,7 @@ const guildCorpusAction = new Action('Guild Corpus', ({
   return Promise.any([
     guildBrains[channel.guildId].createSentence(options),
     timeoutPromise,
-  ]);
+  ]).catch(rejection => console.warn('[Chatter]', rejection));
 }, 100);
 const wikiCorpusAction = new Action('Wiki Corpus', async ({
   content,
@@ -189,6 +191,17 @@ const wikiCorpusAction = new Action('Wiki Corpus', async ({
 
   content ? await wikiRead.addSearchedWiki(content).catch(console.error) : wikiRead.addRandomWiki().catch(console.error);
   return await wikiRead.generateWikiSentence(options).catch(console.error);
+}, 25);
+const sampleCorpusAction = new Action('Sample Corpus', async ({
+  content,
+}) => {
+
+  const options = {
+    input: content,
+    ...sampleChain.sampleGenOptions,
+  };
+
+  return await sampleChain.generateSentence(options).catch(console.error);
 }, 25);
 const guildEmojiAction = new Action('Guild Emoji', async ({ channel }) => {
   const { emojis } = channel.guild;
@@ -216,6 +229,7 @@ const Builtin = {
   ACTIONS: [
     guildCorpusAction,
     wikiCorpusAction,
+    sampleCorpusAction,
     guildEmojiAction,
     guildStickerAction,
     coreThoughtAction,
