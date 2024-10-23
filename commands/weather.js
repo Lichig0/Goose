@@ -1,10 +1,41 @@
 const path = require('path');
 const { EmbedBuilder, ApplicationCommandType, ApplicationCommandOptionType, ButtonStyle, ButtonBuilder, ActionRowBuilder, Colors } = require('discord.js');
 const weatherTable = require('../dbactions/weatherTable');
+const { fetchWeatherApi } = require('openmeteo');
 const https = require('https');
 const url = require('url');
 const math = require('mathjs');
 
+const WMO_CODES = { // ☁️⛅⛈️🌤️🌥️🌦️🌧️🌨️🌩️🌫️🌝🌞☔☃️ 
+  0: '🌞 Clear Sky',
+  1: '⛅ Mostlyy Clear',
+  2: '⛅ Partly Cloudy',
+  3: '☁️ Overcast',
+  45: '🌫️ Fog',
+  48: '🌫️ Fog',
+  51: '🌦️ Light Drizzle',
+  53: '🌦️ Moderate Drizzle',
+  55: '🌦️ Dense Drizzle',
+  56: '🌨️ Light Freezing Drizzle',
+  57: '🌨️ Freezing Drizzle',
+  61: '🌧️ Light Rain',
+  63: '🌧️ Rain',
+  65: '🌧️ Heavy Rain',
+  66: '🌨️ Light Freezing Rain',
+  67: '🌨️ Freezing Rain',
+  71: '🌨️ Light Snow',
+  73: '🌨️ Snow',
+  75: '🌨️ Heavy Snow',
+  77: '🌨️ Snow',
+  80: '🌧️ Light Rain Showers',
+  81: '🌧️ Rain Showers',
+  82: '🌧️ Heavy Rain Showers',
+  85: '🌨️ Snow Showers',
+  86: '🌨️ Heavy Snow Showers',
+  95: '⛈️ Thunderstoms',
+  96: '⛈️ Thunderstorms',
+  99: '⛈️ Strong Thunderstorms'
+};
 
 const COMMAND_NAME = path.basename(__filename, '.js');
 const OPTIONS = {
@@ -14,6 +45,7 @@ const OPTIONS = {
 const BUTTON_IDS = {
   CURRENT: 'weatherCurrent',
   TODAY: 'weatherToday',
+  HOURLY: 'weatherHourly',
   FORECAST: 'weatherForecast',
   ALERTS: 'weatherAlerts',
   LOCATION: 'weatherLocation',
@@ -22,115 +54,135 @@ const BUTTON_IDS = {
 const currentButton = new ButtonBuilder({
   label: 'Current',
   customId: BUTTON_IDS.CURRENT,
-  style: ButtonStyle.Secondary,
+  style: ButtonStyle.Primary,
   disabled: false,
 });
 const todayButton = new ButtonBuilder({
   label: 'Today',
   customId: BUTTON_IDS.TODAY,
-  style: ButtonStyle.Success,
+  style: ButtonStyle.Secondary,
   disabled: false,
 });
-const alertsButton = new ButtonBuilder({
-  label: 'Alerts',
-  customId: BUTTON_IDS.ALERTS,
-  style: ButtonStyle.Danger,
-  disabled: true,
+const hourlyButton = new ButtonBuilder({
+  label: 'Hourly',
+  customId: BUTTON_IDS.HOURLY,
+  style: ButtonStyle.Secondary,
+  disabled: false,
 });
 const forecastButton = new ButtonBuilder({
   label: 'Forecast',
   customId: BUTTON_IDS.FORECAST,
-  style: ButtonStyle.Primary,
+  style: ButtonStyle.Secondary,
   disabled: false,
 });
 
-const stringifyCurrent = (json) => {
-  const { temp, humidity, weather, rain, snow } = json;
-  const { description, /*main, icon*/ } = weather[0];
-  const kTemp = math.unit(temp, 'degF');
-  const cTemp = Math.round(kTemp.to('degC').toNumber());
-  const fTemp = Math.round(kTemp.to('degF').toNumber());
-  const snowAccu = math.unit(snow?.['1h'] ?? 0, 'mm/h');
-  const rainAccu = math.unit(rain?.['1h'] ?? 0, 'mm/h');
-  const snowIn = math.unit(math.round((snowAccu.to('in/h')).toNumber(), 1), 'in/h');
-  const rainIn = math.unit(math.round((rainAccu.to('in/h')).toNumber(), 1), 'in/h');
-
-  return `${description}
-  🌡${fTemp}°F(${cTemp}°C)
-  💧Humidity:${Math.round(humidity)}%
-  ${rain ? `🌧️Rain past 1h: ${rainIn}(${rainAccu})` : ''}
-  ${snow ? `🌨Snow past 1h: ${snowIn}(${snowAccu})` : ''}`;
+const degreesToCompass = (degrees) => {
+  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  const index = Math.round(degrees / 22.5) % 16;
+  return directions[index];
+};
+const degreesToArrow = (degrees) => {
+  const arrows = ['⬆️','↗️','➡️','↘️','⬇️','↙️','⬅️','↖️'];
+  const index = Math.round(degrees / 45) % 8;
+  return arrows[index];
 };
 
-const stringifyDay = (json) => {
+const roundToN = (number, decimalPlaces = 2) => {
+  const multiplier = Math.pow(10, decimalPlaces);
+  return Math.round((number + Number.EPSILON) * multiplier) / multiplier;
+};
 
-  /*
-    {
-      "dt": 1618308000, time of forcast UTC
-      "sunrise": 1618282134, UTC
-      "sunset": 1618333901, UTC
-      "moonrise": 1618284960, UTC
-      "moonset": 1618339740, UTC
-      "moon_phase": 0.04, 0-1, new moon, .25 first quarter, .5 full, etc.
-      "temp": { kelven
-        "day": 279.79,
-        "min": 275.09,
-        "max": 284.07,
-        "night": 275.09,
-        "eve": 279.21,
-        "morn": 278.49
-      },
-      "feels_like": { kelven | C | F
-        "day": 277.59,
-        "night": 276.27,
-        "eve": 276.49,
-        "morn": 276.27
-      },
-      "pressure": 1020, hPa
-      "humidity": 81, %
-      "dew_point": 276.77, kelvin
-      "wind_speed": 3.06, meter/sec | meter/sec | mile/secmat
-      "wind_deg": 294, meterological deg
-      "weather": [
-        {
-          "id": 500, code
-          "main": "Rain",
-          "description": "light rain",
-          "icon": "10d" icon
-        }
-      ],
-      "clouds": 56, %
-      "pop": 0.2, probability %
-      "rain": 0.62, mm (or snow in mm)
-      "uvi": 1.93 mx UV index
-    }
-*/
+const formatCurrent = (data) => {
+  const {
+    // time,
+    // timezone,
+    temperature2m, // C
+    relativeHumidity2m, // %
+    // isDay, // boolean
+    weatherCode, // text
+    windSpeed10m, // km/h
+    windDirection10m, // degrees
+    rain, // mm
+    snow, // cm
+  } = data;
 
-  const { temp, humidity, weather, pop, snow, rain, wind_speed } = json;
-  const { description, /*main, icon*/ } = weather[0];
-  const { min, max, /*day, night, min, max, eve, morn*/ } = temp;
-  const highK = math.unit(max, 'degF');
-  const lowK = math.unit(min, 'degF');
-  const highC = Math.round(highK.to('degC').toNumber());
-  const highF = Math.round(highK.to('degF').toNumber());
-  const lowC = Math.round(lowK.to('degC').toNumber());
-  const lowF = Math.round(lowK.to('degF').toNumber());
-  const windSpeedMph = `${Math.round(wind_speed)}mph`;
+  const cTemp = math.unit(roundToN(temperature2m, 0), 'degC');
+  const fTemp = cTemp.to('degF');
+  const humidity = Math.round(relativeHumidity2m);
+  const rainFall = math.unit(roundToN(rain), 'mm');
+  const snowFall = math.unit(roundToN(snow), 'cm');
+  const wind = math.unit(Math.round(windSpeed10m), 'km/h');
+  const windMph = wind.to('mi/h');
+  const windDirection = Math.round(windDirection10m);
 
-  const hiString = `🌡Hi:${highF}°F (${highC}°C)`;
-  const loString = `🌡Lo:${lowF}°F (${lowC}°C)`;
-  const windSpeed = `🌬${windSpeedMph}`;
-  const humidityString = `💧Humidity:${Math.round(humidity)}%`;
-  const chanceOfPre = `🌂Chance of precip: ${Math.round(pop*100)}%`;
-  const snowAccu = math.unit(snow ?? 0, 'mm');
-  const rainAccu = math.unit(rain ?? 0, 'mm');
-  const snowIn = math.unit(math.round((snowAccu.to('in')).toNumber(), 1), 'in');
-  const rainIn = math.unit(math.round((rainAccu.to('in')).toNumber(), 1), 'in');
+  
+  return `
+  __*${weatherCode}*__
+  🌡${roundToN(fTemp.toNumber(), 0)}°F(${roundToN(cTemp.toNumber())}°C)
+  💧Humidity:${humidity}%
+  🌬${roundToN(windMph.toNumber(), 0)} mph ${degreesToCompass(windDirection)}${degreesToArrow(windDirection)}`
+  + `${rainFall.toNumber() ? `\n🌧️${rainFall}` : ''}${snowFall.toNumber() ? `\n🌨${snowFall}` : ''}`
+  ;
+};
 
-  return `${description}
-  ${hiString}\n${loString}\n${windSpeed}\n${humidityString}\n${chanceOfPre}
-  ${rain ? `🌧️Rain: ${rainIn}(${rainAccu})` : ''}
-  ${snow ? `🌨Snow: ${snowIn}(${snowAccu})` : ''}`;
+const formatDay = (data) => {
+  const {
+    weatherCode,
+    temperature2mMax, // C
+    temperature2mMin, // C
+    precipitationProbabilityMax, // %
+    windSpeed10mMax, // km/h
+    rainSum, // mm
+    snowfallSum, // cm
+  } = data;
+
+  const cHighTemp = math.unit(roundToN(temperature2mMax), 'degC');
+  const fHighTemp = cHighTemp.to('degF');
+  const cLowTemp = math.unit(roundToN(temperature2mMin), 'degC');
+  const fLowTemp = cLowTemp.to('degF');
+  const chanceOfPrecip = Math.round(precipitationProbabilityMax);
+  const rainFall = math.unit(roundToN(rainSum), 'mm');
+  const snowFall = math.unit(roundToN(snowfallSum), 'cm');
+  const wind = math.unit(Math.round(windSpeed10mMax), 'km/h');
+  const windMph = wind.to('mi/h');
+
+  return `
+  __*${weatherCode}*__
+  🌡Hi:${roundToN(fHighTemp.toNumber(), 0)}°F (${roundToN(cHighTemp.toNumber(), 0)}°C)
+  🌡Lo:${roundToN(fLowTemp.toNumber(), 0)}°F (${roundToN(cLowTemp.toNumber(), 0)}°C)
+  🌬${roundToN(windMph.toNumber(), 0)} mph
+  🌂Chance of precip: ${chanceOfPrecip}%`
+  + `${rainFall.toNumber() ? `\n🌧️Rain: ${rainFall}` : ''}${snowFall.toNumber() ? `\n🌨Snow: ${snowFall}` : ''}`
+  ;
+};
+const formatHour = (data) => {
+  const {
+    temperature2m, // C
+    relativeHumidity2m, // %
+    precipitationProbability, // %
+    rain, // mm
+    snowfall, //cm
+    weatherCode, // WMO
+    windSpeed10m, // km/h
+  } = data;
+
+  const cTemp = math.unit(roundToN(temperature2m), 'degC');
+  const fTemp = cTemp.to('degF');
+  const humidity = Math.round(relativeHumidity2m);
+  const chanceOfPrecip = Math.round(precipitationProbability);
+  const rainFall = math.unit(roundToN(rain) , 'mm');
+  const snowFall = math.unit(roundToN(snowfall), 'cm');
+  const wind = math.unit(Math.round(windSpeed10m), 'km/h');
+  const windMph = wind.to('mi/h');
+
+  return `
+    __*${weatherCode}*__
+  🌡${roundToN(fTemp.toNumber(), 0)}°F(${roundToN(cTemp.toNumber(), 0)}°C)
+  💧Humidity:${humidity}%
+  🌬${roundToN(windMph.toNumber(), 0)} mph
+  🌂Chance of precip: ${chanceOfPrecip}%`
+  + `${rainFall.toNumber() ? `\n🌧️Rain: ${rainFall}` : ''}${snowFall.toNumber() ? `\n🌨Snow: ${snowFall}` : ''}`
+  ;
 };
 
 const getLocation = async (locationName) => {
@@ -176,43 +228,142 @@ const getLocation = async (locationName) => {
     });
   });
 };
-const getWeatherOneCall = function(lat, lon){
-  /*
-    https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&exclude={part}&appid={API key}
-  */
-  const requestUrl = url.parse(url.format({
-    protocol: 'https',
-    hostname: 'api.openweathermap.org',
-    pathname: '/data/2.5/onecall',
-    query: {
-      appid: process.env.OPEN_WEATHER_TOKEN,
-      lat,
-      lon,
-      exclude: 'hourly,minutely',
-      units: 'imperial'
-    }
-  }));
-  return new Promise((resolve, reject) => {
-    https.get({
-      hostname: requestUrl.hostname,
-      path: requestUrl.path,
-    }, (res) => {
-      let rawData = '';
-      res.on('data', (chunk) => { rawData += chunk; });
-      res.on('end', () => {
-        try {
-          const finishedResponse = JSON.parse(rawData);
-          resolve(finishedResponse);
-        } catch (e) {
-          reject(e);
-        }
-      });
-    }).on('error', (err) => {
-      console.log(err);
-      reject('http error', err);
-    });
-  });
 
+const getOpenMeteo = async (latitude, longitude) => {
+  const url = 'https://api.open-meteo.com/v1/forecast';
+  const params = {
+    latitude,
+    longitude,
+    forecast_days: 3,
+    timezone: 'auto',
+    daily: [
+      'weather_code', // See WMO_CODES
+      'temperature_2m_max', // C
+      'temperature_2m_min', // C
+      'precipitation_sum', // mm
+      'precipitation_probability_max', // %
+      'wind_speed_10m_max', // km/h
+      'rain_sum', // mm
+      'snowfall_sum', //cm
+    ],
+    hourly: [
+      'temperature_2m',
+      'relative_humidity_2m',
+      'precipitation_probability',
+      'rain',
+      'snowfall',
+      'weather_code',
+      'wind_speed_10m'
+    ],  
+    current: [
+      'temperature_2m', // C
+      'relative_humidity_2m', // %
+      'is_day', // bool
+      'precipitation', // mm
+      'weather_code', // See WMO_CODES
+      'wind_speed_10m', // km/h
+      'wind_direction_10m', // degrees
+      'rain', // mm
+      'snowfall', //cm
+    ]
+  };
+
+  const responses = await fetchWeatherApi(url, params);
+  const response = responses[0];
+
+  // Attributes for timezone and location
+  const utcOffsetSeconds = response.utcOffsetSeconds();
+  const timezone = response.timezone();
+  const current = response.current();
+  const hourly = response.hourly();
+  const daily = response.daily();
+  const time = new Date((Number(current.time()) + utcOffsetSeconds) * 1000);
+
+  // Helper function to form time ranges
+  const range = (start, stop, step) =>
+    Array.from({ length: (stop - start) / step }, (_, i) => start + i * step);
+
+  // Note: The order of weather variables in the URL query and the indices below need to match!
+  const weatherData = {
+    time,
+    localeTime: new Date(time.getTime() + time.getTimezoneOffset() * 60000),
+    timezone,
+    current: {
+      time,
+      timezone,
+      localeTime: new Date(time.getTime() + time.getTimezoneOffset() * 60000),
+      temperature2m: current.variables(0).value(),
+      relativeHumidity2m: current.variables(1).value(),
+      isDay: current.variables(2).value(),
+      precipitation: current.variables(3).value(),
+      weatherCode: WMO_CODES[current.variables(4).value()],
+      windSpeed10m: current.variables(5).value(),
+      windDirection10m: current.variables(6).value(),
+      rain: current.variables(7).value(),
+      snow: current.variables(8).value(),
+    },
+    hourly: {
+      time: range(Number(hourly.time()), Number(hourly.timeEnd()), hourly.interval()).map(
+        (t) => new Date((t + utcOffsetSeconds) * 1000)
+      ),
+      timezone,
+      temperature2m: hourly.variables(0).valuesArray(),
+      relativeHumidity2m: hourly.variables(1).valuesArray(),
+      precipitationProbability: hourly.variables(2).valuesArray(),
+      rain: hourly.variables(3).valuesArray(),
+      snowfall: hourly.variables(4).valuesArray(),
+      weatherCode: hourly.variables(5).valuesArray().reduce((newArray, code) => { 
+        return newArray = [...newArray, WMO_CODES[code]];
+      }, []),
+      windSpeed10m: hourly.variables(6).valuesArray(),
+    },
+    daily: {
+      time: range(Number(daily.time()), Number(daily.timeEnd()), daily.interval()).map(
+        (t) => new Date((t + utcOffsetSeconds) * 1000)
+      ),
+      timezone,
+      weatherCode: daily.variables(0).valuesArray().reduce((newArray, code) => { 
+        return newArray = [...newArray, WMO_CODES[code]];
+      }, []),
+      temperature2mMax: daily.variables(1).valuesArray(),
+      temperature2mMin: daily.variables(2).valuesArray(),
+      precipitationSum: daily.variables(3).valuesArray(),
+      precipitationProbabilityMax: daily.variables(4).valuesArray(),
+      windSpeed10mMax: daily.variables(5).valuesArray(),
+      rainSum: daily.variables(6).valuesArray(),
+      snowfallSum: daily.variables(7).valuesArray(),
+    },
+  };
+  weatherData.hours = weatherData.hourly.time.map((value, i) => {
+    return {
+      time: weatherData.hourly.time[i],
+      localeTime: new Date(weatherData.hourly.time[i].getTime() + weatherData.hourly.time[i].getTimezoneOffset() * 60000),
+      timezone: weatherData.hourly.timezone[i],
+      temperature2m: weatherData.hourly.temperature2m[i],
+      relativeHumidity2m: weatherData.hourly.relativeHumidity2m[i],
+      precipitationProbability: weatherData.hourly.precipitationProbability[i],
+      rain: weatherData.hourly.rain[i],
+      snowfall: weatherData.hourly.snowfall[i],
+      weatherCode: weatherData.hourly.weatherCode[i],
+      windSpeed10m: weatherData.hourly.windSpeed10m[i],
+    };
+  });
+  weatherData.days = weatherData.daily.time.map((value, i) => {
+    return {
+      time: weatherData.daily.time[i],
+      localeTime: new Date(weatherData.daily.time[i].getTime() + weatherData.daily.time[i].getTimezoneOffset() * 60000),
+      timezone,
+      weatherCode: weatherData.daily.weatherCode[i],
+      temperature2mMax: weatherData.daily.temperature2mMax[i],
+      temperature2mMin: weatherData.daily.temperature2mMin[i],
+      precipitationSum: weatherData.daily.precipitationSum[i],
+      precipitationProbabilityMax: weatherData.daily.precipitationProbabilityMax[i],
+      windSpeed10mMax: weatherData.daily.windSpeed10mMax[i],
+      rainSum: weatherData.daily.rainSum[i],
+      snowfallSum: weatherData.daily.snowfallSum[i],
+    };
+  });
+  return weatherData;
 };
 
 const saveLocation = async (memberId, locationName, lon, lat) => {
@@ -236,66 +387,65 @@ const reportWeather = async (interaction, codedLocation) => {
   const row = new ActionRowBuilder();
   const { id, member } = interaction;
   console.log(codedLocation);
-  getWeatherOneCall(codedLocation.lat, codedLocation.lon).then(data => {
+  getOpenMeteo(codedLocation.lat, codedLocation.lon).then(meteoData => {
     const { name } = codedLocation;
     const forecastEmbed = new EmbedBuilder();
-    // const alertEmbeds = [];
-    const alertEmbed = new EmbedBuilder();
     const currentEmbed = new EmbedBuilder();
     const todayEmbed = new EmbedBuilder();
-    const {current, daily, alerts} = data;
+    const hourlyEmbed = new EmbedBuilder();
 
     row.addComponents(currentButton.setCustomId(`${BUTTON_IDS.CURRENT}_${id}`))
       .addComponents(todayButton.setCustomId(`${BUTTON_IDS.TODAY}_${id}`))
-      .addComponents(forecastButton.setCustomId(`${BUTTON_IDS.FORECAST}_${id}`))
-      .addComponents(alertsButton.setCustomId(`${BUTTON_IDS.ALERTS}_${id}`).setDisabled(!alerts));
+      .addComponents(hourlyButton.setCustomId(`${BUTTON_IDS.HOURLY}_${id}`))
+      .addComponents(forecastButton.setCustomId(`${BUTTON_IDS.FORECAST}_${id}`));
     components.push(row);
 
     currentEmbed.setTitle('Current Conditions')
-      .setColor(Colors.Grey)
-      .setDescription(stringifyCurrent(current))
-      .setFooter({ text: `Location: ${name}`});
+      .setColor(Colors.Blurple)
+      .setDescription(`-# ${name} (${meteoData.timezone})`)
+      .addFields([
+        {name: meteoData.current.localeTime.toLocaleTimeString(), value: formatCurrent(meteoData.current), inline: true}
+      ])
+      .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
 
     todayEmbed.setTitle('Today')
-      .setColor(Colors.Green)
+      .setColor(Colors.Blue)
+      .setDescription(`-# ${name} (${meteoData.timezone})`)
       .addFields([
-        {name: 'Current', value: stringifyCurrent(current), inline: true},
-        {name: 'Today', value: stringifyDay(daily[0]), inline: true}
+        {name: meteoData.current.localeTime.toLocaleTimeString(), value: formatCurrent(meteoData.current), inline: true},
+        {name: meteoData.days[0].time.toDateString(), value: formatDay(meteoData.days[0]), inline: true}
       ])
-      .setFooter({ text: `Location: ${name}`});
+      .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
+
+    hourlyEmbed.setTitle('Hourly')
+      .setDescription(`-# ${name} (${meteoData.timezone})`)
+      .setColor(Colors.Green)
+      .addFields(meteoData.hours.map( hour => {
+        return {name: hour.localeTime.toLocaleTimeString(), value: formatHour(hour), inline: true };
+      }).slice(meteoData.localeTime.getHours()+1, meteoData.localeTime.getHours()+4))
+      .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
+
+      
 
     forecastEmbed.setTitle('Weather Forecast')
-      .setColor(Colors.Blurple)
-      .addFields([
-        { name: 'Today', value: stringifyDay(daily[0]), inline: true},
-        { name: 'Tomorrow', value: stringifyDay(daily[1]), inline: true},
-        { name: 'The Day After', value: stringifyDay(daily[2]), inline: true},
-      ])
-      .setFooter({ text: `Location: ${name}`});
+      .setDescription(`-# ${name} (${meteoData.timezone})`)
+      .setColor(Colors.Aqua)
+      .addFields(meteoData.days.map( day => {
+        return { name: day.localeTime.toDateString(), value: formatDay(day), inline: true };
+      }))
+      .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
 
-    if(alerts) {
-      forecastEmbed.addFields([{name: 'Alerts', value: `${alerts.map(alert=>`${alert.event}`)}`}]);
-      currentEmbed.addFields([{name: 'Alerts', value: `${alerts.map(alert=>`${alert.event}`)}`}]);
-      todayEmbed.addFields([{name: 'Alerts', value: `${alerts.map(alert=>`${alert.event}`)}`}]);
-      alertEmbed.setTitle('Alerts')
-        .setColor(Colors.Red)
-        .setFooter({ text: `Location: ${name}`});
-      alerts.map(alert => {
-        alertEmbed.addFields([{ name: alert.event, value: alert.description.substring(0, 1000), inline: true}]);
-      });
-    }
-
-    interaction.editReply({embeds: [currentEmbed], components}).catch(console.warn);
+    interaction.editReply({ embeds: [currentEmbed], components}).catch(console.warn);
 
     const filter = buttonInteract => Object.values(BUTTON_IDS).map(bid=>`${bid}_${id}`).includes(buttonInteract.customId) && buttonInteract.user.id === member.id;
     const collector = interaction.channel.createMessageComponentCollector({ filter, time: 90000 });
     collector.on('collect', async buttonInteract => {
-      if (buttonInteract.customId === `${BUTTON_IDS.ALERTS}_${id}`) {
-        await buttonInteract.update({ embeds: [alertEmbed] }).catch(console.error);
-      } else if (buttonInteract.customId === `${BUTTON_IDS.FORECAST}_${id}`) {
+      if (buttonInteract.customId === `${BUTTON_IDS.FORECAST}_${id}`) {
         await buttonInteract.update({ embeds: [forecastEmbed] }).catch(console.error);
       } else if (buttonInteract.customId === `${BUTTON_IDS.TODAY}_${id}`) {
         await buttonInteract.update({ embeds: [todayEmbed] }).catch(console.error);
+      } else if (buttonInteract.customId === `${BUTTON_IDS.HOURLY}_${id}`) {
+        await buttonInteract.update({ embeds: [hourlyEmbed] }).catch(console.error);
       } else if (buttonInteract.customId === `${BUTTON_IDS.CURRENT}_${id}`) {
         await buttonInteract.update({ embeds: [currentEmbed] }).catch(console.error);
       }
@@ -313,20 +463,14 @@ module.exports.getCommandData = () => {
     {
       name: OPTIONS.LOCATION,
       type: ApplicationCommandOptionType.String,
-      description: 'Location',
+      description: 'Location (Will remember last used location)',
       required: false
-    },
-    {
-      name: OPTIONS.REMEMBER,
-      type: ApplicationCommandOptionType.Boolean,
-      description: 'Remember this location for you?',
-      required: false,
     }
 
   ];
   return {
     name: COMMAND_NAME,
-    description: '(Beta) Sky is wet?',
+    description: 'Get a weather forcast. *Will show town names in chat!*',
     default_permission: true,
     type: ApplicationCommandType.ChatInput,
     options,
@@ -339,7 +483,7 @@ module.exports.execute = async (client, interaction) => {
 
   const savedLocation = await weatherTable.asyncGet(member.id).catch(console.error) ?? false;
   const location = interaction.options.get(OPTIONS.LOCATION)?.value ?? false;
-  const remember = interaction.options.get(OPTIONS.REMEMBER)?.value ?? false;
+  const remember = true;
 
   const codedLocations = location ? await getLocation(location).catch(console.error) ?? false : [savedLocation];
 
@@ -413,4 +557,4 @@ module.exports.execute = async (client, interaction) => {
   }
 };
 
-module.exports.dev = false;
+module.exports.dev = true;
