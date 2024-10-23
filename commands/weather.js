@@ -251,67 +251,39 @@ const getOpenMeteo = async (latitude, longitude) => {
       rain: current.variables(7).value(),
       snow: current.variables(8).value(),
     },
-    hourly: {
-      time: range(Number(hourly.time()), Number(hourly.timeEnd()), hourly.interval()).map(
-        (t) => new Date((t + utcOffsetSeconds) * 1000)
-      ),
-      timezone,
-      temperature2m: hourly.variables(0).valuesArray(),
-      relativeHumidity2m: hourly.variables(1).valuesArray(),
-      precipitationProbability: hourly.variables(2).valuesArray(),
-      rain: hourly.variables(3).valuesArray(),
-      snow: hourly.variables(4).valuesArray(),
-      weatherCode: hourly.variables(5).valuesArray().reduce((newArray, code) => { 
-        return newArray = [...newArray, WMO_CODES[code]];
-      }, []),
-      windSpeed10m: hourly.variables(6).valuesArray(),
-    },
-    daily: {
-      time: range(Number(daily.time()), Number(daily.timeEnd()), daily.interval()).map(
-        (t) => new Date((t + utcOffsetSeconds) * 1000)
-      ),
-      timezone,
-      weatherCode: daily.variables(0).valuesArray().reduce((newArray, code) => { 
-        return newArray = [...newArray, WMO_CODES[code]];
-      }, []),
-      temperature2mMax: daily.variables(1).valuesArray(),
-      temperature2mMin: daily.variables(2).valuesArray(),
-      precipitationSum: daily.variables(3).valuesArray(),
-      precipitationProbability: daily.variables(4).valuesArray(),
-      windSpeed10m: daily.variables(5).valuesArray(),
-      rain: daily.variables(6).valuesArray(),
-      snow: daily.variables(7).valuesArray(),
-    },
+    hourly: range(Number(hourly.time()), Number(hourly.timeEnd()), hourly.interval()).map((t, i) => {
+      const time = new Date((t + utcOffsetSeconds) * 1000);
+      return {
+        time,
+        localeTime: new Date(time.getTime() + time.getTimezoneOffset() * 60000),
+        timezone,
+        temperature2m: hourly.variables(0).valuesArray()[i],
+        relativeHumidity2m: hourly.variables(1).valuesArray()[i],
+        precipitationProbability: hourly.variables(2).valuesArray()[i],
+        rain: hourly.variables(3).valuesArray()[i],
+        snow: hourly.variables(4).valuesArray()[i],
+        weatherCode: WMO_CODES[Number(hourly.variables(5).valuesArray()[i])],
+        windSpeed10m: hourly.variables(6).valuesArray()[i],
+      };
+    }),
+    daily: range(Number(daily.time()), Number(daily.timeEnd()), daily.interval()).map((t, i) => {
+      const time = new Date((t + utcOffsetSeconds) * 1000);
+      return {
+        time,
+        localeTime: new Date(time.getTime() + time.getTimezoneOffset() * 60000),
+        timezone,
+        weatherCode: WMO_CODES[Number(daily.variables(0).valuesArray()[i])],
+        temperature2mMax: daily.variables(1).valuesArray()[i],
+        temperature2mMin: daily.variables(2).valuesArray()[i],
+        precipitationSum: daily.variables(3).valuesArray()[i],
+        precipitationProbability: daily.variables(4).valuesArray()[i],
+        windSpeed10m: daily.variables(5).valuesArray()[i],
+        rain: daily.variables(6).valuesArray()[i],
+        snow: daily.variables(7).valuesArray()[i],
+      };
+    }),
   };
-  weatherData.hours = weatherData.hourly.time.map((value, i) => {
-    return {
-      time: weatherData.hourly.time[i],
-      localeTime: new Date(weatherData.hourly.time[i].getTime() + weatherData.hourly.time[i].getTimezoneOffset() * 60000),
-      timezone: weatherData.hourly.timezone[i],
-      temperature2m: weatherData.hourly.temperature2m[i],
-      relativeHumidity2m: weatherData.hourly.relativeHumidity2m[i],
-      precipitationProbability: weatherData.hourly.precipitationProbability[i],
-      rain: weatherData.hourly.rain[i],
-      snow: weatherData.hourly.snow[i],
-      weatherCode: weatherData.hourly.weatherCode[i],
-      windSpeed10m: weatherData.hourly.windSpeed10m[i],
-    };
-  });
-  weatherData.days = weatherData.daily.time.map((value, i) => {
-    return {
-      time: weatherData.daily.time[i],
-      localeTime: new Date(weatherData.daily.time[i].getTime() + weatherData.daily.time[i].getTimezoneOffset() * 60000),
-      timezone,
-      weatherCode: weatherData.daily.weatherCode[i],
-      temperature2mMax: weatherData.daily.temperature2mMax[i],
-      temperature2mMin: weatherData.daily.temperature2mMin[i],
-      precipitationSum: weatherData.daily.precipitationSum[i],
-      precipitationProbability: weatherData.daily.precipitationProbability[i],
-      windSpeed10m: weatherData.daily.windSpeed10m[i],
-      rain: weatherData.daily.rain[i],
-      snow: weatherData.daily.snow[i],
-    };
-  });
+
   return weatherData;
 };
 
@@ -362,14 +334,14 @@ const reportWeather = async (interaction, codedLocation) => {
       .setDescription(`-# ${name} (${meteoData.timezone})`)
       .addFields([
         {name: meteoData.current.localeTime.toLocaleTimeString(), value: formatWeather(meteoData.current), inline: true},
-        {name: meteoData.days[0].localeTime.toDateString(), value: formatWeather(meteoData.days[0]), inline: true}
+        {name: meteoData.daily[0].localeTime.toDateString(), value: formatWeather(meteoData.daily[0]), inline: true}
       ])
       .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
 
     hourlyEmbed.setTitle('Hourly')
       .setDescription(`-# ${name} (${meteoData.timezone})`)
       .setColor(Colors.Green)
-      .addFields(meteoData.hours.map( hour => {
+      .addFields(meteoData.hourly.map( hour => {
         return {name: hour.localeTime.toLocaleTimeString(), value: formatWeather(hour), inline: true };
       }).slice(meteoData.localeTime.getHours()+1, meteoData.localeTime.getHours()+4))
       .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
@@ -379,7 +351,7 @@ const reportWeather = async (interaction, codedLocation) => {
     forecastEmbed.setTitle('Weather Forecast')
       .setDescription(`-# ${name} (${meteoData.timezone})`)
       .setColor(Colors.Aqua)
-      .addFields(meteoData.days.slice(1,4).map( day => {
+      .addFields(meteoData.daily.slice(1,4).map( day => {
         return { name: day.localeTime.toDateString(), value: formatWeather(day), inline: true };
       }))
       .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
