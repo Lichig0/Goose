@@ -92,96 +92,45 @@ const roundToN = (number, decimalPlaces = 2) => {
   return Math.round((number + Number.EPSILON) * multiplier) / multiplier;
 };
 
-const formatCurrent = (data) => {
+const formatWeather = (data) => {
   const {
-    // time,
-    // timezone,
-    temperature2m, // C
-    relativeHumidity2m, // %
-    // isDay, // boolean
-    weatherCode, // text
-    windSpeed10m, // km/h
-    windDirection10m, // degrees
-    rain, // mm
-    snow, // cm
+    weatherCode = WMO_CODES[0], // WMO
+    temperature2mMax = 0, // C
+    temperature2mMin = 0, // C
+    precipitationProbability = 0, // %
+    temperature2m = 0, // Celcius
+    relativeHumidity2m = 0, // %
+    windSpeed10m = 0, // km/h
+    windDirection10m = 0, // degrees
+    rain = 0, // mm
+    snow = 0, // cm
   } = data;
 
-  const cTemp = math.unit(roundToN(temperature2m, 0), 'degC');
-  const fTemp = cTemp.to('degF');
-  const humidity = Math.round(relativeHumidity2m);
-  const rainFall = math.unit(roundToN(rain), 'mm');
-  const snowFall = math.unit(roundToN(snow), 'cm');
-  const wind = math.unit(Math.round(windSpeed10m), 'km/h');
-  const windMph = wind.to('mi/h');
-  const windDirection = Math.round(windDirection10m);
+  const temperature2mToF = math.unit(temperature2m, 'degC').to('degF').toNumber(); // F
+  const temperature2mMaxToF = math.unit(temperature2mMax, 'degC').to('degF').toNumber(); // F
+  const temperature2mMinToF = math.unit(temperature2mMin, 'degC').to('degF').toNumber(); // F
+  const windToMPH = math.unit(roundToN(windSpeed10m, 0), 'km/h').to('mi/h').toNumber(); // mph
+  const rainToInch = math.unit(roundToN(rain, 2), 'mm').to('inch').toNumber(); // in
+  const snowToInch = math.unit(roundToN(snow, 2), 'cm').to('inch').toNumber(); //in
 
+  const WEATHER_CODE = `__*${weatherCode}*__`;
+  const CURRENT_TEMP = `🌡${roundToN(temperature2mToF, 0)}°F(${roundToN(temperature2m, 0)}°C)`;
+  const HIGH_TEMP = `🌡Hi:${roundToN(temperature2mMaxToF, 0)}°F (${roundToN(temperature2mMax, 0)}°C)`;
+  const LOW_TEMP = `🌡Lo:${roundToN(temperature2mMinToF, 0)}°F (${roundToN(temperature2mMin, 0)}°C)`;
+  const HUMIDITY = `💧Humidity:${roundToN(relativeHumidity2m, 0)}%`;
+  const WIND_SPEED = `🌬${roundToN(windToMPH, 0)} mph`;
+  const WIND_DIRECTION = `${degreesToCompass(windDirection10m)}${degreesToArrow(windDirection10m)}`;
+  const PRECIP_CHANCE = `🌂Chance of precip: ${Math.round(precipitationProbability)}%`;
+  const RAINFALL = `${Math.round(rain) ? `🌧️Rain: ${roundToN(rainToInch)}in (${roundToN(rain)} mm)` : ''}`;
+  const SNOWFALL = `${Math.round(snow) ? `🌨Snow: ${roundToN(snowToInch)}in (${roundToN(snow)} cm)` : ''}`;
   
-  return `
-  __*${weatherCode}*__
-  🌡${roundToN(fTemp.toNumber(), 0)}°F(${roundToN(cTemp.toNumber())}°C)
-  💧Humidity:${humidity}%
-  🌬${roundToN(windMph.toNumber(), 0)} mph ${degreesToCompass(windDirection)}${degreesToArrow(windDirection)}`
-  + `${rainFall.toNumber() ? `\n🌧️${rainFall}` : ''}${snowFall.toNumber() ? `\n🌨${snowFall}` : ''}`
-  ;
-};
-
-const formatDay = (data) => {
-  const {
-    weatherCode,
-    temperature2mMax, // C
-    temperature2mMin, // C
-    precipitationProbabilityMax, // %
-    windSpeed10mMax, // km/h
-    rainSum, // mm
-    snowfallSum, // cm
-  } = data;
-
-  const cHighTemp = math.unit(roundToN(temperature2mMax), 'degC');
-  const fHighTemp = cHighTemp.to('degF');
-  const cLowTemp = math.unit(roundToN(temperature2mMin), 'degC');
-  const fLowTemp = cLowTemp.to('degF');
-  const chanceOfPrecip = Math.round(precipitationProbabilityMax);
-  const rainFall = math.unit(roundToN(rainSum), 'mm');
-  const snowFall = math.unit(roundToN(snowfallSum), 'cm');
-  const wind = math.unit(Math.round(windSpeed10mMax), 'km/h');
-  const windMph = wind.to('mi/h');
-
-  return `
-  __*${weatherCode}*__
-  🌡Hi:${roundToN(fHighTemp.toNumber(), 0)}°F (${roundToN(cHighTemp.toNumber(), 0)}°C)
-  🌡Lo:${roundToN(fLowTemp.toNumber(), 0)}°F (${roundToN(cLowTemp.toNumber(), 0)}°C)
-  🌬${roundToN(windMph.toNumber(), 0)} mph
-  🌂Chance of precip: ${chanceOfPrecip}%`
-  + `${rainFall.toNumber() ? `\n🌧️Rain: ${rainFall}` : ''}${snowFall.toNumber() ? `\n🌨Snow: ${snowFall}` : ''}`
-  ;
-};
-const formatHour = (data) => {
-  const {
-    temperature2m, // C
-    relativeHumidity2m, // %
-    precipitationProbability, // %
-    rain, // mm
-    snowfall, //cm
-    weatherCode, // WMO
-    windSpeed10m, // km/h
-  } = data;
-
-  const cTemp = math.unit(roundToN(temperature2m), 'degC');
-  const fTemp = cTemp.to('degF');
-  const humidity = Math.round(relativeHumidity2m);
-  const chanceOfPrecip = Math.round(precipitationProbability);
-  const rainFall = math.unit(roundToN(rain) , 'mm');
-  const snowFall = math.unit(roundToN(snowfall), 'cm');
-  const wind = math.unit(Math.round(windSpeed10m), 'km/h');
-  const windMph = wind.to('mi/h');
-
-  return `
-    __*${weatherCode}*__
-  🌡${roundToN(fTemp.toNumber(), 0)}°F(${roundToN(cTemp.toNumber(), 0)}°C)
-  💧Humidity:${humidity}%
-  🌬${roundToN(windMph.toNumber(), 0)} mph
-  🌂Chance of precip: ${chanceOfPrecip}%`
-  + `${rainFall.toNumber() ? `\n🌧️Rain: ${rainFall}` : ''}${snowFall.toNumber() ? `\n🌨Snow: ${snowFall}` : ''}`
+  return WEATHER_CODE
+   + `\n${temperature2m ? CURRENT_TEMP : `${HIGH_TEMP}\n${LOW_TEMP}`}`
+   + `${relativeHumidity2m ? `\n${HUMIDITY}` : ''}`
+   + `\n${WIND_SPEED} ${windDirection10m ? WIND_DIRECTION : ''}`
+   + `${precipitationProbability ? `\n${PRECIP_CHANCE}` : ''}`
+   + `${rain ? `\n${RAINFALL}` : ''}`
+   + `${snow ? `\n${SNOWFALL}` : ''}`
   ;
 };
 
@@ -234,7 +183,7 @@ const getOpenMeteo = async (latitude, longitude) => {
   const params = {
     latitude,
     longitude,
-    forecast_days: 3,
+    forecast_days: 4,
     timezone: 'auto',
     daily: [
       'weather_code', // See WMO_CODES
@@ -311,7 +260,7 @@ const getOpenMeteo = async (latitude, longitude) => {
       relativeHumidity2m: hourly.variables(1).valuesArray(),
       precipitationProbability: hourly.variables(2).valuesArray(),
       rain: hourly.variables(3).valuesArray(),
-      snowfall: hourly.variables(4).valuesArray(),
+      snow: hourly.variables(4).valuesArray(),
       weatherCode: hourly.variables(5).valuesArray().reduce((newArray, code) => { 
         return newArray = [...newArray, WMO_CODES[code]];
       }, []),
@@ -328,10 +277,10 @@ const getOpenMeteo = async (latitude, longitude) => {
       temperature2mMax: daily.variables(1).valuesArray(),
       temperature2mMin: daily.variables(2).valuesArray(),
       precipitationSum: daily.variables(3).valuesArray(),
-      precipitationProbabilityMax: daily.variables(4).valuesArray(),
-      windSpeed10mMax: daily.variables(5).valuesArray(),
-      rainSum: daily.variables(6).valuesArray(),
-      snowfallSum: daily.variables(7).valuesArray(),
+      precipitationProbability: daily.variables(4).valuesArray(),
+      windSpeed10m: daily.variables(5).valuesArray(),
+      rain: daily.variables(6).valuesArray(),
+      snow: daily.variables(7).valuesArray(),
     },
   };
   weatherData.hours = weatherData.hourly.time.map((value, i) => {
@@ -343,7 +292,7 @@ const getOpenMeteo = async (latitude, longitude) => {
       relativeHumidity2m: weatherData.hourly.relativeHumidity2m[i],
       precipitationProbability: weatherData.hourly.precipitationProbability[i],
       rain: weatherData.hourly.rain[i],
-      snowfall: weatherData.hourly.snowfall[i],
+      snow: weatherData.hourly.snow[i],
       weatherCode: weatherData.hourly.weatherCode[i],
       windSpeed10m: weatherData.hourly.windSpeed10m[i],
     };
@@ -357,10 +306,10 @@ const getOpenMeteo = async (latitude, longitude) => {
       temperature2mMax: weatherData.daily.temperature2mMax[i],
       temperature2mMin: weatherData.daily.temperature2mMin[i],
       precipitationSum: weatherData.daily.precipitationSum[i],
-      precipitationProbabilityMax: weatherData.daily.precipitationProbabilityMax[i],
-      windSpeed10mMax: weatherData.daily.windSpeed10mMax[i],
-      rainSum: weatherData.daily.rainSum[i],
-      snowfallSum: weatherData.daily.snowfallSum[i],
+      precipitationProbability: weatherData.daily.precipitationProbability[i],
+      windSpeed10m: weatherData.daily.windSpeed10m[i],
+      rain: weatherData.daily.rain[i],
+      snow: weatherData.daily.snow[i],
     };
   });
   return weatherData;
@@ -404,7 +353,7 @@ const reportWeather = async (interaction, codedLocation) => {
       .setColor(Colors.Blurple)
       .setDescription(`-# ${name} (${meteoData.timezone})`)
       .addFields([
-        {name: meteoData.current.localeTime.toLocaleTimeString(), value: formatCurrent(meteoData.current), inline: true}
+        {name: meteoData.current.localeTime.toLocaleTimeString(), value: formatWeather(meteoData.current), inline: true}
       ])
       .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
 
@@ -412,8 +361,8 @@ const reportWeather = async (interaction, codedLocation) => {
       .setColor(Colors.Blue)
       .setDescription(`-# ${name} (${meteoData.timezone})`)
       .addFields([
-        {name: meteoData.current.localeTime.toLocaleTimeString(), value: formatCurrent(meteoData.current), inline: true},
-        {name: meteoData.days[0].time.toDateString(), value: formatDay(meteoData.days[0]), inline: true}
+        {name: meteoData.current.localeTime.toLocaleTimeString(), value: formatWeather(meteoData.current), inline: true},
+        {name: meteoData.days[0].localeTime.toDateString(), value: formatWeather(meteoData.days[0]), inline: true}
       ])
       .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
 
@@ -421,7 +370,7 @@ const reportWeather = async (interaction, codedLocation) => {
       .setDescription(`-# ${name} (${meteoData.timezone})`)
       .setColor(Colors.Green)
       .addFields(meteoData.hours.map( hour => {
-        return {name: hour.localeTime.toLocaleTimeString(), value: formatHour(hour), inline: true };
+        return {name: hour.localeTime.toLocaleTimeString(), value: formatWeather(hour), inline: true };
       }).slice(meteoData.localeTime.getHours()+1, meteoData.localeTime.getHours()+4))
       .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
 
@@ -430,8 +379,8 @@ const reportWeather = async (interaction, codedLocation) => {
     forecastEmbed.setTitle('Weather Forecast')
       .setDescription(`-# ${name} (${meteoData.timezone})`)
       .setColor(Colors.Aqua)
-      .addFields(meteoData.days.map( day => {
-        return { name: day.localeTime.toDateString(), value: formatDay(day), inline: true };
+      .addFields(meteoData.days.slice(1,4).map( day => {
+        return { name: day.localeTime.toDateString(), value: formatWeather(day), inline: true };
       }))
       .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
 
