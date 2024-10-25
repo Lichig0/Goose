@@ -134,9 +134,9 @@ class Brain {
         inputOptions[i+1]
       ]);
     } 
-    console.log('[Guild Brain]::Found states',`${inputOptions}`);
+    console.log('[Guild Brain]::Found states',`"${inputOptions}"`);
     for(const inputArray of parallelInputs) {
-      console.log('[Guild Brain]::Checking state',`${inputArray} of ${parallelInputs}`);
+      console.log('[Guild Brain]::Checking state',`"${inputArray}" of "${parallelInputs}"`);
       const result = await Promise.any([
         this.#corpus.generateSentence({...options, input: inputArray[0]}),
         inputArray[1] ? this.#corpus.generateSentence({...options, input: inputArray[1]}) : Promise.reject('Empty second option')
