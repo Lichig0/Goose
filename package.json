@@ -14,6 +14,7 @@
     "markov-strings": "^3.0.1",
     "mathjs": "^7.6.0",
     "nodemon": "^2.0.12",
+    "openmeteo": "^1.1.4",
     "sqlite3": "^5.0.2",
     "utf-8-validate": "^5.0.5",
     "wikipedia": "^1.1.9",
