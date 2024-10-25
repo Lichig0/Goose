@@ -478,4 +478,4 @@ module.exports.execute = async (client, interaction) => {
   }
 };
 
-module.exports.dev = true;
+module.exports.dev = false;
