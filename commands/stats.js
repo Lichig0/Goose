@@ -42,7 +42,7 @@ module.exports.execute = async (client, interaction) => {
       inline: true
     },
     {name: 'Heap', value: `${formatMemoryUsage(process.memoryUsage().heapUsed)} / ${formatMemoryUsage(process.memoryUsage().heapTotal)}`, inline: true },
-    {name: 'Process', value: JSON.stringify(usage, null, 2), inline: true},
+    {name: 'Process', value: `\`\`\`JSON\n${JSON.stringify(usage, null, 2)}\`\`\``, inline: true},
   ]);
   await interaction.reply({
     embeds: [embed],
