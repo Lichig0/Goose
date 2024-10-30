@@ -1,0 +1,17 @@
+Named after Andrey Markov: Markov chains are named after the Russian mathematician Andrey Markov, who first introduced them in the early 20th century.
+The defining characteristic of a Markov chain is its "memoryless" property, meaning the probability of transitioning to any particular state depends solely on the current state and not on the sequence of events that preceded it.
+A Markov chain is a type of stochastic process, which is a sequence of random variables where the future state depends only on the current state.
+Markov chains are widely used in various fields, including economics, game theory, genetics, finance, and information theory.
+Discrete and Continuous: Markov chains can be either discrete-time (where transitions occur at specific time steps) or continuous-time (where transitions can occur at any time).
+State Space: The state space of a Markov chain can be finite or countably infinite, and it can represent anything from letters and numbers to weather conditions and stock performances.
+Markov chains are often represented using a transition matrix, where each entry in the matrix represents the probability of transitioning from one state to another.
+Some Markov chains are ergodic, meaning they have a stationary distribution to which they converge over time, regardless of the initial state.
+Markov chains are the basis for Markov chain Monte Carlo (MCMC) methods, which are used for simulating sampling from complex probability distributions.
+A simple example of a Markov chain is a weather model with states like "sunny" and "rainy," where the probability of transitioning from one state to another is fixed.
+A Markov word chain is a model that predicts the next word in a sequence based on the current word (or words). It operates on the principle that the probability of each word depends only on the word(s) that came immediately before it, rather than the entire sequence of words.
+To construct a Markov word chain, you typically start with a large corpus of text. You analyze this text to determine the probability distribution of word transitions. For example, if the word "sun" is often followed by the word "is," the model will record a high probability for the transition from "sun" to "is."
+Once the chain is built, you can use it to generate text. You start with a seed word or phrase and then use the chain to predict the next word, add it to the sequence, and repeat the process.
+you have a text corpus with the following sentence: "The cat sat on the mat."
+A first-order Markov chain might learn that "The" is followed by "cat," "sat," and "mat" with certain probabilities.
+When generating text, if it starts with "The," it might predict "cat" as the next word, and so on.
+Markov word chains are a fundamental tool in many natural language processing applications due to their simplicity and effectiveness in capturing statistical patterns in text.
