@@ -170,7 +170,7 @@ const guildCorpusAction = new Action('Guild Corpus', ({
   const { retries } = settings.settings.chatter;
   const options = {
     input,
-    retries: Math.round(Math.min(retries, Math.max(2, guildBrains[channel.guildId].corpus.size / 10000))),
+    retries: Math.round(Math.min(retries, Math.max(2, guildBrains[channel.guildId].corpus.chain.size / 10000 || 0))),
     filter: Brain.generateFilter(input, channel)
   };
 
