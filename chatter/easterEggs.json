@@ -1,12 +1,14 @@
 [
     {
-        "triggers": [
-            "this discord sucks",
-            "this server sucks"
+        "conditions": [
+            " honk "
         ],
-        "likelihood": 100,
+        "regex": null,
+        "weight": 100,
         "responses": [
-            "Fucking leave then."
+            "HONK!",
+            "honk!",
+            "HONK HONK"
         ]
     }
 ]
