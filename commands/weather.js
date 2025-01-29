@@ -69,6 +69,12 @@ const hourlyButton = new ButtonBuilder({
   style: ButtonStyle.Secondary,
   disabled: false,
 });
+const alertsButton = new ButtonBuilder({
+  label: 'Alerts',
+  customId: BUTTON_IDS.ALERTS,
+  style: ButtonStyle.Danger,
+  disabled: true,
+});
 const forecastButton = new ButtonBuilder({
   label: 'Forecast',
   customId: BUTTON_IDS.FORECAST,
@@ -132,6 +138,38 @@ const formatWeather = (data) => {
    + `${rain ? `\n${RAINFALL}` : ''}`
    + `${snow ? `\n${SNOWFALL}` : ''}`
   ;
+};
+
+const getAlerts = async (latitude, longitude) => {
+  // https://api.weather.gov/alerts?point=43.06%2C-75.27&limit=2
+  const requestUrl = new url.URL('https://api.weather.gov/alerts/active');
+  requestUrl.searchParams.set('point',`${latitude},${longitude}`);
+  requestUrl.searchParams.set('limit', 3);
+
+  return new Promise((resolve, reject) => {
+    https.get({
+      hostname: requestUrl.hostname,
+      path: `${requestUrl.pathname}${requestUrl.search}`,
+      headers: {
+        accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'user-agent': 'nodejs-goose'
+      }
+    }, (response) => {
+      let raw = '';
+      if (response.statusCode !== 200) {
+        reject(response.statusCode + response.statusMessage);
+      }
+      response.on('data', (chunk) => { raw += chunk; });
+      response.on('end', () => {
+        try {
+          const finishedResponse = JSON.parse(raw);
+          resolve(finishedResponse);
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+  });
 };
 
 const getLocation = async (locationName) => {
@@ -314,11 +352,14 @@ const reportWeather = async (interaction, codedLocation) => {
     const currentEmbed = new EmbedBuilder();
     const todayEmbed = new EmbedBuilder();
     const hourlyEmbed = new EmbedBuilder();
+    const alertsEmbed = new EmbedBuilder();
+    let ACTIVE_EMBED = currentEmbed;
 
     row.addComponents(currentButton.setCustomId(`${BUTTON_IDS.CURRENT}_${id}`))
       .addComponents(todayButton.setCustomId(`${BUTTON_IDS.TODAY}_${id}`))
       .addComponents(hourlyButton.setCustomId(`${BUTTON_IDS.HOURLY}_${id}`))
-      .addComponents(forecastButton.setCustomId(`${BUTTON_IDS.FORECAST}_${id}`));
+      .addComponents(forecastButton.setCustomId(`${BUTTON_IDS.FORECAST}_${id}`))
+      .addComponents(alertsButton.setCustomId(`${BUTTON_IDS.ALERTS}_${id}`));
     components.push(row);
 
     currentEmbed.setTitle('Current Conditions')
@@ -346,8 +387,6 @@ const reportWeather = async (interaction, codedLocation) => {
       }).slice(meteoData.localeTime.getHours()+1, meteoData.localeTime.getHours()+4))
       .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
 
-      
-
     forecastEmbed.setTitle('Weather Forecast')
       .setDescription(`-# ${name} (${meteoData.timezone})`)
       .setColor(Colors.Aqua)
@@ -355,21 +394,42 @@ const reportWeather = async (interaction, codedLocation) => {
         return { name: day.localeTime.toDateString(), value: formatWeather(day), inline: true };
       }))
       .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
-
+    
+    getAlerts(codedLocation.lat, codedLocation.lon).then(({features}) => {
+      if (features.length > 0) {
+        alertsButton.setDisabled(false);
+        const alerts = `${features.map(feature => feature.properties.event )}`;
+        currentEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
+        todayEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
+        hourlyEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
+        alertsEmbed.setTitle('USA NWS Alerts')
+          .setDescription(alerts)
+          .setColor(Colors.Red)
+          .addFields(features.map(feature => {
+            return { name: feature.properties.event, value: feature.properties.description, inline: true };
+          }))
+          .setFooter({text: 'Data by Weather.gov (https://api.weather.gov/openapi.json)'});
+        interaction.editReply({embeds: [ACTIVE_EMBED], components}).catch(console.error);
+      }
+    }).catch(console.warn);
+    ACTIVE_EMBED = currentEmbed;
     interaction.editReply({ embeds: [currentEmbed], components}).catch(console.warn);
 
     const filter = buttonInteract => Object.values(BUTTON_IDS).map(bid=>`${bid}_${id}`).includes(buttonInteract.customId) && buttonInteract.user.id === member.id;
     const collector = interaction.channel.createMessageComponentCollector({ filter, time: 90000 });
     collector.on('collect', async buttonInteract => {
       if (buttonInteract.customId === `${BUTTON_IDS.FORECAST}_${id}`) {
-        await buttonInteract.update({ embeds: [forecastEmbed] }).catch(console.error);
+        ACTIVE_EMBED = forecastEmbed;
       } else if (buttonInteract.customId === `${BUTTON_IDS.TODAY}_${id}`) {
-        await buttonInteract.update({ embeds: [todayEmbed] }).catch(console.error);
+        ACTIVE_EMBED = todayEmbed;
       } else if (buttonInteract.customId === `${BUTTON_IDS.HOURLY}_${id}`) {
-        await buttonInteract.update({ embeds: [hourlyEmbed] }).catch(console.error);
+        ACTIVE_EMBED = hourlyEmbed;
       } else if (buttonInteract.customId === `${BUTTON_IDS.CURRENT}_${id}`) {
-        await buttonInteract.update({ embeds: [currentEmbed] }).catch(console.error);
+        ACTIVE_EMBED = currentEmbed;
+      } else if (buttonInteract.customId === `${BUTTON_IDS.ALERTS}_${id}`) {
+        ACTIVE_EMBED = alertsEmbed;
       }
+      await buttonInteract.update({ embeds: [ACTIVE_EMBED] }).catch(console.error);
     });
     collector.on('end', () => {
       interaction.editReply({components:[]}).catch(console.warn);
