@@ -157,7 +157,7 @@ const getAlerts = async (latitude, longitude) => {
     }, (response) => {
       let raw = '';
       if (response.statusCode !== 200) {
-        reject(response.statusCode + response.statusMessage);
+        reject(`${response.statusCode} ${response.statusMessage}`);
       }
       response.on('data', (chunk) => { raw += chunk; });
       response.on('end', () => {
@@ -346,6 +346,7 @@ const reportWeather = async (interaction, codedLocation) => {
   const row = new ActionRowBuilder();
   const { id, member } = interaction;
   console.log(codedLocation);
+  const isUSA = codedLocation.name.includes('United States');
   getOpenMeteo(codedLocation.lat, codedLocation.lon).then(meteoData => {
     const { name } = codedLocation;
     const forecastEmbed = new EmbedBuilder();
@@ -358,10 +359,13 @@ const reportWeather = async (interaction, codedLocation) => {
     row.addComponents(currentButton.setCustomId(`${BUTTON_IDS.CURRENT}_${id}`))
       .addComponents(todayButton.setCustomId(`${BUTTON_IDS.TODAY}_${id}`))
       .addComponents(hourlyButton.setCustomId(`${BUTTON_IDS.HOURLY}_${id}`))
-      .addComponents(forecastButton.setCustomId(`${BUTTON_IDS.FORECAST}_${id}`))
-      .addComponents(alertsButton.setCustomId(`${BUTTON_IDS.ALERTS}_${id}`));
-    components.push(row);
+      .addComponents(forecastButton.setCustomId(`${BUTTON_IDS.FORECAST}_${id}`));
 
+    if (isUSA) {
+      row.addComponents(alertsButton.setCustomId(`${BUTTON_IDS.ALERTS}_${id}`));
+    }
+
+    components.push(row);
     currentEmbed.setTitle('Current Conditions')
       .setColor(Colors.Blurple)
       .setDescription(`-# ${name} (${meteoData.timezone})`)
@@ -395,23 +399,26 @@ const reportWeather = async (interaction, codedLocation) => {
       }))
       .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
     
-    getAlerts(codedLocation.lat, codedLocation.lon).then(({features}) => {
-      if (features.length > 0) {
-        alertsButton.setDisabled(false);
-        const alerts = `${features.map(feature => feature.properties.event )}`;
-        currentEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
-        todayEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
-        hourlyEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
-        alertsEmbed.setTitle('USA NWS Alerts')
-          .setDescription(alerts)
-          .setColor(Colors.Red)
-          .addFields(features.map(feature => {
-            return { name: feature.properties.event, value: feature.properties.description, inline: true };
-          }))
-          .setFooter({text: 'Data by Weather.gov (https://api.weather.gov/openapi.json)'});
-        interaction.editReply({embeds: [ACTIVE_EMBED], components}).catch(console.error);
-      }
-    }).catch(console.warn);
+    if (isUSA) {
+      getAlerts(codedLocation.lat, codedLocation.lon).then(({features}) => {
+        if (features.length > 0) {
+          alertsButton.setDisabled(false);
+          const alerts = `${features.map(feature => feature.properties.event )}`;
+          currentEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
+          todayEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
+          hourlyEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
+          alertsEmbed.setTitle('USA NWS Alerts')
+            .setDescription(alerts)
+            .setColor(Colors.Red)
+            .addFields(features.map(feature => {
+              return { name: feature.properties.event, value: feature.properties.description, inline: true };
+            }))
+            .setFooter({text: 'Data by Weather.gov (https://api.weather.gov/openapi.json)'});
+          interaction.editReply({embeds: [ACTIVE_EMBED], components}).catch(console.error);
+        }
+      }).catch(console.warn);
+    }
+
     ACTIVE_EMBED = currentEmbed;
     interaction.editReply({ embeds: [currentEmbed], components}).catch(console.warn);
 
