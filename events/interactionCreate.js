@@ -34,5 +34,7 @@ module.exports = async (client, interaction) => {
     console.log(`>button: ${interaction.customId}`);
     // interaction.deferUpdate().then(console.log).catch(console.error);
     // interaction.fetchReply({content: 'Oops. Didn\'t finish that yet.'}).catch(console.error);
+  } else if (interaction.isModalSubmit()) {
+    console.log(`>modalSubmit ${interaction.customId}`);
   }
 };
