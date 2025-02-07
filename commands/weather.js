@@ -1,5 +1,13 @@
 const path = require('path');
-const { EmbedBuilder, ApplicationCommandType, ApplicationCommandOptionType, ButtonStyle, ButtonBuilder, ActionRowBuilder, Colors } = require('discord.js');
+const { 
+  EmbedBuilder,
+  ApplicationCommandType,
+  ApplicationCommandOptionType,
+  ButtonStyle,
+  ButtonBuilder,
+  ActionRowBuilder,
+  Colors
+} = require('discord.js');
 const weatherTable = require('../dbactions/weatherTable');
 const { fetchWeatherApi } = require('openmeteo');
 const https = require('https');
@@ -406,6 +414,7 @@ const reportWeather = async (interaction, codedLocation) => {
           const alerts = `${features.map(feature => feature.properties.event )}`;
           currentEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
           todayEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
+          forecastEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
           hourlyEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
           alertsEmbed.setTitle('USA NWS Alerts')
             .setDescription(alerts)
