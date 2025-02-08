@@ -7,7 +7,9 @@ const {
   TextInputStyle,
   TextInputBuilder,
   ButtonBuilder,
-  ButtonStyle
+  ButtonStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
 } = require('discord.js');
 const settings = require('../settings');
 const qdb = require('../dbactions/qdbTable');
@@ -37,11 +39,12 @@ const TEXT_INPUT_FIELDS = {
 };
 const PREVIOUS = 'previous';
 const NEXT = 'next';
+const SELECT = 'select';
 
 const PREVIOUS_BUTTON = new ButtonBuilder({
   label: '⏮️',
   style: ButtonStyle.Secondary,
-  disabled: true,
+  disabled: false,
 });
 
 const NEXT_BUTTON = new ButtonBuilder({
@@ -112,7 +115,7 @@ exports.getCommandData = () => {
   };
 };
 
-const sendCallback = (interaction, quote) => {
+const sendQuote = (interaction, quote) => {
   if (quote) {
     const embed = new EmbedBuilder();
     const actionRow = new ActionRowBuilder();
@@ -145,7 +148,7 @@ const sendCallback = (interaction, quote) => {
     if (notes) fields.push({name: 'Notes:', value: notes});
     if (score) fields.push({name: 'Score', value: score, inline: true});
     if (votes) fields.push({name: 'Votes', value: votes, inline: true});
-    fields.push({name: 'Added by', value: author_id || 'Anonymous', inline: true});
+    fields.push({name: 'Added by', value: author_id ?? 'Anonymous', inline: true});
     embed.addFields(fields);
     if (tags) embed.setFooter({ text: tags});
     if (created) embed.setTimestamp(new Date(created));
@@ -180,140 +183,132 @@ const sendCallback = (interaction, quote) => {
     collector.on('end', () => {
       interaction.editReply({components:[]}).catch(console.warn);
     });
-    interaction.update({embeds:[embed], components: pages.length > 1 ? [actionRow] : []}).then(sendMessage => {
-      const qid = id;
-      const filter = (reaction) => reaction.emoji.name === '👍' || reaction.emoji.name === '👎';
-      const config = settings.qdb || {};
-      const time = config.voteTime || 60000;
-      sendMessage.react('👍').catch(console.error);
-      sendMessage.react('👎').catch(console.error);
-      const collector = sendMessage.createReactionCollector({filter, time });
-      collector.on('end', collected => {
-        console.log(collected.get('👍').count ,collected.get('👎').count);
-        const upVote = collected.get('👍')?.count -1 ?? 0;
-        const downVote = collected.get('👎')?.count - 1 ?? 0;
-        const results = Number(score) + (upVote - downVote);
-        const newVotes = Number(votes || 0) + (upVote+downVote);
-        const scoreField = embed.data.fields.find(field=> field.name === 'Score');
-        const votesField = embed.data.fields.find(field => field.name === 'Votes');
-        scoreField.value = results;
-        votesField.value = newVotes;
-        qdb.vote(qid, results, newVotes);
-        sendMessage.edit({embeds: [embed]}).catch(console.error);
-        sendMessage.reactions.removeAll().catch(e => {
-          console.error(e);
-          sendMessage.react('👍').catch(console.error);
-          sendMessage.react('👎').catch(console.error);
+    interaction.editReply({embeds:[embed], components: pages.length > 1 ? [actionRow] : []})
+      .then(sendMessage => {
+        const qid = id;
+        const filter = (reaction) => reaction.emoji.name === '👍' || reaction.emoji.name === '👎';
+        const config = settings.qdb || {};
+        const time = config.voteTime || 60000;
+        sendMessage.react('👍').catch(console.error);
+        sendMessage.react('👎').catch(console.error);
+        const collector = sendMessage.createReactionCollector({filter, time });
+        collector.on('end', collected => {
+          console.log(collected.get('👍')?.count ,collected.get('👎')?.count);
+          const upVote = collected.get('👍')?.count -1 ?? 0;
+          const downVote = collected.get('👎')?.count - 1 ?? 0;
+          const results = Number(score) + (upVote - downVote);
+          const newVotes = Number(votes || 0) + (upVote+downVote);
+          const scoreField = embed.data.fields.find(field=> field.name === 'Score');
+          const votesField = embed.data.fields.find(field => field.name === 'Votes');
+          scoreField.value = results;
+          votesField.value = newVotes;
+          qdb.vote(qid, results, newVotes);
+          sendMessage.edit({embeds: [embed]}).catch(console.error);
+          sendMessage.reactions.removeAll()
+            .then(() => {
+              sendMessage.react('✅').catch(console.error);
+            })
+            .catch(e => {
+              console.error(e);
+              sendMessage.react('👍').catch(console.error);
+              sendMessage.react('👎').catch(console.error);
+            });
+          
         });
-        sendMessage.react('✅').catch(console.error);
+      })
+      .catch(e => {
+        console.error('Failed to send.', e);
+        interaction.editReply('Don\'t look.').catch(console.error);
       });
-    }).catch(e => {
-      console.error('Failed to send.', e);
-      interaction.editReply('Don\'t look.').catch(console.error);
-    });
   } else {
-    interaction.editReply('Nah.').catch(console.error);
+    interaction.editReply('Try your other words.').catch(console.error);
   }
 };
 
-const addCallback = (interaction, result) => {
-  qdb.get(result.lastID, result.guildId).then((result) => sendCallback(interaction, ...result));
+const addQuote = (interaction, result) => {
+  qdb.get(result.lastID, result.guildId)
+    .then((result) => sendQuote(interaction, ...result))
+    .catch(() => interaction.editReply('I made a mistake in the DB.'));
 };
 
-const deleteQuote = (interaction, quoteNumber) => {
-  qdb.get(quoteNumber, interaction.guild.id, (e, body) => {
-    if (e) {
-      console.error(e);
-    }
-    const quote = body[0];
-    if (quote) return interaction.editReply('Sorry bud. That isn\'t yours to delete.').catch(console.error);
-    interaction.editReply('Poof. Gone.').catch(console.error);
-  });
+const deleteResponse = (interaction, quoteNumber) => {
+  qdb.get(quoteNumber, interaction.guild.id)
+    .then((results) => {
+      const quote = results[0];
+      if (quote) return interaction.editReply('Sorry bud. That isn\'t yours to delete.').catch(console.error);
+      interaction.editReply('Poof. Gone.').catch(console.error);
+    })
+    .catch(() => {
+      interaction.editReply('404');
+    });
 };
 
 const quotePicker = async (interaction, results) => {
-  const buttonRow = new ActionRowBuilder();
-  const pageRow = new ActionRowBuilder();
+  const selectorRow = new ActionRowBuilder();
   const quotesList = new EmbedBuilder();
   const fields = [];
-  const quoteButtons = [];
-  let page = 0;
+  const menuOptions = [];
+  const replyData = {
+    content: '',
+    components: [],
+    embeds: [],
+  };
+
   const buttonInteractFilter = (buttonInteract) => {
     return buttonInteract.customId.includes(interaction.id) && interaction.member.id === buttonInteract.user.id;
   };
+  const collector = interaction.channel.createMessageComponentCollector({
+    filter: buttonInteractFilter,
+    time: 90000
+  });
 
   await interaction.editReply({content: `Found ${results.length} matches...`});
   
   results.forEach(quote => {
-    const { id } = quote;
-    fields.push({name: `QID: #${id}`, value:`${quote.body.slice(0, 30)}...${quote.attachmentUrl ? '<img>' : ''}`});
-    quoteButtons.push(new ButtonBuilder({
-      customId: `${interaction.id}_${id}`,
-      label: `#${id}`,
-      style: ButtonStyle.Secondary,
-      disabled: false
-    }));
+    const { id, attachmentUrl } = quote;
+    fields.push({
+      name: `QID: #${id}`,
+      value:`${quote.body.slice(0, 30)} ${attachmentUrl ? '<img>' : ''}`,
+      inline: true
+    });
+    menuOptions.push(new StringSelectMenuOptionBuilder()
+      .setDescription(`${quote.body.slice(0, 30)} ${attachmentUrl ? '<img>' : ''}`)
+      .setLabel(`#${id}`)
+      .setValue(`${id}`)
+    );
   });
-
-  if(results.length > 5) {
-    interaction.editReply({
-      embeds: [quotesList
-        .setTitle(`Page: ${page+1}`)
-        .setFields(fields.slice(page*3, page*3+3))],
-      components: [
-        buttonRow.setComponents(quoteButtons.slice(page*3, page*3+3)),
-        pageRow
-          .addComponents(PREVIOUS_BUTTON.setCustomId(`${interaction.id}_${PREVIOUS}`))
-          .addComponents(NEXT_BUTTON.setCustomId( `${interaction.id}_${NEXT}`))]
-    }).catch(console.error);
-  } else {
-    interaction.editReply({
-      embeds: [
-        quotesList.setFields(fields)
-      ],
-      components: [
-        buttonRow.setComponents(quoteButtons)
-      ]
-    }).catch(console.error);
+  if(results.length > 25) {
+    sendQuote(interaction); // send no quote; ask for different input
   }
-
-  const collector = interaction.channel.createMessageComponentCollector({filter: buttonInteractFilter, time: 90000});
+  else if(results.length > 1) {
+    replyData.content = `Found ${results.length} matches...`;
+    replyData.components = [
+      selectorRow.addComponents(new StringSelectMenuBuilder()
+        .setCustomId(`${interaction.id}_${SELECT}`)
+        .setPlaceholder('Select a quote')
+        .addOptions(menuOptions))
+    ];
+    replyData.embeds = [
+      quotesList.setFields(fields)
+    ];
+  } else {
+    replyData.embeds = [
+      quotesList.setFields(fields)
+    ];
+  }
+  interaction.editReply(replyData).catch(console.error);
+ 
   collector.on('collect', async buttonInteract => {
-    const qid = buttonInteract.customId.split('_')[1];
-    if(qid === PREVIOUS) {
-      page--;
-      buttonInteract.update({
-        content: `Found ${results.length} matches...(Page ${page+1})`,
-        embeds: [
-          quotesList
-            .setTitle(`Page: ${page+1}`)
-            .setFields(fields.slice(page*3, page*3+3))
-        ],
-        components: [
-          buttonRow.setComponents(quoteButtons.slice(page*3, page*3+3)),
-          pageRow.setComponents([PREVIOUS_BUTTON.setDisabled(page === 0), NEXT_BUTTON.setDisabled(page+1 >= results.length / 3)])
-        ]
-      }).catch(console.error);
-    } else if (qid === NEXT) {
-      page++;
-      buttonInteract.update({
-        content: `Found ${results.length} matches...(Page ${page+1})`,
-        embeds: [
-          quotesList
-            .setTitle(`Page: ${page+1}`)
-            .setFields(fields.slice(page*3, page*3+3))
-        ],
-        components: [
-          buttonRow.setComponents(quoteButtons.slice(page*3, page*3+3)),
-          pageRow.setComponents([PREVIOUS_BUTTON.setDisabled(page === 0), NEXT_BUTTON.setDisabled(page+1 >= results.length / 3)])
-        ]}).catch(console.error);
-    } else {
-      qdb.get(qid, interaction.guild).then((response) => {
+    const command = buttonInteract.customId.split('_')[1];
+    switch(command) {
+    case SELECT:
+      qdb.get(buttonInteract.values[0], interaction.guild).then((response) => {
         collector.stop();
         buttonInteract.update({content:'', components:[]}).then(() => {
-          sendCallback(buttonInteract, ...response);
+          sendQuote(buttonInteract, ...response);
         });
       });
+      return;
     }
   });
 };
@@ -332,46 +327,62 @@ exports.execute = async (client, interaction) => {
 
   const {guild} = interaction;
 
-
   console.log(subCommand, interaction.options);
 
   switch (subCommand) {
   case SUBCOMMANDS.GET:
     option = commandOptions.get(PARAMETERS.NUMBER).value;
-    qdb.get(option, guild).then((response) => sendCallback(interaction, ...response).catch( e => {
-      console.error(e);
-      interaction.editReply('I threw up a little.').catch(console.warn);
-    }));
+    qdb.get(option, guild)
+      .then((response) => sendQuote(interaction, ...response))
+      .catch( e => {
+        console.error(e);
+        interaction.editReply('I threw up a little.').catch(console.warn);
+      });
     break;
   case SUBCOMMANDS.FIND:
     option = commandOptions.get(PARAMETERS.LIKE).value;
-    qdb.like(option, guild).then((response) => response.length > 1 ? quotePicker(interaction, response) : sendCallback(interaction, response[0]).catch(e => {
-      console.error(e);
-      interaction.editReply('I threw up a little.').catch(console.warn);
-    }));
+    qdb.like(option, guild)
+      .then((response) => {
+        if(response.length > 1) {
+          quotePicker(interaction, response);
+        } else {
+          sendQuote(interaction, response[0]);
+        }
+      })
+      .catch(e => {
+        console.error(e);
+        interaction.editReply('I threw up a little.');
+      });
     break;
   case SUBCOMMANDS.ADD:
     interaction.awaitModalSubmit({ filter: ({customId}) => customId === customInteractId, time: 90000 })
       .then(async submitInteraction => {
         await submitInteraction.deferReply();
-        console.log(`${submitInteraction.customId} was submitted!`);
-        qdb.add(submitInteraction.fields.getTextInputValue(TEXT_INPUT_FIELDS.QUOTE), interaction, {
-          notes: submitInteraction.fields.getTextInputValue(TEXT_INPUT_FIELDS.NOTES),
-          tags: submitInteraction.fields.getTextInputValue(TEXT_INPUT_FIELDS.TAGS),
+        const {
+          fields,
+          customId,
+        } = submitInteraction;
+              
+        console.log(`${customId} was submitted!`);
+
+        qdb.add(fields.getTextInputValue(TEXT_INPUT_FIELDS.QUOTE), interaction, {
+          notes: fields.getTextInputValue(TEXT_INPUT_FIELDS.NOTES),
+          tags: fields.getTextInputValue(TEXT_INPUT_FIELDS.TAGS),
           attachment: commandOptions.get(PARAMETERS.IMAGE)?.attachment,
           attachmentUrl: commandOptions.get(PARAMETERS.IMAGE)?.attachment.url
         })
-          .then((result) => addCallback(submitInteraction, result))
+          .then((result) => addQuote(submitInteraction, result))
           .catch(console.error);
-      });
+      }).catch(console.warn);
     break;
   case SUBCOMMANDS.DELETE:
-    qdb.delete(commandOptions.get(PARAMETERS.NUMBER).value, interaction.user).then(() => {
-      deleteQuote(interaction, commandOptions.get(PARAMETERS.NUMBER).value);
-    });
+    qdb.delete(commandOptions.get(PARAMETERS.NUMBER).value, interaction.user)
+      .then(() => {
+        deleteResponse(interaction, commandOptions.get(PARAMETERS.NUMBER).value);
+      });
     break;
   default:
-    qdb.get(undefined).then(sendCallback);
+    qdb.get(undefined).then(() => sendQuote(interaction));
     console.log(subCommand, commandOptions);
     break;
   }
@@ -413,4 +424,4 @@ const getAddQuoteModal = (interactionId) => {
   return modal;
 };
 
-exports.dev = true;
+exports.dev = false;
