@@ -6,7 +6,9 @@ const {
   ButtonStyle,
   ButtonBuilder,
   ActionRowBuilder,
-  Colors
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
+  Colors,
 } = require('discord.js');
 const weatherTable = require('../dbactions/weatherTable');
 const { fetchWeatherApi } = require('openmeteo');
@@ -181,7 +183,7 @@ const getAlerts = async (latitude, longitude) => {
 };
 
 const getLocation = async (locationName) => {
-  // https://api.mapbox.com/geocoding/v5/mapbox.places/1058KJ.json?types=place%2Cpostcode%2Caddress&access_token=pk.eyJ1IjoibGljaGlnMCIsImEiOiJja3o4ZGZyNzAxam0wMnZvZmttdWdrZmpqIn0.TAgbeSANbbkKvXHLJkg4aw
+  // https://api.mapbox.com/geocoding/v5/mapbox.places/1058KJ.json?types=place%2Cpostcode%2Caddress&access_token=<api_key>
   console.log(`finding ${locationName}`);
   const requestUrl = url.parse(url.format({
     protocol: 'https',
@@ -189,8 +191,8 @@ const getLocation = async (locationName) => {
     pathname: `/geocoding/v5/mapbox.places/${locationName}.json`,
     query: {
       types: ['place','postcode'],
-      proximity: '-90,40',
       access_token: process.env.MAPBOX_TOKEN,
+      limit: 10
     }
   }));
   return new Promise((resolve, reject) => {
@@ -486,58 +488,40 @@ module.exports.execute = async (client, interaction) => {
 
 
   if (codedLocations.length > 1 && codedLocations[0].name) {
-    const locations = codedLocations.map(({name})=>`"${name}" `);
-    const locationsRow = new ActionRowBuilder();
-    const locationButtonMap = {};
-
-    codedLocations.map((location, index) => {
-      const buttonId = `${id}_${index}`;
-      locationButtonMap[buttonId] = location.name;
-      locationsRow.addComponents(new ButtonBuilder({
-        label: location.name,
-        customId: buttonId,
-        style: ButtonStyle.Secondary,
-        disabled: false
-      }));
-    });
-
+    const menuOptions = codedLocations.map(({name}) => new StringSelectMenuOptionBuilder().setLabel(name).setValue(name));
+    const locationsMenu = new StringSelectMenuBuilder()
+      .setCustomId(`${BUTTON_IDS.LOCATION}_${id}`)
+      .setPlaceholder('Select a location')
+      .addOptions(menuOptions);
+    const locationsRow = new ActionRowBuilder().addComponents(locationsMenu);
     interaction.editReply({
-      content: `Found multiple places with that name: ${locations}`,
+      content: 'Found multiple places with that name. Please select one.',
       components: [locationsRow],
     }).catch(console.error);
-
-    const filter = buttonInteract => Object.keys(locationButtonMap).includes(buttonInteract.customId) && buttonInteract.user.id === member.id;
+    const filter = menuInteract => menuInteract.customId === `${BUTTON_IDS.LOCATION}_${id}` && menuInteract.user.id === member.id;
     const collector = interaction.channel.createMessageComponentCollector({filter, time: 90000 });
-    collector.on('collect', async buttonInteract => {
-
-      const locationName = locationButtonMap[buttonInteract.customId];
-      if (locationName) {
-        buttonInteract.update({content: `Using ${locationName}`, components:[]}).catch(console.error);
-        const codedLocation = codedLocations.find((location) => location.name === locationName);
-        const {name, lat, lon} = codedLocation;
-        if(remember) {
-          buttonInteract.update({content: `Saving ${locationName}`, components:[]}).catch(console.error);
-          const setLocName = await saveLocation(member.id, name, lon, lat).then().catch((e) => {
-            buttonInteract.editReply({
-              components: [],
+    collector.on('collect', async menuInteract => {
+      const locationName = menuInteract.values[0];
+      const codedLocation = codedLocations.find((location) => location.name === locationName);
+      if (codedLocation) {
+        if (remember) {
+          const {name, lon, lat} = codedLocation;
+          saveLocation(member.id, name, lon, lat).then().catch((e) => {
+            interaction.editReply({
               content: e
             }).catch(console.error);
           });
-          buttonInteract.editReply({
-            components: [],
-            content: `Location set to ${setLocName}`,
-            ephemeral: true
-          }).catch(console.error);
         }
+        menuInteract.update({content: `Selected ${locationName}`}).catch(console.error);
         reportWeather(interaction, codedLocation).catch(console.error);
       } else {
-        buttonInteract.update({content: 'Oops, I messed up.', components:[]}).catch(console.error);
+        menuInteract.update({content: 'Oops, I messed up.', components:[]}).catch(console.error);
       }
     });
-
     collector.on('end', () => {
       console.log('Collect end');
-    });
+    }
+    );
   } else if( codedLocations.length === 1 && codedLocations[0]?.name ) {
     if (remember) {
       const {name, lon, lat} = codedLocations[0];
