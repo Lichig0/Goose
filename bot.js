@@ -54,6 +54,7 @@ client.once('ready', () => {
   process.setUncaughtExceptionCaptureCallback((err) => {
     client.users.fetch(`${client.owner}`).then(user => {
       user.createDM().then(dmChannel => {
+        console.error(err);
         dmChannel.send(`${client.user.tag} encountered ${err}`);
       }).catch(console.error);
     }).catch(console.error);
