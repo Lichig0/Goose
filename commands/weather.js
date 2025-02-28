@@ -357,103 +357,122 @@ const reportWeather = async (interaction, codedLocation) => {
   const { id, member } = interaction;
   console.log(codedLocation);
   const isUSA = codedLocation.name.includes('United States');
-  getOpenMeteo(codedLocation.lat, codedLocation.lon).then(meteoData => {
-    const { name } = codedLocation;
-    const forecastEmbed = new EmbedBuilder();
-    const currentEmbed = new EmbedBuilder();
-    const todayEmbed = new EmbedBuilder();
-    const hourlyEmbed = new EmbedBuilder();
-    const alertsEmbed = new EmbedBuilder();
-    let ACTIVE_EMBED = currentEmbed;
+  const weatherQueries = [];
+  const weatherFetch = getOpenMeteo(codedLocation.lat, codedLocation.lon);
+  weatherQueries.push(weatherFetch);
+  if (isUSA) {
+    const alertsFetch = getAlerts(codedLocation.lat, codedLocation.lon);
+    weatherQueries.push(alertsFetch);
+  }
+  const [
+    meteoData,
+    alertsData = false
+  ] = await Promise.all(weatherQueries).catch((error) => {
+    console.error(error);
+    interaction.editReply(`Error: ${error}`).catch(console.error);
+  });
+  const { name } = codedLocation;
+  const forecastEmbed = new EmbedBuilder();
+  const currentEmbed = new EmbedBuilder();
+  const todayEmbed = new EmbedBuilder();
+  const hourlyEmbed = new EmbedBuilder();
+  const alertsEmbed = new EmbedBuilder();
+  let ACTIVE_EMBED = currentEmbed;
 
-    row.addComponents(currentButton.setCustomId(`${BUTTON_IDS.CURRENT}_${id}`))
-      .addComponents(todayButton.setCustomId(`${BUTTON_IDS.TODAY}_${id}`))
-      .addComponents(hourlyButton.setCustomId(`${BUTTON_IDS.HOURLY}_${id}`))
-      .addComponents(forecastButton.setCustomId(`${BUTTON_IDS.FORECAST}_${id}`));
+  row
+    .addComponents(currentButton.setCustomId(`${BUTTON_IDS.CURRENT}_${id}`))
+    .addComponents(todayButton.setCustomId(`${BUTTON_IDS.TODAY}_${id}`))
+    .addComponents(hourlyButton.setCustomId(`${BUTTON_IDS.HOURLY}_${id}`))
+    .addComponents(forecastButton.setCustomId(`${BUTTON_IDS.FORECAST}_${id}`));
+  components.push(row);
 
-    if (isUSA) {
-      row.addComponents(alertsButton.setCustomId(`${BUTTON_IDS.ALERTS}_${id}`));
+  currentEmbed
+    .setTitle('Current Conditions')
+    .setColor(Colors.Blurple)
+    .setDescription(`-# ${name} (${meteoData.timezone})`)
+    .addFields([
+      {name: meteoData.current.localeTime.toLocaleTimeString(), value: formatWeather(meteoData.current), inline: true}
+    ])
+    .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
+
+  todayEmbed
+    .setTitle('Today')
+    .setColor(Colors.Blue)
+    .setDescription(`-# ${name} (${meteoData.timezone})`)
+    .addFields([
+      {name: meteoData.current.localeTime.toLocaleTimeString(), value: formatWeather(meteoData.current), inline: true},
+      {name: meteoData.daily[0].localeTime.toDateString(), value: formatWeather(meteoData.daily[0]), inline: true}
+    ])
+    .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
+
+  hourlyEmbed
+    .setTitle('Hourly')
+    .setDescription(`-# ${name} (${meteoData.timezone})`)
+    .setColor(Colors.Green)
+    .addFields(meteoData.hourly.map( hour => {
+      return {name: hour.localeTime.toLocaleTimeString(), value: formatWeather(hour), inline: true };
+    }).slice(meteoData.localeTime.getHours()+1, meteoData.localeTime.getHours()+4))
+    .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
+
+  forecastEmbed
+    .setTitle('Weather Forecast')
+    .setDescription(`-# ${name} (${meteoData.timezone})`)
+    .setColor(Colors.Aqua)
+    .addFields(meteoData.daily.slice(1,4).map( day => {
+      return { name: day.localeTime.toDateString(), value: formatWeather(day), inline: true };
+    }))
+    .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
+  
+  if (isUSA && alertsData) {
+    const { features } = alertsData;
+    row.addComponents(alertsButton.setCustomId(`${BUTTON_IDS.ALERTS}_${id}`).setDisabled(!features.length));
+    if (features.length > 0) {
+      const alerts = `${features.map(feature => feature.properties.event )}`;
+      alertsEmbed
+        .setTitle('USA NWS Alerts')
+        .setDescription(alerts)
+        .setColor(Colors.Red)
+        .addFields(features.map(feature => {
+          return { name: feature.properties.event, value: feature.properties.description, inline: true };
+        }))
+        .setFooter({text: 'Data by Weather.gov (https://api.weather.gov/openapi.json)'});
+      currentEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
+      todayEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
+      forecastEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
+      hourlyEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
     }
+  }
 
-    components.push(row);
-    currentEmbed.setTitle('Current Conditions')
-      .setColor(Colors.Blurple)
-      .setDescription(`-# ${name} (${meteoData.timezone})`)
-      .addFields([
-        {name: meteoData.current.localeTime.toLocaleTimeString(), value: formatWeather(meteoData.current), inline: true}
-      ])
-      .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
+  ACTIVE_EMBED = currentEmbed;
+  interaction.editReply({ embeds: [currentEmbed], components}).catch(console.warn);
 
-    todayEmbed.setTitle('Today')
-      .setColor(Colors.Blue)
-      .setDescription(`-# ${name} (${meteoData.timezone})`)
-      .addFields([
-        {name: meteoData.current.localeTime.toLocaleTimeString(), value: formatWeather(meteoData.current), inline: true},
-        {name: meteoData.daily[0].localeTime.toDateString(), value: formatWeather(meteoData.daily[0]), inline: true}
-      ])
-      .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
-
-    hourlyEmbed.setTitle('Hourly')
-      .setDescription(`-# ${name} (${meteoData.timezone})`)
-      .setColor(Colors.Green)
-      .addFields(meteoData.hourly.map( hour => {
-        return {name: hour.localeTime.toLocaleTimeString(), value: formatWeather(hour), inline: true };
-      }).slice(meteoData.localeTime.getHours()+1, meteoData.localeTime.getHours()+4))
-      .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
-
-    forecastEmbed.setTitle('Weather Forecast')
-      .setDescription(`-# ${name} (${meteoData.timezone})`)
-      .setColor(Colors.Aqua)
-      .addFields(meteoData.daily.slice(1,4).map( day => {
-        return { name: day.localeTime.toDateString(), value: formatWeather(day), inline: true };
-      }))
-      .setFooter({text: 'Weather data by Open-Meteo.com (https://open-meteo.com/)'});
-    
-    if (isUSA) {
-      getAlerts(codedLocation.lat, codedLocation.lon).then(({features}) => {
-        if (features.length > 0) {
-          alertsButton.setDisabled(false);
-          const alerts = `${features.map(feature => feature.properties.event )}`;
-          currentEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
-          todayEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
-          forecastEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
-          hourlyEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
-          alertsEmbed.setTitle('USA NWS Alerts')
-            .setDescription(alerts)
-            .setColor(Colors.Red)
-            .addFields(features.map(feature => {
-              return { name: feature.properties.event, value: feature.properties.description, inline: true };
-            }))
-            .setFooter({text: 'Data by Weather.gov (https://api.weather.gov/openapi.json)'});
-          interaction.editReply({embeds: [ACTIVE_EMBED], components}).catch(console.error);
-        }
-      }).catch(console.warn);
+  const filter = buttonInteract => Object.values(BUTTON_IDS).map(bid=>`${bid}_${id}`).includes(buttonInteract.customId) && buttonInteract.user.id === member.id;
+  const collector = interaction.channel.createMessageComponentCollector({ filter, time: 90000 });
+  collector.on('collect', async buttonInteract => {
+    switch (buttonInteract.customId) {
+    case `${BUTTON_IDS.CURRENT}_${id}`:
+      ACTIVE_EMBED = currentEmbed;
+      break;
+    case `${BUTTON_IDS.TODAY}_${id}`:
+      ACTIVE_EMBED = todayEmbed;
+      break;
+    case `${BUTTON_IDS.HOURLY}_${id}`:
+      ACTIVE_EMBED = hourlyEmbed;
+      break;
+    case `${BUTTON_IDS.FORECAST}_${id}`:
+      ACTIVE_EMBED = forecastEmbed;
+      break;
+    case `${BUTTON_IDS.ALERTS}_${id}`:
+      ACTIVE_EMBED = alertsEmbed;
+      break;
+    default:
+      ACTIVE_EMBED = todayEmbed;
+      break;
     }
-
-    ACTIVE_EMBED = currentEmbed;
-    interaction.editReply({ embeds: [currentEmbed], components}).catch(console.warn);
-
-    const filter = buttonInteract => Object.values(BUTTON_IDS).map(bid=>`${bid}_${id}`).includes(buttonInteract.customId) && buttonInteract.user.id === member.id;
-    const collector = interaction.channel.createMessageComponentCollector({ filter, time: 90000 });
-    collector.on('collect', async buttonInteract => {
-      if (buttonInteract.customId === `${BUTTON_IDS.FORECAST}_${id}`) {
-        ACTIVE_EMBED = forecastEmbed;
-      } else if (buttonInteract.customId === `${BUTTON_IDS.TODAY}_${id}`) {
-        ACTIVE_EMBED = todayEmbed;
-      } else if (buttonInteract.customId === `${BUTTON_IDS.HOURLY}_${id}`) {
-        ACTIVE_EMBED = hourlyEmbed;
-      } else if (buttonInteract.customId === `${BUTTON_IDS.CURRENT}_${id}`) {
-        ACTIVE_EMBED = currentEmbed;
-      } else if (buttonInteract.customId === `${BUTTON_IDS.ALERTS}_${id}`) {
-        ACTIVE_EMBED = alertsEmbed;
-      }
-      await buttonInteract.update({ embeds: [ACTIVE_EMBED] }).catch(console.error);
-    });
-    collector.on('end', () => {
-      interaction.editReply({components:[]}).catch(console.warn);
-    });
-  }).catch((error) => {
-    interaction.editReply(`${error}`).catch(console.warn);
+    await buttonInteract.update({ embeds: [ACTIVE_EMBED] }).catch(console.error);
+  });
+  collector.on('end', () => {
+    interaction.editReply({components:[]}).catch(console.warn);
   });
 };
 
@@ -512,7 +531,8 @@ module.exports.execute = async (client, interaction) => {
             }).catch(console.error);
           });
         }
-        menuInteract.update({content: `Selected ${locationName}`}).catch(console.error);
+        locationsMenu.setDisabled(true);
+        menuInteract.update({content: `Selected ${locationName}`, components:[locationsRow]}).catch(console.error);
         reportWeather(interaction, codedLocation).catch(console.error);
       } else {
         menuInteract.update({content: 'Oops, I messed up.', components:[]}).catch(console.error);
