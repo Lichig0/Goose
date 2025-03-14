@@ -9,26 +9,26 @@
     - [Install](#install--setup)
 ---
 ## Description
-Goose, Goose bot, Bruce, or Groose are all identities of this bot. This codebase has served bots with various identities which has left it with an identity crysis, but Goose is the OG.
+Goose, Goose bot, Bruce, or Groose are all identities of this bot. This codebase has served bots with various identities which has left it with an identity crasis, but Goose is the OG.
 
 ### **Origin**
-Goose is originially written as a utility bot for Discord for my own administration, such as kicking, auto-sending invites, "cursing" to make people unable to speak(before Discord added a Timeout feature), anncouncing departures from a server, alerting of someone deleting to gas light, etc.
+Goose is originally written as a utility bot for Discord for my own administration, such as kicking, auto-sending invites, "cursing" to make people unable to speak(before Discord added a Timeout feature), announcing departures from a server, alerting of someone deleting to gas light, etc.
 
 ### **Evolution**
-Goose has since evolved into a Markov chain chat bot, and functions mostly on RNG with some additions to add a little more personality and patterns of life. It has grown to have different behaviors as to what I feel like doing with it at any given time. Perhapse they can be enumerated sometime in the future.
+Goose has since evolved into a Markov chain chat bot, and functions mostly on RNG with some additions to add a little more personality and patterns of life. It has grown to have different behaviors as to what I feel like doing with it at any given time. Perhaps they can be enumerated sometime in the future.
 
 As it is at the time of writing, it is made so that each instance has some core internal set of strings added to the corpus before fetching as much history as possible from all Discord guilds' channels as possible. Each guild has it's own corpus to not spill any data elsewhere unexpectedly. As Goose has spread to new and different servers, data collecting has become a concern, so [there is a table that describes what data/where is collected/held/stored](#data-table)
 
 ### **Future ideas?**
 Some ideas I am looking to explore
 - [ ] Make the chatter activity into different *cores* so different libraries or techniques can be used for the chat features. Adding "actual" machine learning to learn behaviors of a Guild, and more intelligently reply. This may be too much for a Raspberry Pi?
-- [ ] Add a way to ingest text blocks as a file. Discord seems to plan to add attachments as an argument to Slash Command interactions, so pehapse wait for that.
-- [ ] Separate the chatter cores/features from the commands and corpus; that way updating chat behavior and commands does not restart the entire application and restart the history reading process. Perhapse a first step for this could be live-refreshing commands?
+- [ ] Add a way to ingest text blocks as a file. Discord seems to plan to add attachments as an argument to Slash Command interactions, so perhaps wait for that.
+- [ ] Separate the chatter cores/features from the commands and corpus; that way updating chat behavior and commands does not restart the entire application and restart the history reading process. Perhaps a first step for this could be live-refreshing commands?
 - [ ] Make a GUI for the settings. (Maybe move them to the DB)
 - [ ] Build task to minify/optimize for "prod"
 ---
 ## Where does the data go?
-For the sake of privacy, everything that can sensibliy be held in memory, ~~should~~ will be. If it is not, it should be fixed. Everytime the bot gets shut down, host loses power, or even when it crashes, everything in memory has to be re-fetched from Discord Servers. Goose's knowledge of you is only a subset of what is already on Discord's servers, and less so if restricted with Guild/Role/User permisisons in any one Guild.
+For the sake of privacy, everything that can sensibly be held in memory, ~~should~~ will be. If it is not, it should be fixed. Every time the bot gets shut down, host loses power, or even when it crashes, everything in memory has to be re-fetched from Discord Servers. Goose's knowledge of you is only a subset of what is already on Discord's servers, and less so if restricted with Guild/Role/User permisisons in any one Guild.
 
 | Type | Location | Crosses Guilds |
 |------|----------|----------------|
@@ -53,7 +53,7 @@ For the sake of privacy, everything that can sensibliy be held in memory, ~~shou
     - OpenWeather API Token **(Optional)**
         - MapBox Token **(Required if OpenWeather is provided)**
 ### Install & Setup
-Ceck versions match requirements above
+Check versions match requirements above
 ```
 node --version
 ```
