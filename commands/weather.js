@@ -42,7 +42,7 @@ const WMO_CODES = { // ☁️⛅⛈️🌤️🌥️🌦️🌧️🌨️🌩️
   82: '🌧️ Heavy Rain Showers',
   85: '🌨️ Snow Showers',
   86: '🌨️ Heavy Snow Showers',
-  95: '⛈️ Thunderstoms',
+  95: '⛈️ Thunderstorms',
   96: '⛈️ Thunderstorms',
   99: '⛈️ Strong Thunderstorms'
 };
@@ -367,10 +367,11 @@ const reportWeather = async (interaction, codedLocation) => {
   const [
     meteoData,
     alertsData = false
-  ] = await Promise.all(weatherQueries).catch((error) => {
-    console.error(error);
-    interaction.editReply(`Error: ${error}`).catch(console.error);
-  });
+  ] = await Promise.all(weatherQueries)
+    .catch((error) => {
+      console.error(error);
+      interaction.editReply(`Error: ${error}`).catch(console.error);
+    });
   const { name } = codedLocation;
   const forecastEmbed = new EmbedBuilder();
   const currentEmbed = new EmbedBuilder();
