@@ -18,7 +18,7 @@ const math = require('mathjs');
 
 const WMO_CODES = { // ☁️⛅⛈️🌤️🌥️🌦️🌧️🌨️🌩️🌫️🌝🌞☔☃️ 
   0: '🌞 Clear Sky',
-  1: '⛅ Mostlyy Clear',
+  1: '⛅ Mostly Clear',
   2: '⛅ Partly Cloudy',
   3: '☁️ Overcast',
   45: '🌫️ Fog',
@@ -151,17 +151,16 @@ const formatWeather = (data) => {
 };
 
 const getAlerts = async (latitude, longitude) => {
-  // https://api.weather.gov/alerts?point=43.06%2C-75.27&limit=2
+  // https://api.weather.gov/alerts?point=43.06%2C-75.27
   const requestUrl = new url.URL('https://api.weather.gov/alerts/active');
   requestUrl.searchParams.set('point',`${latitude},${longitude}`);
-  requestUrl.searchParams.set('limit', 3);
-
+   
   return new Promise((resolve, reject) => {
     https.get({
       hostname: requestUrl.hostname,
       path: `${requestUrl.pathname}${requestUrl.search}`,
       headers: {
-        accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        accept: 'application/geo+json',
         'user-agent': 'nodejs-goose'
       }
     }, (response) => {
@@ -434,7 +433,13 @@ const reportWeather = async (interaction, codedLocation) => {
         .setDescription(alerts)
         .setColor(Colors.Red)
         .addFields(features.map(feature => {
-          return { name: feature.properties.event, value: feature.properties.description, inline: true };
+          return { 
+            name: feature.properties.event, 
+            value: feature.properties.description.length > 1024 
+              ? feature.properties.description.slice(0, 1021) + '...' 
+              : feature.properties.description, 
+            inline: true 
+          };
         }))
         .setFooter({text: 'Data by Weather.gov (https://api.weather.gov/openapi.json)'});
       currentEmbed.addFields([{name: 'Alerts', value: alerts, inline: false }]);
