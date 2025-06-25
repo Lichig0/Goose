@@ -494,7 +494,7 @@ module.exports.getCommandData = () => {
   ];
   return {
     name: COMMAND_NAME,
-    description: 'Get a weather forcast. *Will show town names in chat!*',
+    description: 'Get a weather forecast. *Will show town names in chat!*', // fixed "forecast" -> "forecast"
     default_permission: true,
     type: ApplicationCommandType.ChatInput,
     options,
