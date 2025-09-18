@@ -23,6 +23,9 @@ const deleteMessages = [
 module.exports = (client, messageDelete) => {
   console.log('[Message Deleted]');
   isBotMessage = messageDelete.author.bot;
+  const optedOutIds = client.optedOutUsers.map(({userId}) => userId);
+  if(optedOutIds.includes(messageDelete.author.id)) return;
+
   const deleteChannel = messageDelete.guild.channels.cache.find(ch => ch.name === 'deleted');
   const sendSawThat = (e) => {
     if(e) console.error(e);
@@ -41,10 +44,10 @@ module.exports = (client, messageDelete) => {
   }
   if (messageDelete.attachments && messageDelete.attachments.size > 0 && messageDelete) { // If I change this to: message.attachments.size>0 && message it works with deleted image & text but as it is without this said line it doesn't function
 
-    var Attachment = [...(messageDelete.attachments).values()];
+    const Attachment = [...messageDelete.attachments.values()];
 
     Attachment.forEach(function (attachment) {
-      const logembed = new EmbedBuilder()
+      const logEmbed = new EmbedBuilder()
 
         .setAuthor({ name: messageDelete.author.tag, iconURL: messageDelete.author.displayAvatarURL()})
         .setDescription(`**Image sent by ${messageDelete.author.tag} deleted in <#${messageDelete.channel.id}>**`)
@@ -52,17 +55,17 @@ module.exports = (client, messageDelete) => {
         .setFooter({ text: 'Deleted Image'})
         .setTimestamp();
 
-      deleteChannel.send({embeds: [logembed]}).catch(sendSawThat);
+      deleteChannel.send({embeds: [logEmbed]}).catch(sendSawThat);
     });
   } else {
-    const logembed = new EmbedBuilder()
+    const logEmbed = new EmbedBuilder()
       .setTitle('Message Deleted')
       .setAuthor({ name: messageDelete.author.tag, iconURL: messageDelete.author.displayAvatarURL()})
       .setDescription(`**Message sent by ${messageDelete.author.tag} deleted in <#${messageDelete.channel.id}>**`)
       .setFooter({ text: 'Deleted Message'})
       .setTimestamp();
-    if(messageDelete.content) logembed.addFields([{name: 'Message Content', value: `${messageDelete.content}`}]);
-    deleteChannel.send({embeds: [logembed]}).catch(sendSawThat);
+    if(messageDelete.content) logEmbed.addFields([{name: 'Message Content', value: `${messageDelete.content}`}]);
+    deleteChannel.send({embeds: [logEmbed]}).catch(sendSawThat);
 
   }
 };
