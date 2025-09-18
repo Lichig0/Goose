@@ -65,7 +65,13 @@ module.exports.run = async (message, client) => {
   audit = {};
   if(optedOutIds.includes(author.id)) return;
   const config = settings.settings.chatter;
-  const { ignoredChannels = [], frequency = 60, useHonk, randomChat, wobble = 2 } = config;
+  const {
+    ignoredChannels = [],
+    frequency = 60,
+    useHonk,
+    randomChat,
+    wobble = 2,
+  } = config;
   const noiseFrequency = frequency * 60000;
   const isMentioned = mentions.has(client.user.id);
   const honkChannel = isMentioned && useHonk ? theHonk : channel;
@@ -230,14 +236,14 @@ const coreAction = new Action('Core', () => {
 const ollamaAction = new Action('Ollama', async ({ content, channel }) => {
   try {
     // Get context from last few messages
-    const contextMessages = await channel.messages.fetch({ limit: 5 });
+    const contextMessages = await channel.messages.fetch({ limit: 10 });
     const context = contextMessages
       .reverse()
       .map(m => `${m.author.username}: ${m.content}`)
       .join('\n');
     
     // Create prompt with context
-    const prompt = `Previous conversation:\n${context}\n\nYou are a troll and not quite mean, but not friendly Discord bot. Respond to the last message in a natural way. Keep your response concise and engaging. Last message: ${content}`;
+    const prompt = `People in this chat may refer to you as Bruce, Goose, or Groose.\n\nPrevious conversation:\n${context}\n\nYou are a Discord bot. Add to the conversation and try to match the energy of the room. Keep your response no longer than any one else's message. Last message: ${content}`;
     
     // Check if model is ready
     const isReady = await ollamaClient.isModelReady();
