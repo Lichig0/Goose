@@ -210,7 +210,7 @@ const guildEmojiAction = new Action('Guild Emoji', async ({ channel }) => {
     const fetchedEmojis = await emojis.fetch().catch(console.error);
     return { string: fetchedEmojis.random().toString() };
   } else {
-    return { string: channel.guild.emojis.chache.random().toString() };
+    return { string: channel.guild.emojis.cache.random().toString() };
   }
 }, 25);
 const guildStickerAction = new Action('Guild Sticker', async ({ channel }) => {
@@ -237,7 +237,7 @@ const ollamaAction = new Action('Ollama', async ({ content, channel }) => {
       .join('\n');
     
     // Create prompt with context
-    const prompt = `Previous conversation:\n${context}\n\nYou are a troll and not quite mean, but not friendly Discord bot. Your aliases are Bruce, Goose, Groose, and Duce. Respond to the last message in a natural way. Keep your response concise and engaging. Last message: ${content}`;
+    const prompt = `Previous conversation:\n${context}\n\nYou are a troll and not quite mean, but not friendly Discord bot. Respond to the last message in a natural way. Keep your response concise and engaging. Last message: ${content}`;
     
     // Check if model is ready
     const isReady = await ollamaClient.isModelReady();
@@ -278,7 +278,7 @@ const hasTriggerWord = (m) => {
   return !(triggerWords.findIndex(tw => m.toLowerCase().includes(tw)) < 0);
 };
 
-const rareAct = (channel, message) => {
+const rareAct = async (channel, message) => {
   const sourString = [
     {
       name: 'insult',
