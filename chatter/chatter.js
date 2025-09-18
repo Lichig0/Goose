@@ -9,6 +9,7 @@ const { Brain } = require('./brain');
 const zalgo = require('zalgo-js');
 const Action = require('./Action').default;
 const sampleChain = require('./sampleCorpus');
+const ollamaClient = require('./ollamaClient');
 
 const chance = new Chance();
 const guildBrains = {};
@@ -225,6 +226,38 @@ const coreAction = new Action('Core', () => {
   return { string: chance.pickone(coreThoughts.raw) };
 }, 1);
 
+
+const ollamaAction = new Action('Ollama', async ({ content, channel }) => {
+  try {
+    // Get context from last few messages
+    const contextMessages = await channel.messages.fetch({ limit: 5 });
+    const context = contextMessages
+      .reverse()
+      .map(m => `${m.author.username}: ${m.content}`)
+      .join('\n');
+    
+    // Create prompt with context
+    const prompt = `Previous conversation:\n${context}\n\nYou are a troll and not quite mean, but not friendly Discord bot. Your aliases are Bruce, Goose, Groose, and Duce. Respond to the last message in a natural way. Keep your response concise and engaging. Last message: ${content}`;
+    
+    // Check if model is ready
+    const isReady = await ollamaClient.isModelReady();
+    if (!isReady) {
+      console.warn('[Ollama] Model not ready');
+      return { string: 'Sorry, I need a moment to collect my thoughts...' };
+    }
+
+    // Generate response
+    const response = await ollamaClient.generateResponse(prompt, {
+      temperature: 0.7
+    });
+
+    return { string: response };
+  } catch (error) {
+    console.error('[Ollama] Error:', error);
+    return { string: 'Oops, something went wrong with my thinking process...' };
+  }
+}, 50);
+
 const Builtin = {
   ACTIONS: [
     guildCorpusAction,
@@ -235,7 +268,8 @@ const Builtin = {
     coreThoughtAction,
     insultAction,
     reactAction,
-    coreAction
+    coreAction,
+    ollamaAction
   ]
 };
 
@@ -290,7 +324,7 @@ const act = async (channel, message) => {
 
   const config = settings.settings.chatter;
   const { guildId } = channel;
-  const {disableImage = false, mentions = true, weights = [100, 25, 25, 25, 10, 25, 1] } = config;
+  const {disableImage = false, mentions = true, weights = [100, 25, 25, 25, 10, 25, 1, 1, 1, 50] } = config;
 
 
   const taskWeights = [];
