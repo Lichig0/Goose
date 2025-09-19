@@ -239,6 +239,7 @@ const ollamaAction = new Action('Ollama', async ({ content, channel }) => {
     const contextMessages = await channel.messages.fetch({ limit: 10 });
     const context = contextMessages
       .reverse()
+      .filter(m => m.author.id !== channel.client.user.id)
       .map(m => `${m.author.username}: ${m.content}`)
       .join('\n');
     
