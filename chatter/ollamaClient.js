@@ -16,7 +16,13 @@ class OllamaClient {
         body: JSON.stringify({
           model,
           prompt,
-          temperature,
+          options: {
+            temperature,
+            top_k: options.top_k || 40,
+            top_p: options.top_p || 0.9,
+            max_tokens: options.max_tokens || 512,
+            keep_alive: options.keep_alive || '5m',
+          },
           stream: false
         })
       });

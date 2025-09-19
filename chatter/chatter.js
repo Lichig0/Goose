@@ -244,7 +244,7 @@ const ollamaAction = new Action('Ollama', async ({ content, channel }) => {
       .join('\n');
     
     // Create prompt with context
-    const prompt = `People in this chat may refer to you as Bruce, Goose, or Groose.\n\nPrevious conversation:\n${context}\n\nYou are a Discord bot. Add to the conversation and try to match the energy of the room. Keep your response no longer than any one else's message. Last message: ${content}`;
+    const prompt = `Previous conversation:\n${context}\n\nYou are a Discord bot. Add to the conversation and try to type in the style as everyone else as to fit in. A sentence or two is fine, but don't make the messages too long. Last message: ${content}`;
     
     // Check if model is ready
     const isReady = await ollamaClient.isModelReady();
@@ -255,7 +255,8 @@ const ollamaAction = new Action('Ollama', async ({ content, channel }) => {
 
     // Generate response
     const response = await ollamaClient.generateResponse(prompt, {
-      temperature: 0.7
+      temperature: 0.7,
+      keep_alive: '30m',
     });
 
     return { string: response };
