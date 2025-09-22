@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goose Settings</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --section-bg: white;
+            --text-color: #333;
+            --border-color: #ddd;
+            --shadow-color: rgba(0,0,0,0.1);
+            --success-bg: #dff0d8;
+            --success-color: #3c763d;
+            --success-border: #d6e9c6;
+            --error-bg: #f2dede;
+            --error-color: #a94442;
+            --error-border: #ebccd1;
+            --input-bg: white;
+            --button-save: #4CAF50;
+            --button-save-hover: #45a049;
+            --button-remove: #f44336;
+            --button-add: #2196F3;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a1a;
+            --section-bg: #2d2d2d;
+            --text-color: #e0e0e0;
+            --border-color: #404040;
+            --shadow-color: rgba(0,0,0,0.3);
+            --success-bg: #1b4a1b;
+            --success-color: #90ee90;
+            --success-border: #2e662e;
+            --error-bg: #4a1b1b;
+            --error-color: #ee9090;
+            --error-border: #662e2e;
+            --input-bg: #3d3d3d;
+            --button-save: #388e3c;
+            --button-save-hover: #2e7d32;
+            --button-remove: #d32f2f;
+            --button-add: #1976d2;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 250px;
+            background-color: var(--section-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: transform 0.3s ease;
+            z-index: 100;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-290px);
+        }
+
+        .sidebar-toggle {
+            position: fixed;
+            left: 290px;
+            top: 20px;
+            border-right: none;
+            background-color: var(--section-bg);
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 0px 4px 4px 0px;
+            transition: left 0.3s ease;
+            z-index: 100;
+        }
+
+        .sidebar-toggle.collapsed {
+            left: 0;
+            border-right: none;
+            border-radius: 4px 0px 0px 4px;
+        }
+
+        .sidebar-toggle:hover {
+            background-color: var(--border-color);
+        }
+
+        .sidebar-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            transition: background-color 0.2s;
+            color: var(--text-color);
+            text-decoration: none;
+        }
+
+        .sidebar-item:hover {
+            background-color: var(--border-color);
+        }
+
+        .sidebar-item.active {
+            background-color: var(--button-add);
+            color: white;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 290px;
+            padding: 20px;
+            max-width: 1000px;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.sidebar-collapsed {
+            margin-left: 0;
+        }
+
+        .content-header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            margin-bottom: 20px;
+            padding: 0 60px;
+        }
+
+        .content-header h1 {
+            margin: 0;
+            text-align: center;
+            flex: 1;
+        }
+
+        .theme-switch {
+            position: absolute;
+            top: 0;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Switch styles */
+        .theme-switch input[type="checkbox"] {
+            height: 0;
+            width: 0;
+            visibility: hidden;
+            position: absolute;
+        }
+
+        .theme-switch label {
+            cursor: pointer;
+            text-indent: -9999px;
+            width: 52px;
+            height: 27px;
+            background: var(--border-color);
+            display: block;
+            border-radius: 100px;
+            position: relative;
+        }
+
+        .theme-switch label:after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 21px;
+            height: 21px;
+            background: #fff;
+            border-radius: 90px;
+            transition: 0.3s;
+        }
+
+        .theme-switch input:checked + label {
+            background: var(--button-add);
+        }
+
+        .theme-switch input:checked + label:after {
+            left: calc(100% - 3px);
+            transform: translateX(-100%);
+        }
+
+        .theme-switch label:active:after {
+            width: 30px;
+        }
+
+        .section {
+            background-color: var(--section-bg);
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px var(--shadow-color);
+        }
+
+        .section-header {
+            padding: 15px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 1.2em;
+            flex-grow: 1;
+        }
+
+        .section-content {
+            padding: 20px;
+            display: none;
+        }
+
+        .section-content.expanded {
+            display: block;
+        }
+
+        .collapse-arrow {
+            transition: transform 0.3s ease;
+            font-size: 1.2em;
+            width: 20px;
+            text-align: center;
+        }
+
+        .collapse-arrow.expanded {
+            transform: rotate(90deg);
+        }
+
+        .setting-group {
+            margin-bottom: 15px;
+        }
+
+        .setting-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .setting-row label {
+            flex: 0 0 200px;
+            font-weight: bold;
+        }
+
+        .array-label {
+            flex: 0 0 50px;
+            font-weight: bold;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+
+        input[type="number"],
+        input[type="text"],
+        select {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        button {
+            background-color: var(--button-save);
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: var(--button-save-hover);
+        }
+
+        .array-input {
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .array-input button {
+            flex-shrink: 0;
+            background-color: var(--button-remove);
+        }
+
+        .add-item {
+            background-color: var(--button-add);
+        }
+
+        @media screen and (max-width: 768px) {
+            /* Basic mobile layout */
+            .main-content {
+                margin-left: 0;
+                padding: 10px;
+                max-width: 100%;
+            }
+
+            /* Stack inputs and labels */
+            .setting-row {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+
+            .setting-row label {
+                flex: none;
+                margin-bottom: 5px;
+            }
+
+            /* Make sure inputs and nested sections take full width */
+            input[type="number"],
+            input[type="text"],
+            select,
+            .section {
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            /* Reset margin for nested sections */
+            .setting-group .section {
+                margin-left: 0 !important;
+                margin-right: 0;
+            }
+
+            /* Adjust padding for nested content */
+            .section-content {
+                padding: 10px;
+                width: 100%;
+                box-sizing: border-box;
+            }
+
+            /* Handle arrays better on mobile */
+            .array-input {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .array-input input {
+                width: 100%;
+            }
+
+            /* Make the sidebar work better on mobile */
+            .sidebar {
+                width: 80%;
+                max-width: 250px;
+            }
+
+            .sidebar.collapsed {
+                transform: translateX(-100%);
+            }
+
+            /* Center theme switch on mobile */
+            .content-header {
+                flex-direction: column;
+                gap: 10px;
+                padding: 0;
+            }
+
+            .theme-switch {
+                position: static;
+                justify-content: center;
+                width: 100%;
+            }
+
+            /* Make sure buttons are easy to tap */
+            button {
+                min-height: 44px;
+                padding: 10px 20px;
+            }
+        }
+
+        .notification {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .success {
+            background-color: var(--success-bg);
+            color: var(--success-color);
+            border: 1px solid var(--success-border);
+        }
+
+        .error {
+            background-color: var(--error-bg);
+            color: var(--error-color);
+            border: 1px solid var(--error-border);
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="settings-nav">
+        <!-- Navigation items will be inserted here -->
+    </div>
+    <button class="sidebar-toggle" onclick="toggleSidebar()">›</button>
+
+    <div class="main-content">
+        <div class="content-header">
+            <h1>Goose Settings</h1>
+            <div class="theme-switch">
+                <span style="margin-right: 8px;">Dark Mode</span>
+                <input type="checkbox" id="theme-toggle" onclick="toggleTheme()">
+                <label for="theme-toggle">Toggle dark mode</label>
+            </div>
+        </div>
+
+        <div id="notification" class="notification"></div>
+        <div id="settings-form"></div>
+        <button onclick="saveSettings()">Save All Settings</button>
+    </div>
+
+    <script>
+        // Theme handling
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            setTheme(newTheme);
+            document.getElementById('theme-toggle').checked = newTheme === 'dark';
+        }
+
+        // Initialize theme from localStorage
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        setTheme(savedTheme);
+        document.getElementById('theme-toggle').checked = savedTheme === 'dark';
+
+        // Sidebar handling
+        function toggleSidebar() {
+            const sidebar = document.getElementById('settings-nav');
+            const toggle = document.querySelector('.sidebar-toggle');
+            const mainContent = document.querySelector('.main-content');
+
+            // Rotate toggle button
+            toggle.style.transform = sidebar.classList.contains('collapsed') 
+                ? 'none'
+                : 'rotate(180deg)';
+            
+            sidebar.classList.toggle('collapsed');
+            toggle.classList.toggle('collapsed');
+            mainContent.classList.toggle('sidebar-collapsed');
+            
+            // Save state
+            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+        }
+
+        // Initialize sidebar state from localStorage
+        const sidebarCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+        if (sidebarCollapsed) {
+            const sidebar = document.getElementById('settings-nav');
+            const toggle = document.querySelector('.sidebar-toggle');
+            const mainContent = document.querySelector('.main-content');
+            
+            sidebar.classList.add('collapsed');
+            toggle.classList.add('collapsed');
+            mainContent.classList.add('sidebar-collapsed');
+            toggle.style.transform = 'rotate(180deg)';
+        }
+    </script>
+
+    <script>
+        let currentSettings = {};
+
+        function createArrayInput(key, array, parentElement) {
+            const container = document.createElement('div');
+            container.className = 'setting-group';
+            
+            const headerRow = document.createElement('div');
+            headerRow.className = 'setting-row';
+            const headerLabel = document.createElement('label');
+            headerLabel.textContent = key;
+            headerRow.appendChild(headerLabel);
+            container.appendChild(headerRow);
+
+            const arrayContainer = document.createElement('div');
+            arrayContainer.id = `array-${key}`;
+            arrayContainer.style.marginLeft = '200px';  // Align with other inputs
+            
+            array.forEach((item, index) => {
+                const itemContainer = document.createElement('div');
+                itemContainer.className = 'array-input';
+                
+                const indexLabel = document.createElement('span');
+                indexLabel.className = 'array-label';
+                indexLabel.textContent = `[${index}]`;
+                
+                const input = document.createElement('input');
+                input.type = typeof item === 'number' ? 'number' : 'text';
+                input.value = item;
+                input.onchange = () => {
+                    const newValue = input.type === 'number' ? Number(input.value) : input.value;
+                    array[index] = newValue;
+                    
+                    // Update parent object
+                    let section = input.closest('.section');
+                    let sectionKey = section.id.replace('section-', '');
+                    let current = currentSettings[sectionKey];
+                    
+                    if (typeof current === 'object' && !Array.isArray(current)) {
+                        current[key] = array;
+                    } else {
+                        currentSettings[sectionKey] = array;
+                    }
+                };
+                
+                const removeButton = document.createElement('button');
+                removeButton.textContent = 'Remove';
+                removeButton.onclick = () => {
+                    array.splice(index, 1);
+                    
+                    // Update parent object
+                    let section = input.closest('.section');
+                    let sectionKey = section.id.replace('section-', '');
+                    let current = currentSettings[sectionKey];
+                    
+                    if (typeof current === 'object' && !Array.isArray(current)) {
+                        current[key] = array;
+                    } else {
+                        currentSettings[sectionKey] = array;
+                    }
+                    
+                    renderSettings(currentSettings);
+                };
+                
+                itemContainer.appendChild(indexLabel);
+                itemContainer.appendChild(input);
+                itemContainer.appendChild(removeButton);
+                arrayContainer.appendChild(itemContainer);
+            });
+
+            const addButton = document.createElement('button');
+            addButton.textContent = 'Add Item';
+            addButton.className = 'add-item';
+            addButton.onclick = () => {
+                array.push(typeof array[0] === 'number' ? 0 : '');
+                renderSettings(currentSettings);
+            };
+            
+            container.appendChild(arrayContainer);
+            container.appendChild(addButton);
+            parentElement.appendChild(container);
+        }
+
+        function createInput(key, value, parentElement) {
+            if (Array.isArray(value)) {
+                createArrayInput(key, value, parentElement);
+                return;
+            }
+
+            const container = document.createElement('div');
+            container.className = 'setting-group';
+
+            if (typeof value === 'object' && !Array.isArray(value)) {
+                // Skip creating container for objects - they're handled in renderSettings
+                return;
+            } else {
+                if (typeof value === 'object' && !Array.isArray(value)) {
+                    // Skip creating container for objects - they're handled in renderSettings
+                    return;
+                } else {
+                    const row = document.createElement('div');
+                    row.className = 'setting-row';
+                    
+                    const label = document.createElement('label');
+                    label.textContent = key;
+                    
+                    let input;
+                    if (typeof value === 'boolean') {
+                        input = document.createElement('select');
+                        const trueOption = document.createElement('option');
+                        trueOption.value = 'true';
+                        trueOption.textContent = 'true';
+                        const falseOption = document.createElement('option');
+                        falseOption.value = 'false';
+                        falseOption.textContent = 'false';
+                        input.appendChild(trueOption);
+                        input.appendChild(falseOption);
+                        input.value = value.toString();
+                        input.onchange = () => {
+                            let section = row.closest('.section');
+                            let sectionKey = section.id.replace('section-', '');
+                            let current = currentSettings[sectionKey];
+                            
+                            if (typeof current === 'object' && !Array.isArray(current)) {
+                                current[key] = input.value === 'true';
+                            } else {
+                                currentSettings[sectionKey] = input.value === 'true';
+                            }
+                        };
+                    } else {
+                        input = document.createElement('input');
+                        input.type = typeof value === 'number' ? 'number' : 'text';
+                        input.value = value;
+                        input.onchange = () => {
+                            let section = row.closest('.section');
+                            let sectionKey = section.id.replace('section-', '');
+                            let current = currentSettings[sectionKey];
+                            let newValue = input.type === 'number' ? Number(input.value) : input.value;
+                            
+                            if (typeof current === 'object' && !Array.isArray(current)) {
+                                current[key] = newValue;
+                            } else {
+                                currentSettings[sectionKey] = newValue;
+                            }
+                        };
+                    }
+                row.appendChild(label);
+                row.appendChild(input);
+                container.appendChild(row);
+            }
+        }
+            parentElement.appendChild(container);
+        }
+
+        function createSection(key, content) {
+            const section = document.createElement('div');
+            section.className = 'section';
+
+            const header = document.createElement('div');
+            header.className = 'section-header';
+            
+            const arrow = document.createElement('span');
+            arrow.className = 'collapse-arrow';
+            arrow.textContent = '›';
+            
+            const title = document.createElement('h2');
+            title.textContent = key;
+
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'section-content';
+            contentDiv.appendChild(content);
+
+            header.appendChild(arrow);
+            header.appendChild(title);
+            
+            // Toggle expand/collapse
+            header.onclick = () => {
+                contentDiv.classList.toggle('expanded');
+                arrow.classList.toggle('expanded');
+            };
+
+            section.appendChild(header);
+            section.appendChild(contentDiv);
+
+            return section;
+        }
+
+        function createNavigation(settings) {
+            const nav = document.getElementById('settings-nav');
+            nav.innerHTML = '<h2>Settings</h2>';
+            
+            Object.keys(settings).forEach((key, index) => {
+                const navItem = document.createElement('div');
+                navItem.className = 'sidebar-item';
+                navItem.textContent = key;
+                navItem.onclick = () => {
+                    // Remove active class from all items
+                    document.querySelectorAll('.sidebar-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    // Add active class to clicked item
+                    navItem.classList.add('active');
+                    
+                    // Collapse all sections
+                    document.querySelectorAll('.section-content').forEach(content => {
+                        content.classList.remove('expanded');
+                    });
+                    document.querySelectorAll('.collapse-arrow').forEach(arrow => {
+                        arrow.classList.remove('expanded');
+                    });
+                    
+                    // Expand clicked section
+                    const section = document.getElementById(`section-${key}`);
+                    section.querySelector('.section-content').classList.add('expanded');
+                    section.querySelector('.collapse-arrow').classList.add('expanded');
+                    
+                    // Scroll section into view
+                    section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                };
+                nav.appendChild(navItem);
+            });
+        }
+
+        function renderSettings(settings) {
+            const form = document.getElementById('settings-form');
+            form.innerHTML = '';
+            
+            Object.entries(settings).forEach(([key, value], index) => {
+                const section = document.createElement('div');
+                section.className = 'section';
+                section.id = `section-${key}`; // Add ID for navigation
+
+                const header = document.createElement('div');
+                header.className = 'section-header';
+                
+                const arrow = document.createElement('span');
+                arrow.className = 'collapse-arrow';
+                arrow.textContent = '›';
+                
+                const title = document.createElement('h2');
+                title.textContent = key;
+
+                const content = document.createElement('div');
+                content.className = 'section-content';
+
+                if (typeof value === 'object' && !Array.isArray(value)) {
+                    // For objects, directly create inputs for their properties
+                    Object.entries(value).forEach(([k, v]) => {
+                        createInput(k, v, content);
+                    });
+                } else {
+                    // For non-objects, create a single input
+                    createInput(key, value, content);
+                }
+
+                header.appendChild(arrow);
+                header.appendChild(title);
+                
+                // Toggle expand/collapse
+                header.onclick = () => {
+                    content.classList.toggle('expanded');
+                    arrow.classList.toggle('expanded');
+                };
+
+                section.appendChild(header);
+                section.appendChild(content);
+                form.appendChild(section);
+                
+                // Expand first section by default
+                if (index === 0) {
+                    content.classList.add('expanded');
+                    arrow.classList.add('expanded');
+                }
+            });
+
+            // Create navigation after sections are rendered
+            createNavigation(settings);
+            // Set first item as active
+            const firstNavItem = document.querySelector('.sidebar-item');
+            if (firstNavItem) {
+                firstNavItem.classList.add('active');
+            }
+        }
+
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${isError ? 'error' : 'success'}`;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                currentSettings = await response.json();
+                renderSettings(currentSettings);
+            } catch (error) {
+                showNotification('Failed to load settings', true);
+            }
+        }
+
+        async function saveSettings() {
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(currentSettings),
+                });
+                
+                if (!response.ok) throw new Error('Failed to save settings');
+                
+                showNotification('Settings saved successfully');
+            } catch (error) {
+                showNotification('Failed to save settings', true);
+            }
+        }
+
+        // Load settings when page loads
+        loadSettings();
+    </script>
+</body>
+</html>
