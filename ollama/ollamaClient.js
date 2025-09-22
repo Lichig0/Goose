@@ -1,9 +1,17 @@
+const settings = require('../settings');
+
+
 class OllamaClient {
   constructor(baseUrl = 'http://127.0.0.1:11434') {
     this.baseUrl = baseUrl;
   }
 
   async generateResponse(prompt, options = {}) {
+    const config = settings.settings.ollama;
+    options = {
+      ...config,
+      ...options
+    };
     const model = options.model || 'gemma3:1b';
     const temperature = options.temperature || 0.7;
     
@@ -15,15 +23,15 @@ class OllamaClient {
         },
         body: JSON.stringify({
           model,
-          prompt,
-          options: {
-            temperature,
-            top_k: options.top_k || 40,
-            top_p: options.top_p || 0.9,
-            max_tokens: options.max_tokens || 512,
-            keep_alive: options.keep_alive || '5m',
-          },
-          stream: false
+          temperature,
+          prompt: `${options.promptPrefix}${prompt}`,
+          system: options.systemPrompt ?? '',
+          top_k: options.topK ?? 40,
+          top_p: options.topP ?? 0.9,
+          max_tokens: options.maxTokens ?? config.maxTokens,
+          keep_alive: options.keepAlive ?? '1m',
+          stream: false,
+          think: false
         })
       });
 

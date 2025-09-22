@@ -1,5 +1,5 @@
 const { SlashCommandBuilder } = require('discord.js');
-const ollamaClient = require('../chatter/ollamaClient');
+const ollamaClient = require('../ollama/ollamaClient');
 const path = require('path');
 const COMMAND_NAME = path.basename(__filename, '.js');
 
@@ -27,6 +27,7 @@ exports.execute = async (client, interaction) => {
     const messages = await interaction.channel.messages.fetch({ limit: 10 });
     // Format message history into context
     const messageHistory = messages
+      .filter(m => m.author.id !== client.user.id)
       .reverse()
       .map(msg => `${msg.author.username}: ${msg.content}`)
       .join('\n');
@@ -39,13 +40,12 @@ exports.execute = async (client, interaction) => {
     }
     
     // Set system prompt with chat context
-    const systemPrompt =
-      `You are in a Discord chat, you'll talk in a similar manor to those in the chat so you can fit in. Here is the recent chat history for context:\n${messageHistory}\n\nPlease respond to the user's next message. Next message: ${prompt}`
+    const systemPrompt = `${messageHistory}\nNext message: ${prompt}`
     ;
 
     // Generate response
     const response = await ollamaClient.generateResponse(systemPrompt, {
-      temperature: 0.9
+      temperature: 0.5
     });
 
     if (!response) {
@@ -53,8 +53,19 @@ exports.execute = async (client, interaction) => {
       return;
     }
 
-    // Format the response to fit in Discord's message length limit
-    const chunks = response.match(/.{1,1900}/g) || [];
+    // Split response into sentences and group them into chunks of 5
+    const sentences = response.match(/[^.!?]+[.!?]+/g) || [];
+    const chunks = [];
+    
+    // Group sentences into chunks of 5
+    for (let i = 0; i < sentences.length; i += 5) {
+      chunks.push(sentences.slice(i, i + 5).join(' '));
+    }
+    
+    // If no chunks were created (no sentence endings found), create one chunk with the whole response
+    if (chunks.length === 0) {
+      chunks.push(response);
+    }
     
     // Send first chunk as edit to deferred reply
     await interaction.editReply(chunks[0]);

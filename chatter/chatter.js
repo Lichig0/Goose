@@ -9,7 +9,7 @@ const { Brain } = require('./brain');
 const zalgo = require('zalgo-js');
 const Action = require('./Action').default;
 const sampleChain = require('./sampleCorpus');
-const ollamaClient = require('./ollamaClient');
+const ollamaClient = require('../ollama/ollamaClient');
 
 const chance = new Chance();
 const guildBrains = {};
