@@ -237,14 +237,18 @@ const ollamaAction = new Action('Ollama', async ({ content, channel }) => {
   try {
     // Get context from last few messages
     const contextMessages = await channel.messages.fetch({ limit: 10 });
-    const context = contextMessages
-      .reverse()
+    const messageHistory = contextMessages
       .filter(m => m.author.id !== channel.client.user.id)
-      .map(m => `${m.author.username}: ${m.content}`)
-      .join('\n');
+      .reverse()
+      .map(msg => {
+        return {
+          role: 'user',
+          content: `${msg.author.username}: ${msg.content}`
+        };
+      });
     
     // Create prompt with context
-    const prompt = `Previous conversation:\n${context}\n\nYou are a Discord bot. Add to the conversation and try to type in the style as everyone else as to fit in. A sentence or two is fine, but don't make the messages too long. Last message: ${content}`;
+    const prompt = `${content}`;
     
     // Check if model is ready
     const isReady = await ollamaClient.isModelReady();
@@ -255,8 +259,7 @@ const ollamaAction = new Action('Ollama', async ({ content, channel }) => {
 
     // Generate response
     const response = await ollamaClient.generateResponse(prompt, {
-      temperature: 0.7,
-      keep_alive: '30m',
+      messages: messageHistory,
     });
 
     return { string: response };

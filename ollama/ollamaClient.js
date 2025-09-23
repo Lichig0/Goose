@@ -16,23 +16,25 @@ class OllamaClient {
     const temperature = options.temperature || 0.7;
     
     try {
+      const body = JSON.stringify({
+        model,
+        messages: options.messages,
+        prompt: `${options.promptPrefix}\n\n${prompt}`,
+        think: false,
+        stream: false,
+        keep_alive: options.keepAlive ?? '1m',
+        system: options.systemPrompt ?? '',
+        temperature,
+        top_k: options.topK ?? 40,
+        top_p: options.topP ?? 0.9,
+        max_tokens: options.maxTokens ?? config.maxTokens,
+      });
       const response = await fetch(`${this.baseUrl}/api/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          model,
-          temperature,
-          prompt: `${options.promptPrefix}${prompt}`,
-          system: options.systemPrompt ?? '',
-          top_k: options.topK ?? 40,
-          top_p: options.topP ?? 0.9,
-          max_tokens: options.maxTokens ?? config.maxTokens,
-          keep_alive: options.keepAlive ?? '1m',
-          stream: false,
-          think: false
-        })
+        body
       });
 
       if (!response.ok) {

@@ -2,6 +2,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const ollamaClient = require('../ollama/ollamaClient');
 const path = require('path');
 const COMMAND_NAME = path.basename(__filename, '.js');
+const settings = require('../settings');
 
 const audit = {
   timestamp: Date.now()
@@ -11,7 +12,7 @@ module.exports.audit = () => audit;
 exports.getCommandData = () => {
   return new SlashCommandBuilder()
     .setName(COMMAND_NAME)
-    .setDescription('Ask a question and get an AI response')
+    .setDescription('Ask a question and get an AI response.(Offline model)')
     .addStringOption(option => {
       option.setName('prompt')
         .setDescription('Your question or prompt')
@@ -21,32 +22,35 @@ exports.getCommandData = () => {
 };
 
 exports.execute = async (client, interaction) => {
+  const config = settings.settings.ollama;
   await interaction.deferReply();
   try {
-    // Get the last 20 messages from the channel
-    const messages = await interaction.channel.messages.fetch({ limit: 10 });
+    // Get the last N messages from the channel
+    const messages = config.history > 0 ? await interaction.channel.messages.fetch({ limit: config.history ?? 10 }) : [];
     // Format message history into context
     const messageHistory = messages
       .filter(m => m.author.id !== client.user.id)
       .reverse()
-      .map(msg => `${msg.author.username}: ${msg.content}`)
-      .join('\n');
+      .map(msg => {
+        return {
+          role: 'user',
+          content: `${msg.author.username}: ${msg.content}`
+        };
+      });
 
-    const prompt = interaction.options.getString('prompt');
+    const prompt = `${interaction.options.getString('prompt')}`;
     const isReady = await ollamaClient.isModelReady();
     if (!isReady) {
       console.warn('[Ollama] Model not ready');
       return { string: 'Sorry, I need a moment to collect my thoughts...' };
     }
-    
-    // Set system prompt with chat context
-    const systemPrompt = `${messageHistory}\nNext message: ${prompt}`
-    ;
 
     // Generate response
-    const response = await ollamaClient.generateResponse(systemPrompt, {
-      temperature: 0.5
-    });
+    const response = await ollamaClient.generateResponse(prompt, {
+      messages: messageHistory,
+    }
+    );
+
 
     if (!response) {
       await interaction.editReply('Sorry, I got an empty response from the model.');
