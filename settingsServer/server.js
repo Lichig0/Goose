@@ -1,6 +1,7 @@
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
+const settings = require('../settings');
 
 async function startServer() {
   const app = express();
@@ -24,15 +25,12 @@ async function startServer() {
     try {
       const newSettings = req.body;
       // Pretty print JSON with 2 spaces
-      await fs.writeFile(
-        path.join(__dirname, '../settings.json'),
-        JSON.stringify(newSettings, null, 2),
-        'utf8'
-      );
+      await settings.setConfig(newSettings);
       res.json({ success: true });
     } catch (error) {
       res.status(500).json({ error: 'Failed to update settings' });
     }
+    settings.loadConfig();
   });
 
   // Get local IP
@@ -54,14 +52,24 @@ async function startServer() {
   const port = 46673;
   const { startProxyServer } = require('./proxy');
 
-  const server = await new Promise((resolve, reject) => {
+  const serverPromise = await new Promise((resolve, reject) => {
     const server = app.listen(port, '0.0.0.0', () => {
       const localIP = getLocalIP();
       console.log('Settings server running at:');
       console.log(`  http://${localIP}:${port}`);
       console.log(`  http://localhost:${port}`);
       resolve(server);
-    }).on('error', reject);
+    }).on('error', (error) => {
+      console.warn(error);
+      console.warn('Trying again on port', port+1);
+      const server = app.listen(port+1, '0.0.0.0', () => {
+        const localIP = getLocalIP();
+        console.log('Settings server running at:');
+        console.log(`  http://${localIP}:${port+1}`);
+        console.log(`  http://localhost:${port+1}`);
+        resolve(server);
+      }).on('error', reject);
+    });
   });
 
   try {
@@ -70,7 +78,7 @@ async function startServer() {
     console.error('Failed to start proxy server:', error);
   }
 
-  return server;
+  return serverPromise;
 }
 
 module.exports = { startServer };

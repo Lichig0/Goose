@@ -794,6 +794,7 @@
                 
                 showNotification('Settings saved successfully');
             } catch (error) {
+                console.error(error);
                 showNotification('Failed to save settings', true);
             }
         }
